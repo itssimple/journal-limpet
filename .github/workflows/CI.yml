@@ -1,0 +1,37 @@
+name: Continous integration
+
+on:
+  push:
+    branches: [ master ]
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Set version
+      id: set-version
+      run: echo "::set-env name=PACKAGE_VERSION::$(date +'%Y.%m.%d').$GITHUB_RUN_NUMBER"
+
+    - name: Setup .NET Core
+      uses: actions/setup-dotnet@v1
+      with:
+        dotnet-version: 3.1.x
+
+    - name: Install Octopus CLI
+      run: |
+        sudo apt update && sudo apt install --no-install-recommends gnupg curl ca-certificates apt-transport-https && \
+        curl -sSfL https://apt.octopus.com/public.key | sudo apt-key add - && \
+        sudo sh -c "echo deb https://apt.octopus.com/ stable main > /etc/apt/sources.list.d/octopus.com.list" && \
+        sudo apt update && sudo apt install octopuscli
+
+    - name: Build and package site for publish
+      run: |
+        cd Journal-Limpet \
+        dotnet publish Journal-Limpet.csproj --output published-app --verbosity q --configuration Release \
+        octo pack --id="journal-limpet" --version="$PACKAGE_VERSION" --basePath="./packages/journal-limpet" --outFolder="./packages"
+
+    - name: Push to Octopus
+      run: octo push --package="./packages/journal-limpet.$PACKAGE_VERSION.zip" --server="${{ secrets.OCTOPUS_SERVER_URL }}" --apiKey="${{ secrets.OCTOPUS_API_KEY }}"
