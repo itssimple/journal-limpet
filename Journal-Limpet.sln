@@ -10,9 +10,12 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		.github\workflows\CI.yml = .github\workflows\CI.yml
 		.github\FUNDING.yml = .github\FUNDING.yml
 		README.md = README.md
+		setup-pgsql-docker.ps1 = setup-pgsql-docker.ps1
 	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Journal-Limpet", "Journal-Limpet\Journal-Limpet.csproj", "{77B8E097-BC26-4E52-B00E-6D7D15C52923}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Journal-Limpet.Shared", "Journal-Limpet.Shared\Journal-Limpet.Shared.csproj", "{65EBA096-6677-482C-B6C3-EC428AF9F39F}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -24,6 +27,10 @@ Global
 		{77B8E097-BC26-4E52-B00E-6D7D15C52923}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{77B8E097-BC26-4E52-B00E-6D7D15C52923}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{77B8E097-BC26-4E52-B00E-6D7D15C52923}.Release|Any CPU.Build.0 = Release|Any CPU
+		{65EBA096-6677-482C-B6C3-EC428AF9F39F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{65EBA096-6677-482C-B6C3-EC428AF9F39F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{65EBA096-6677-482C-B6C3-EC428AF9F39F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{65EBA096-6677-482C-B6C3-EC428AF9F39F}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
