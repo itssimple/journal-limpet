@@ -21,6 +21,18 @@
                         <li class="nav-item">
                             <a class="nav-link" asp-area="" asp-page="/Index">Home</a>
                         </li>
+                        @if (ViewData["LoggedIn"] == null)
+                        {
+                            <li class="nav-item">
+                                <a class="nav-link" asp-area="" asp-page="Login">Login</a>
+                            </li>
+                        }
+                        else
+                        {
+                            <li class="nav-item">
+                                <a class="nav-link" asp-area="" asp-page="/Journals">My journals</a>
+                            </li>
+                        }
                     </ul>
                 </div>
             </div>
