@@ -1,10 +1,12 @@
 ﻿using Journal_Limpet.Shared.Database;
+using Journal_Limpet.Shared.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
+using System.Text.Json;
 using System.Threading.Tasks;
 
 namespace Journal_Limpet.Controllers
@@ -59,12 +61,15 @@ namespace Journal_Limpet.Controllers
 
             var result = await c.PostAsync("https://auth.frontierstore.net/token", new FormUrlEncodedContent(formData));
 
-            var tokenInfo = await result.Content.ReadAsStringAsync();
+            var tokenInfo = JsonSerializer.Deserialize<OAuth2Response>(await result.Content.ReadAsStringAsync());
 
             if (result.IsSuccessStatusCode)
             {
+                c.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", tokenInfo.AccessToken);
+
+                result = await c.GetAsync("https://auth.frontierstore.net/me");
                 // TODO: Save this, you dimwit.
-                return new JsonResult(tokenInfo);
+                return new JsonResult(new { TokenInfo = tokenInfo, Profile = await result.Content.ReadAsStringAsync() });
             }
             else
             {
