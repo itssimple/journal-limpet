@@ -13,9 +13,11 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		setup-pgsql-docker.ps1 = setup-pgsql-docker.ps1
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Journal-Limpet", "Journal-Limpet\Journal-Limpet.csproj", "{77B8E097-BC26-4E52-B00E-6D7D15C52923}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Journal-Limpet", "Journal-Limpet\Journal-Limpet.csproj", "{77B8E097-BC26-4E52-B00E-6D7D15C52923}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Journal-Limpet.Shared", "Journal-Limpet.Shared\Journal-Limpet.Shared.csproj", "{65EBA096-6677-482C-B6C3-EC428AF9F39F}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Journal-Limpet.Shared", "Journal-Limpet.Shared\Journal-Limpet.Shared.csproj", "{65EBA096-6677-482C-B6C3-EC428AF9F39F}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Journal-Limpet.Hangfire", "Journal-Limpet.Hangfire\Journal-Limpet.Hangfire.csproj", "{85F1DB67-A4F2-49BD-A02D-28A2078ACF02}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -31,6 +33,10 @@ Global
 		{65EBA096-6677-482C-B6C3-EC428AF9F39F}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{65EBA096-6677-482C-B6C3-EC428AF9F39F}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{65EBA096-6677-482C-B6C3-EC428AF9F39F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{85F1DB67-A4F2-49BD-A02D-28A2078ACF02}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{85F1DB67-A4F2-49BD-A02D-28A2078ACF02}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{85F1DB67-A4F2-49BD-A02D-28A2078ACF02}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{85F1DB67-A4F2-49BD-A02D-28A2078ACF02}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
