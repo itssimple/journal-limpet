@@ -33,3 +33,10 @@ jobs:
         dotnet publish Journal-Limpet.csproj --output published-app --verbosity q --configuration Release && \
         octo pack --id="journal-limpet" --version="$PACKAGE_VERSION" --basePath="./published-app" --outFolder="./published-app" && \
         octo push --package="./published-app/journal-limpet.$PACKAGE_VERSION.nupkg" --server="${{ secrets.OCTOPUS_SERVER_URL }}" --apiKey="${{ secrets.OCTOPUS_API_KEY }}"
+
+    - name: Build and package hangfire for publish
+      run: |
+        cd .. && cd Journal-Lipmet.Hangfire && \
+        dotnet publish Journal-Limpet.Hangfire.csproj --output published-app --verbosity q --configuration Release && \
+        octo pack --id="journal-limpet-hangfire" --version="$PACKAGE_VERSION" --basePath="./published-app" --outFolder="./published-app" && \
+        octo push --package="./published-app/journal-limpet-hangfire.$PACKAGE_VERSION.nupkg" --server="${{ secrets.OCTOPUS_SERVER_URL }}" --apiKey="${{ secrets.OCTOPUS_API_KEY }}"
