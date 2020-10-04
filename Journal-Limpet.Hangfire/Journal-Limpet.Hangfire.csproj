@@ -19,4 +19,8 @@
     <ProjectReference Include="..\Journal-Limpet.Shared\Journal-Limpet.Shared.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Jobs\" />
+  </ItemGroup>
+
 </Project>

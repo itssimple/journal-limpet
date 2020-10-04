@@ -73,13 +73,8 @@ namespace Journal_Limpet.Controllers
             }
             else
             {
-
+                return new JsonResult(await result.Content.ReadAsStringAsync());
             }
-
-            return new JsonResult(new
-            {
-                success = true
-            });
         }
     }
 }
