@@ -1,6 +1,7 @@
 ﻿using Journal_Limpet.Shared.Database;
 using Journal_Limpet.Shared.Models;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Configuration;
 using System;
 using System.Collections.Generic;
@@ -17,11 +18,13 @@ namespace Journal_Limpet.Controllers
     {
         private readonly NPGDB _db;
         private readonly IConfiguration _configuration;
+        private readonly IMemoryCache _memoryCache;
 
-        public JournalController(NPGDB db, IConfiguration configuration)
+        public JournalController(NPGDB db, IConfiguration configuration, IMemoryCache memoryCache)
         {
             _db = db;
             _configuration = configuration;
+            _memoryCache = memoryCache;
         }
 
         [HttpGet("info")]
@@ -46,6 +49,16 @@ namespace Journal_Limpet.Controllers
         {
             var code = Request.Query["code"];
             var state = Request.Query["state"];
+
+            if (!_memoryCache.TryGetValue(HttpContext.Session.Id, out string storedState))
+            {
+                return BadRequest("Could not find login token, try again");
+            }
+
+            if (state != storedState)
+            {
+                return Unauthorized("Invalid state, please relogin");
+            }
 
             var redirectUrl = string.Format("{0}://{1}{2}", Request.Scheme, Request.Host, Url.Content("~/api/journal/authenticate"));
 

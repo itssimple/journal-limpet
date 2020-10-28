@@ -1,4 +1,6 @@
-﻿using Journal_Limpet.Shared;
+﻿using Hangfire;
+using Hangfire.PostgreSql;
+using Journal_Limpet.Shared;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -20,6 +22,16 @@ namespace Journal_Limpet.Hangfire
             _serviceCollection = new ServiceCollection();
 
             _serviceCollection.AddJournalLimpetDependencies(_configuration);
+
+            _serviceCollection.AddHangfire(configuration =>
+            {
+                configuration
+                    .UseSimpleAssemblyNameTypeSerializer()
+                    .UseRecommendedSerializerSettings()
+                    .UsePostgreSqlStorage(_configuration["Database:ConnectionString"]);
+            });
+
+            _serviceCollection.AddHangfireServer();
         }
     }
 }
