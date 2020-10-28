@@ -15,7 +15,7 @@ jobs:
       id: set-version
       run: |
         echo "PACKAGE_VERSION=$(date +'%Y.%m.%d').$GITHUB_RUN_NUMBER" >> $GITHUB_ENV
-        sed -i "s/{{version}}/$PACKAGE_VERSION/g" Journal-Limpet/Pages/Shared/_Layout.cshtml
+        sed -i "s/{{version}}/$(date +'%Y.%m.%d').$GITHUB_RUN_NUMBER/g" Journal-Limpet/Pages/Shared/_Layout.cshtml
 
     - name: Setup .NET Core
       uses: actions/setup-dotnet@v1
