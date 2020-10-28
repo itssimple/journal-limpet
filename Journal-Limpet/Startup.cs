@@ -43,6 +43,8 @@ namespace Journal_Limpet
                     .UseRecommendedSerializerSettings()
                     .UsePostgreSqlStorage(Configuration["Database:ConnectionString"]);
             });
+
+            services.AddHangfireServer();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
