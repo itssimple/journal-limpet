@@ -76,16 +76,15 @@ namespace Journal_Limpet
 
             app.UseSession();
 
-            app.UseHangfireDashboard();
+            app.UseHangfireDashboard(options: new DashboardOptions
+            {
+                Authorization = new[] { new HangfireAuthorizationFilter(Configuration["Hangfire:AuthKey"]) }
+            });
 
             app.UseEndpoints(endpoints =>
             {
                 endpoints.MapControllers();
                 endpoints.MapRazorPages();
-                endpoints.MapHangfireDashboard(options: new DashboardOptions
-                {
-                    Authorization = new[] { new HangfireAuthorizationFilter(Configuration["Hangfire:AuthKey"]) }
-                });
             });
         }
     }
