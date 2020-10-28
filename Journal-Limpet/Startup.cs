@@ -70,13 +70,13 @@ namespace Journal_Limpet
 
             app.UseStaticFiles();
 
-            app.UseHangfireDashboard();
-
             app.UseRouting();
 
             app.UseAuthorization();
 
             app.UseSession();
+
+            app.UseHangfireDashboard();
 
             app.UseEndpoints(endpoints =>
             {
