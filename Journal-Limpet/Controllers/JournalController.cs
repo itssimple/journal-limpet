@@ -1,8 +1,10 @@
 ﻿using Journal_Limpet.Shared.Database;
 using Journal_Limpet.Shared.Models;
+using Journal_Limpet.Shared.Models.User;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Configuration;
+using NpgsqlTypes;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -50,7 +52,7 @@ namespace Journal_Limpet.Controllers
             var code = Request.Query["code"];
             var state = Request.Query["state"];
 
-            if (!_memoryCache.TryGetValue(HttpContext.Session.Id, out string storedState))
+            if (!_memoryCache.TryGetValue("frontierLogin-" + HttpContext.Connection.RemoteIpAddress.ToString(), out string storedState))
             {
                 return BadRequest("Could not find login token, try again");
             }
@@ -81,6 +83,36 @@ namespace Journal_Limpet.Controllers
                 c.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", tokenInfo.AccessToken);
 
                 result = await c.GetAsync("https://auth.frontierstore.net/me");
+
+                var profile = JsonSerializer.Deserialize<FrontierProfile>(await result.Content.ReadAsStringAsync());
+
+                var settings = new Settings
+                {
+                    AuthToken = tokenInfo.AccessToken,
+                    TokenExpiration = DateTimeOffset.UtcNow.AddSeconds(tokenInfo.ExpiresIn),
+                    RefreshToken = tokenInfo.RefreshToken,
+                    FrontierProfile = profile
+                };
+
+                // Move this so a service later
+                var matchingUser = (await _db.ExecuteListAsync<Shared.Models.User.Profile>("select * from user_profile WHERE CAST(user_settings->'FrontierProfile'->'CustomerId' AS text) = @customerId;", new Npgsql.NpgsqlParameter("customerId", profile.CustomerId))).FirstOrDefault();
+
+                if (matchingUser != null)
+                {
+                    // Update user with new token info
+                    await _db.ExecuteNonQueryAsync("UPDATE user_profile OUTPUT  SET user_settings = @settings WHERE user_identifier = @userIdentifier",
+                        new Npgsql.NpgsqlParameter("settings", NpgsqlDbType.Jsonb) { Value = JsonSerializer.Serialize(settings) },
+                        new Npgsql.NpgsqlParameter("userIdentifier", matchingUser.UserIdentifier)
+                    );
+                }
+                else
+                {
+                    // Create new user
+                    await _db.ExecuteNonQueryAsync("INSERT INTO user_profile (user_settings) VALUES (@settings)",
+                        new Npgsql.NpgsqlParameter("settings", NpgsqlDbType.Jsonb) { Value = JsonSerializer.Serialize(settings) }
+                    );
+                }
+
                 // TODO: Save this, you dimwit.
                 return new JsonResult(new { TokenInfo = tokenInfo, Profile = await result.Content.ReadAsStringAsync() });
             }

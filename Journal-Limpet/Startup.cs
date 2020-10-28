@@ -27,7 +27,7 @@ namespace Journal_Limpet
             services.AddSession(options =>
             {
                 options.IdleTimeout = TimeSpan.FromMinutes(20);
-                options.Cookie.HttpOnly = true;
+                options.Cookie.HttpOnly = false;
                 options.Cookie.IsEssential = true;
                 options.Cookie.SecurePolicy = Microsoft.AspNetCore.Http.CookieSecurePolicy.Always;
             });

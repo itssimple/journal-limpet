@@ -18,7 +18,7 @@ namespace Journal_Limpet.Pages
         public void OnGet()
         {
             var redirectUrl = string.Format("{0}://{1}{2}", Request.Scheme, Request.Host, Url.Content("~/api/journal/authenticate"));
-            var _randomState = _memoryCache.GetOrCreate(HttpContext.Session.Id, (entry) =>
+            var _randomState = _memoryCache.GetOrCreate("frontierLogin-" + HttpContext.Connection.RemoteIpAddress.ToString(), (entry) =>
             {
                 entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(20);
                 return "jl-" + DateTime.Now.Ticks;

@@ -46,6 +46,14 @@ namespace Journal_Limpet.Shared.Database
             return items;
         }
 
+        public async Task<int> ExecuteNonQueryAsync(string sql, params NpgsqlParameter[] parameters)
+        {
+            await EnsureConnected();
+            var command = await GetCommandWithParams(sql, parameters);
+
+            return await command.ExecuteNonQueryAsync();
+        }
+
         public async Task<T> ExecuteScalarAsync<T>(string sql, params NpgsqlParameter[] parameters)
         {
             await EnsureConnected();
