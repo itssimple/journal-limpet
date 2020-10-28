@@ -100,7 +100,7 @@ namespace Journal_Limpet.Controllers
                 if (matchingUser != null)
                 {
                     // Update user with new token info
-                    await _db.ExecuteNonQueryAsync("UPDATE user_profile OUTPUT  SET user_settings = @settings WHERE user_identifier = @userIdentifier",
+                    await _db.ExecuteNonQueryAsync("UPDATE user_profile SET user_settings = @settings WHERE user_identifier = @userIdentifier",
                         new Npgsql.NpgsqlParameter("settings", NpgsqlDbType.Jsonb) { Value = JsonSerializer.Serialize(settings) },
                         new Npgsql.NpgsqlParameter("userIdentifier", matchingUser.UserIdentifier)
                     );
