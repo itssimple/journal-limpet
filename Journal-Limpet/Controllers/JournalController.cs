@@ -32,7 +32,11 @@ namespace Journal_Limpet.Controllers
         [HttpGet("info")]
         public async Task<JsonResult> GetInfo([FromQuery] string uuid)
         {
-            var user = (await _db.ExecuteListAsync<Shared.Models.User.Profile>("SELECT * FROM user_profile WHERE user_identifier = @id", new Npgsql.NpgsqlParameter("id", Guid.Parse(uuid)))).FirstOrDefault();
+            var user = (await _db.ExecuteListAsync<Shared.Models.User.Profile>(
+                "SELECT * FROM user_profile WHERE user_identifier = @id",
+                new Npgsql.NpgsqlParameter("id", Guid.Parse(uuid))))
+                .FirstOrDefault();
+
             if (user != null)
             {
                 // This UUID has a user!
@@ -95,7 +99,7 @@ namespace Journal_Limpet.Controllers
                 };
 
                 // Move this so a service later
-                var matchingUser = (await _db.ExecuteListAsync<Shared.Models.User.Profile>("select * from user_profile WHERE CAST(user_settings->'FrontierProfile'->'CustomerId' AS text) = @customerId;", new Npgsql.NpgsqlParameter("customerId", profile.CustomerId))).FirstOrDefault();
+                var matchingUser = (await _db.ExecuteListAsync<Shared.Models.User.Profile>("select * from user_profile WHERE CAST(user_settings->'FrontierProfile'->>'customer_id' AS text) = @customerId;", new Npgsql.NpgsqlParameter("customerId", profile.CustomerId))).FirstOrDefault();
 
                 if (matchingUser != null)
                 {
@@ -104,13 +108,15 @@ namespace Journal_Limpet.Controllers
                         new Npgsql.NpgsqlParameter("settings", NpgsqlDbType.Jsonb) { Value = JsonSerializer.Serialize(settings) },
                         new Npgsql.NpgsqlParameter("userIdentifier", matchingUser.UserIdentifier)
                     );
+
+                    matchingUser.UserSettings = settings;
                 }
                 else
                 {
                     // Create new user
-                    await _db.ExecuteNonQueryAsync("INSERT INTO user_profile (user_settings) VALUES (@settings)",
+                    matchingUser = (await _db.ExecuteListAsync<Shared.Models.User.Profile>("INSERT INTO user_profile (user_settings) VALUES (@settings) RETURNING *",
                         new Npgsql.NpgsqlParameter("settings", NpgsqlDbType.Jsonb) { Value = JsonSerializer.Serialize(settings) }
-                    );
+                    )).FirstOrDefault();
                 }
 
                 // TODO: Save this, you dimwit.

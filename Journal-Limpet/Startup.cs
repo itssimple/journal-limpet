@@ -20,6 +20,8 @@ namespace Journal_Limpet
 
         public IConfiguration Configuration { get; }
 
+        public static IServiceProvider ServiceProvider;
+
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
@@ -30,7 +32,10 @@ namespace Journal_Limpet
                 options.Cookie.HttpOnly = false;
                 options.Cookie.IsEssential = true;
                 options.Cookie.SecurePolicy = Microsoft.AspNetCore.Http.CookieSecurePolicy.Always;
+                options.Cookie.SameSite = Microsoft.AspNetCore.Http.SameSiteMode.None;
             });
+
+            services.AddHttpClient();
 
             services.AddControllers();
             services.AddRazorPages();
@@ -86,6 +91,8 @@ namespace Journal_Limpet
                 endpoints.MapControllers();
                 endpoints.MapRazorPages();
             });
+
+            ServiceProvider = app.ApplicationServices;
         }
     }
 }
