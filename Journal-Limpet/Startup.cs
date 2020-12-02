@@ -95,7 +95,7 @@ namespace Journal_Limpet
 
             ServiceProvider = app.ApplicationServices;
 
-            RecurringJob.AddOrUpdate("journal-limpet:update-tokens", () => AccountTokenRefresher.RefreshUserTokensAsync(null), Cron.Minutely(), TimeZoneInfo.Utc);
+            RecurringJob.AddOrUpdate("journal-limpet:update-tokens", () => AccountTokenRefresher.RefreshUserTokensAsync(null), "*/10 * * * *", TimeZoneInfo.Utc);
         }
     }
 }
