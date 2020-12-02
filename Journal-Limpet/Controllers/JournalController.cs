@@ -2,9 +2,9 @@
 using Journal_Limpet.Shared.Models;
 using Journal_Limpet.Shared.Models.User;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Configuration;
-using NpgsqlTypes;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -18,11 +18,11 @@ namespace Journal_Limpet.Controllers
     [ApiController]
     public class JournalController : ControllerBase
     {
-        private readonly NPGDB _db;
+        private readonly MSSQLDB _db;
         private readonly IConfiguration _configuration;
         private readonly IMemoryCache _memoryCache;
 
-        public JournalController(NPGDB db, IConfiguration configuration, IMemoryCache memoryCache)
+        public JournalController(MSSQLDB db, IConfiguration configuration, IMemoryCache memoryCache)
         {
             _db = db;
             _configuration = configuration;
@@ -34,7 +34,7 @@ namespace Journal_Limpet.Controllers
         {
             var user = (await _db.ExecuteListAsync<Shared.Models.User.Profile>(
                 "SELECT * FROM user_profile WHERE user_identifier = @id",
-                new Npgsql.NpgsqlParameter("id", Guid.Parse(uuid))))
+                new SqlParameter("id", Guid.Parse(uuid))))
                 .FirstOrDefault();
 
             if (user != null)
@@ -99,14 +99,19 @@ namespace Journal_Limpet.Controllers
                 };
 
                 // Move this so a service later
-                var matchingUser = (await _db.ExecuteListAsync<Shared.Models.User.Profile>("select * from user_profile WHERE CAST(user_settings->'FrontierProfile'->>'customer_id' AS text) = @customerId;", new Npgsql.NpgsqlParameter("customerId", profile.CustomerId))).FirstOrDefault();
+                var matchingUser = (await _db.ExecuteListAsync<Shared.Models.User.Profile>(@"
+SELCT *
+FROM user_profile
+WHERE JSON_VALUE(user_settings, '$.FrontierProfile.customer_id') = @customerId;",
+new SqlParameter("customerId", profile.CustomerId))
+                ).FirstOrDefault();
 
                 if (matchingUser != null)
                 {
                     // Update user with new token info
-                    await _db.ExecuteNonQueryAsync("UPDATE user_profile SET user_settings = @settings WHERE user_identifier = @userIdentifier",
-                        new Npgsql.NpgsqlParameter("settings", NpgsqlDbType.Jsonb) { Value = JsonSerializer.Serialize(settings) },
-                        new Npgsql.NpgsqlParameter("userIdentifier", matchingUser.UserIdentifier)
+                    await _db.ExecuteNonQueryAsync("UPDATE user_profile SET user_settings = @settings, last_notification_mail = NULL WHERE user_identifier = @userIdentifier",
+                        new SqlParameter("settings", JsonSerializer.Serialize(settings)),
+                        new SqlParameter("userIdentifier", matchingUser.UserIdentifier)
                     );
 
                     matchingUser.UserSettings = settings;
@@ -114,8 +119,8 @@ namespace Journal_Limpet.Controllers
                 else
                 {
                     // Create new user
-                    matchingUser = (await _db.ExecuteListAsync<Shared.Models.User.Profile>("INSERT INTO user_profile (user_settings) VALUES (@settings) RETURNING *",
-                        new Npgsql.NpgsqlParameter("settings", NpgsqlDbType.Jsonb) { Value = JsonSerializer.Serialize(settings) }
+                    matchingUser = (await _db.ExecuteListAsync<Shared.Models.User.Profile>("INSERT INTO user_profile (user_settings) OUTPUT INSERTED.* VALUES (@settings)",
+                        new SqlParameter("settings", JsonSerializer.Serialize(settings))
                     )).FirstOrDefault();
                 }
 

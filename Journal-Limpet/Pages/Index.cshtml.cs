@@ -8,11 +8,11 @@ namespace Journal_Limpet.Pages
     public class IndexModel : PageModel
     {
         private readonly ILogger<IndexModel> _logger;
-        private readonly NPGDB _db;
+        private readonly MSSQLDB _db;
 
-        public long UserCount = 0;
+        public int UserCount = 0;
 
-        public IndexModel(ILogger<IndexModel> logger, NPGDB db)
+        public IndexModel(ILogger<IndexModel> logger, MSSQLDB db)
         {
             _logger = logger;
             _db = db;
@@ -20,7 +20,7 @@ namespace Journal_Limpet.Pages
 
         public async Task OnGet()
         {
-            UserCount = await _db.ExecuteScalarAsync<long>("SELECT COUNT(*) FROM user_profile WHERE deleted = false");
+            UserCount = await _db.ExecuteScalarAsync<int>("SELECT COUNT(*) FROM user_profile WHERE deleted = 0");
         }
     }
 }

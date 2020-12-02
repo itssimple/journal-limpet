@@ -13,6 +13,8 @@ namespace Journal_Limpet.Shared.Models.User
         public DateTimeOffset? DeletionDate { get; set; }
         [JsonIgnore]
         public Settings UserSettings { get; set; }
+        public string NotificationEmail { get; set; }
+        public DateTimeOffset? LastNotificationMail { get; set; }
 
         public Profile(DataRow row)
         {
@@ -21,6 +23,8 @@ namespace Journal_Limpet.Shared.Models.User
             Deleted = row.Field<bool>("deleted");
             DeletionDate = (!row.IsNull("deletion_date") ? new DateTimeOffset(row.Field<DateTime>("deletion_date"), TimeSpan.Zero) as DateTimeOffset? : null);
             UserSettings = JsonSerializer.Deserialize<Settings>(row.Field<string>("user_settings"));
+            NotificationEmail = row.Field<string>("notification_email");
+            LastNotificationMail = (!row.IsNull("last_notification_mail") ? new DateTimeOffset(row.Field<DateTime>("last_notification_mail"), TimeSpan.Zero) as DateTimeOffset? : null);
         }
     }
 }

@@ -46,7 +46,7 @@ namespace Journal_Limpet
                 configuration
                     .UseSimpleAssemblyNameTypeSerializer()
                     .UseRecommendedSerializerSettings()
-                    .UsePostgreSqlStorage(Configuration["Database:ConnectionString"]);
+                    .UsePostgreSqlStorage(Configuration["Database:HangfireConnection"]);
             });
 
             services.AddHangfireServer();

@@ -1,4 +1,4 @@
-﻿using Npgsql;
+﻿using Microsoft.Data.SqlClient;
 using System;
 using System.Collections.Generic;
 using System.Data;
@@ -7,21 +7,21 @@ using System.Threading.Tasks;
 
 namespace Journal_Limpet.Shared.Database
 {
-    public class NPGDB : IDisposable
+    public class MSSQLDB : IDisposable
     {
-        private readonly NpgsqlConnection _connection;
+        private readonly SqlConnection _connection;
 
-        public NPGDB(NpgsqlConnection connection)
+        public MSSQLDB(SqlConnection connection)
         {
             _connection = connection;
         }
 
-        public async Task<DataTable> ExecuteDataTableAsync(string sql, params NpgsqlParameter[] parameters)
+        public async Task<DataTable> ExecuteDataTableAsync(string sql, params SqlParameter[] parameters)
         {
             await EnsureConnected();
             var command = await GetCommandWithParams(sql, parameters);
 
-            using (var da = new NpgsqlDataAdapter(command))
+            using (var da = new SqlDataAdapter(command))
             {
                 DataTable dt = new DataTable();
 
@@ -31,7 +31,7 @@ namespace Journal_Limpet.Shared.Database
             }
         }
 
-        public async Task<List<T>> ExecuteListAsync<T>(string sql, params NpgsqlParameter[] parameters)
+        public async Task<List<T>> ExecuteListAsync<T>(string sql, params SqlParameter[] parameters)
         {
             var dt = await ExecuteDataTableAsync(sql, parameters);
 
@@ -46,7 +46,7 @@ namespace Journal_Limpet.Shared.Database
             return items;
         }
 
-        public async Task<int> ExecuteNonQueryAsync(string sql, params NpgsqlParameter[] parameters)
+        public async Task<int> ExecuteNonQueryAsync(string sql, params SqlParameter[] parameters)
         {
             await EnsureConnected();
             var command = await GetCommandWithParams(sql, parameters);
@@ -54,7 +54,7 @@ namespace Journal_Limpet.Shared.Database
             return await command.ExecuteNonQueryAsync();
         }
 
-        public async Task<T> ExecuteScalarAsync<T>(string sql, params NpgsqlParameter[] parameters)
+        public async Task<T> ExecuteScalarAsync<T>(string sql, params SqlParameter[] parameters)
         {
             await EnsureConnected();
             var command = await GetCommandWithParams(sql, parameters);
@@ -67,7 +67,7 @@ namespace Journal_Limpet.Shared.Database
             return default;
         }
 
-        private async Task<NpgsqlCommand> GetCommandWithParams(string sql, NpgsqlParameter[] parameters)
+        private async Task<SqlCommand> GetCommandWithParams(string sql, SqlParameter[] parameters)
         {
             var command = _connection.CreateCommand();
             command.CommandText = sql;
