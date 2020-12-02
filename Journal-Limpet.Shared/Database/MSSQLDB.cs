@@ -2,7 +2,6 @@
 using System;
 using System.Collections.Generic;
 using System.Data;
-using System.Linq;
 using System.Threading.Tasks;
 
 namespace Journal_Limpet.Shared.Database
@@ -72,10 +71,10 @@ namespace Journal_Limpet.Shared.Database
             var command = _connection.CreateCommand();
             command.CommandText = sql;
             command.Parameters.AddRange(parameters);
-            if (parameters.Count() > 0)
-            {
-                await command.PrepareAsync();
-            }
+            //if (parameters.Count() > 0)
+            //{
+            //    await command.PrepareAsync();
+            //}
 
             return command;
         }

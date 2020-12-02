@@ -100,7 +100,7 @@ Journal Limpet
                         await sendgridClient.SendEmailAsync(mail);
 
                         await db.ExecuteNonQueryAsync("UPDATE user_profile SET last_notification_mail = GETUTCDATE() WHERE user_identifier = @userIdentifier",
-                            new SqlParameter("userIdentifier", user.UserIdentifier)
+                            new SqlParameter("@userIdentifier", user.UserIdentifier)
                         );
                     }
                 }
@@ -120,8 +120,8 @@ Journal Limpet
 
                     // Update user with new token info
                     await db.ExecuteNonQueryAsync("UPDATE user_profile SET user_settings = @settings, last_notification_mail = NULL WHERE user_identifier = @userIdentifier",
-                            new SqlParameter("settings", JsonSerializer.Serialize(settings)),
-                            new SqlParameter("userIdentifier", user.UserIdentifier)
+                            new SqlParameter("@settings", JsonSerializer.Serialize(settings)),
+                            new SqlParameter("@userIdentifier", user.UserIdentifier)
                         );
                 }
             }

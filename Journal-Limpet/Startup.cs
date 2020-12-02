@@ -1,5 +1,6 @@
 using Hangfire;
 using Hangfire.PostgreSql;
+using Journal_Limpet.Jobs;
 using Journal_Limpet.Shared;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -93,6 +94,8 @@ namespace Journal_Limpet
             });
 
             ServiceProvider = app.ApplicationServices;
+
+            RecurringJob.AddOrUpdate("journal-limpet:update-tokens", () => AccountTokenRefresher.RefreshUserTokensAsync(null), Cron.Hourly(), TimeZoneInfo.Utc);
         }
     }
 }

@@ -34,7 +34,7 @@ namespace Journal_Limpet.Controllers
         {
             var user = (await _db.ExecuteListAsync<Shared.Models.User.Profile>(
                 "SELECT * FROM user_profile WHERE user_identifier = @id",
-                new SqlParameter("id", Guid.Parse(uuid))))
+                new SqlParameter("@id", Guid.Parse(uuid))))
                 .FirstOrDefault();
 
             if (user != null)
@@ -100,18 +100,18 @@ namespace Journal_Limpet.Controllers
 
                 // Move this so a service later
                 var matchingUser = (await _db.ExecuteListAsync<Shared.Models.User.Profile>(@"
-SELCT *
+SELECT *
 FROM user_profile
 WHERE JSON_VALUE(user_settings, '$.FrontierProfile.customer_id') = @customerId;",
-new SqlParameter("customerId", profile.CustomerId))
+new SqlParameter("@customerId", profile.CustomerId))
                 ).FirstOrDefault();
 
                 if (matchingUser != null)
                 {
                     // Update user with new token info
                     await _db.ExecuteNonQueryAsync("UPDATE user_profile SET user_settings = @settings, last_notification_mail = NULL WHERE user_identifier = @userIdentifier",
-                        new SqlParameter("settings", JsonSerializer.Serialize(settings)),
-                        new SqlParameter("userIdentifier", matchingUser.UserIdentifier)
+                        new SqlParameter("@settings", JsonSerializer.Serialize(settings)),
+                        new SqlParameter("@userIdentifier", matchingUser.UserIdentifier)
                     );
 
                     matchingUser.UserSettings = settings;
@@ -120,7 +120,7 @@ new SqlParameter("customerId", profile.CustomerId))
                 {
                     // Create new user
                     matchingUser = (await _db.ExecuteListAsync<Shared.Models.User.Profile>("INSERT INTO user_profile (user_settings) OUTPUT INSERTED.* VALUES (@settings)",
-                        new SqlParameter("settings", JsonSerializer.Serialize(settings))
+                        new SqlParameter("@settings", JsonSerializer.Serialize(settings))
                     )).FirstOrDefault();
                 }
 
