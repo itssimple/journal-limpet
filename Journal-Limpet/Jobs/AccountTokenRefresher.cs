@@ -30,7 +30,7 @@ namespace Journal_Limpet.Jobs
                 var soonExpiringUsers = await db.ExecuteListAsync<Shared.Models.User.Profile>(
     @"SELECT *
 FROM user_profile
-WHERE CAST(JSON_VALUE(user_settings, '$.TokenExpiration') as DATETIMEOFFSET) < DATEADD(HOUR, -1, GETUTCDATE())
+WHERE CAST(JSON_VALUE(user_settings, '$.TokenExpiration') as DATETIMEOFFSET) < DATEADD(HOUR, -2, GETUTCDATE())
 AND last_notification_mail IS NULL"
                 );
                 context.WriteLine($"Found {soonExpiringUsers.Count} user(s) to refresh tokens for");
@@ -44,9 +44,9 @@ AND last_notification_mail IS NULL"
                     var res = await hc.PostAsync("https://auth.frontierstore.net/token",
                         new FormUrlEncodedContent(new Dictionary<string, string>
                         {
-                        { "grant_type", "refresh_token" },
-                        { "refresh_token", user.UserSettings.RefreshToken.ToString() },
-                        { "client_id", configuration["EliteDangerous:ClientId"] }
+                            { "grant_type", "refresh_token" },
+                            { "refresh_token", user.UserSettings.RefreshToken.ToString() },
+                            { "client_id", configuration["EliteDangerous:ClientId"] }
                         })
                     );
 
