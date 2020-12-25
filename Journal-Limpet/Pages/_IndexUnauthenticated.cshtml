@@ -1,4 +1,17 @@
 ﻿@model IndexModel
 <h1 class="display-4">Welcome to Journal Limpet</h1>
 <p>This project aims to store the player journals from Elite: Dangerous</p>
-<p>Currently we have @Model.UserCount.ToString("n0") users registered and a total of @Model.TotalUserJournalCount.ToString("n0") journals (with @Model.TotalUserJournalLines.ToString("n0") lines)!</p>
+<p>Currently we have</p>
+<ul>
+    <li>@Model.UserCount.ToString("n0") users registered</li>
+    <li>@Model.TotalUserJournalCount.ToString("n0") journals saved</li>
+    <li>@Model.TotalUserJournalLines.ToString("n0") lines of journal</li>
+</ul>
+<hr />
+<p>So, a quick little intro about Journal Limpet..</p>
+<ul>
+    <li>Stores your journal logs for a longer time than Frontier stores them through their API</li>
+    <li>Gives you access to download these journals at any given time</li>
+    <li>No need to create a new account or anything, just log in with your Frontier credentials</li>
+    <li>Later, we will add support to send your journals forward to 3rd party applications</li>
+</ul>
