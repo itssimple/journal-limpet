@@ -1,5 +1,8 @@
-﻿using Journal_Limpet.Shared.Database;
+﻿using Amazon.S3;
+using Amazon.S3.Transfer;
+using Journal_Limpet.Shared.Database;
 using Journal_Limpet.Shared.Models;
+using Journal_Limpet.Shared.Models.Journal;
 using Journal_Limpet.Shared.Models.User;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
@@ -26,12 +29,14 @@ namespace Journal_Limpet.Controllers
         private readonly MSSQLDB _db;
         private readonly IConfiguration _configuration;
         private readonly IMemoryCache _memoryCache;
+        private readonly AmazonS3Client _s3Client;
 
-        public JournalController(MSSQLDB db, IConfiguration configuration, IMemoryCache memoryCache)
+        public JournalController(MSSQLDB db, IConfiguration configuration, IMemoryCache memoryCache, AmazonS3Client s3Client)
         {
             _db = db;
             _configuration = configuration;
             _memoryCache = memoryCache;
+            _s3Client = s3Client;
         }
 
         [HttpGet("info")]
@@ -151,6 +156,34 @@ new SqlParameter("@customerId", profile.CustomerId))
             else
             {
                 return new JsonResult(await result.Content.ReadAsStringAsync());
+            }
+        }
+
+        [HttpGet("{journalDate}/download")]
+        public async Task<IActionResult> DownloadJournalAsync(DateTime journalDate)
+        {
+            var journalItem = _db.ExecuteSingleRowAsync<UserJournal>(
+                "SELECT * FROM user_journal WHERE user_identifier = @user_identifier AND journal_date = @journal_date",
+                new SqlParameter("user_identifier", User.Identity.Name),
+                new SqlParameter("journal_date", journalDate.Date)
+            );
+
+            if (journalItem == null)
+                return NotFound();
+
+            using (var tu = new TransferUtility(_s3Client))
+            {
+                var stream = await tu.OpenStreamAsync("journal-limpet", $"{User.Identity.Name.ToLower()}/journal/{journalDate.Year}/{journalDate.Month.ToString().PadLeft(2, '0')}/{journalDate.Day.ToString().PadLeft(2, '0')}.journal");
+                var f = "Journal." +
+                    journalDate.Year.ToString().Substring(2) +
+                    journalDate.Month.ToString().PadLeft(2, '0') +
+                    journalDate.Day.ToString().PadLeft(2, '0') +
+                    journalDate.Hour.ToString().PadLeft(2, '0') +
+                    journalDate.Minute.ToString().PadLeft(2, '0') +
+                    journalDate.Second.ToString().PadLeft(2, '0') +
+                    ".01.log";
+
+                return File(stream, "application/octet-stream", f);
             }
         }
 

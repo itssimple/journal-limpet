@@ -1,0 +1,46 @@
+﻿@page
+@model Journal_Limpet.Pages.JournalsModel
+@{
+    ViewData["Title"] = "Journals";
+}
+
+<table class="table table-striped table-dark table-hover" id="journal-table" data-toggle="table" data-pagination="true">
+    <thead>
+        <tr>
+            <th scope="col"
+                data-field="JournalDate"
+                data-width="50" data-formatter="dateLinkFormatter">Journal Date</th>
+            <th scope="col"
+                data-field="NumberOfLines"
+                data-width="50">Lines in journal</th>
+            <th scope="col"
+                data-field="CompleteEntry"
+                data-width="50">
+                <abbr title="Complete entry means that we can't get any more logs from that specific date">Complete entry</abbr>
+            </th>
+        </tr>
+    </thead>
+    <tbody>
+    </tbody>
+</table>
+@section Head
+{
+    <link rel="stylesheet" type="text/css" href="~/lib/bootstrap-table-master/bootstrap-table.min.css" />
+}
+
+@section Scripts
+{
+    <script type="text/javascript" src="~/lib/bootstrap-table-master/bootstrap-table.min.js"></script>
+
+    <script type="text/javascript">
+    var jt = $('#journal-table');
+    (function() {
+    var journalData = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.JournalItems));
+    jt.bootstrapTable({ data: journalData });
+    })();
+
+    function dateLinkFormatter(value) {
+        return `<a href="/api/journal/${value}/download" rel="noopener"><abbr title="Click to download the journal for ${value}">${value}</abbr></a>`
+    }
+    </script>
+}
