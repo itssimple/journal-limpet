@@ -1,6 +1,9 @@
 ﻿using Journal_Limpet.Shared.Database;
 using Journal_Limpet.Shared.Models;
 using Journal_Limpet.Shared.Models.User;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Caching.Memory;
@@ -9,6 +12,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
+using System.Security.Claims;
 using System.Text.Json;
 using System.Threading.Tasks;
 
@@ -16,6 +20,7 @@ namespace Journal_Limpet.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize]
     public class JournalController : ControllerBase
     {
         private readonly MSSQLDB _db;
@@ -51,6 +56,7 @@ namespace Journal_Limpet.Controllers
         }
 
         [HttpGet("authenticate")]
+        [AllowAnonymous]
         public async Task<IActionResult> Authenticate()
         {
             var code = Request.Query["code"];
@@ -124,8 +130,23 @@ new SqlParameter("@customerId", profile.CustomerId))
                     )).FirstOrDefault();
                 }
 
-                // TODO: Save this, you dimwit.
-                return new JsonResult(new { TokenInfo = tokenInfo, Profile = await result.Content.ReadAsStringAsync() });
+                var claims = new List<Claim>()
+                {
+                    new Claim(ClaimTypes.Name, matchingUser.UserIdentifier.ToString())
+                };
+
+                var claimsIdentity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
+
+                var authProperties = new AuthenticationProperties
+                {
+                    AllowRefresh = true,
+                    IsPersistent = false,
+                    IssuedUtc = DateTimeOffset.UtcNow
+                };
+
+                await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, new ClaimsPrincipal(claimsIdentity), authProperties);
+
+                return LocalRedirect("~/Index");
             }
             else
             {

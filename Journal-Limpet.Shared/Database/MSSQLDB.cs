@@ -18,7 +18,7 @@ namespace Journal_Limpet.Shared.Database
         public async Task<DataTable> ExecuteDataTableAsync(string sql, params SqlParameter[] parameters)
         {
             await EnsureConnected();
-            var command = await GetCommandWithParams(sql, parameters);
+            var command = GetCommandWithParams(sql, parameters);
 
             using (var da = new SqlDataAdapter(command))
             {
@@ -48,7 +48,7 @@ namespace Journal_Limpet.Shared.Database
         public async Task<int> ExecuteNonQueryAsync(string sql, params SqlParameter[] parameters)
         {
             await EnsureConnected();
-            var command = await GetCommandWithParams(sql, parameters);
+            var command = GetCommandWithParams(sql, parameters);
 
             return await command.ExecuteNonQueryAsync();
         }
@@ -56,7 +56,7 @@ namespace Journal_Limpet.Shared.Database
         public async Task<T> ExecuteScalarAsync<T>(string sql, params SqlParameter[] parameters)
         {
             await EnsureConnected();
-            var command = await GetCommandWithParams(sql, parameters);
+            var command = GetCommandWithParams(sql, parameters);
 
             var retValue = await command.ExecuteScalarAsync();
 
@@ -66,15 +66,11 @@ namespace Journal_Limpet.Shared.Database
             return default;
         }
 
-        private async Task<SqlCommand> GetCommandWithParams(string sql, SqlParameter[] parameters)
+        private SqlCommand GetCommandWithParams(string sql, SqlParameter[] parameters)
         {
             var command = _connection.CreateCommand();
             command.CommandText = sql;
             command.Parameters.AddRange(parameters);
-            //if (parameters.Count() > 0)
-            //{
-            //    await command.PrepareAsync();
-            //}
 
             return command;
         }

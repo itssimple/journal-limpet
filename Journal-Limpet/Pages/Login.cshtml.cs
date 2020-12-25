@@ -1,10 +1,12 @@
-﻿using Microsoft.AspNetCore.Mvc.RazorPages;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Configuration;
 using System;
 
 namespace Journal_Limpet.Pages
 {
+    [AllowAnonymous]
     public class LoginModel : PageModel
     {
         private readonly IConfiguration _configuration;
@@ -24,7 +26,7 @@ namespace Journal_Limpet.Pages
                 return "jl-" + DateTime.Now.Ticks;
             });
 
-            Response.Redirect($"https://auth.frontierstore.net/auth?state={_randomState}&response_type=code&approval_prompt=auto&redirect_uri={redirectUrl}&client_id={_configuration["EliteDangerous:ClientId"]}");
+            Response.Redirect($"https://auth.frontierstore.net/auth?state={_randomState}&response_type=code&scope=auth%20capi&approval_prompt=auto&redirect_uri={redirectUrl}&client_id={_configuration["EliteDangerous:ClientId"]}");
         }
     }
 }

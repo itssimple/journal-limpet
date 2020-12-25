@@ -1,7 +1,5 @@
-using Hangfire;
-using Hangfire.PostgreSql;
-using Journal_Limpet.Jobs;
 using Journal_Limpet.Shared;
+using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.HttpOverrides;
@@ -30,7 +28,7 @@ namespace Journal_Limpet
             services.AddSession(options =>
             {
                 options.IdleTimeout = TimeSpan.FromMinutes(20);
-                options.Cookie.HttpOnly = false;
+                options.Cookie.HttpOnly = true;
                 options.Cookie.IsEssential = true;
                 options.Cookie.SecurePolicy = Microsoft.AspNetCore.Http.CookieSecurePolicy.Always;
                 options.Cookie.SameSite = Microsoft.AspNetCore.Http.SameSiteMode.None;
@@ -40,8 +38,28 @@ namespace Journal_Limpet
 
             services.AddControllers();
             services.AddRazorPages();
+
+            services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme).AddCookie(options =>
+            {
+                options.Cookie.HttpOnly = true;
+                options.Cookie.IsEssential = true;
+                options.Cookie.SecurePolicy = Microsoft.AspNetCore.Http.CookieSecurePolicy.SameAsRequest;
+                options.Cookie.SameSite = Microsoft.AspNetCore.Http.SameSiteMode.Lax;
+                options.Cookie.Name = "journal-limpet-auth";
+
+                options.ExpireTimeSpan = TimeSpan.FromMinutes(20);
+
+                options.LoginPath = "/Login";
+                options.LogoutPath = "/Logout";
+                options.AccessDeniedPath = "/AccessDenied";
+
+                options.SlidingExpiration = true;
+            });
+            services.AddAuthorization();
+
             services.AddJournalLimpetDependencies(Configuration);
 
+#if !DEBUG
             services.AddHangfire(configuration =>
             {
                 configuration
@@ -51,6 +69,7 @@ namespace Journal_Limpet
             });
 
             services.AddHangfireServer();
+#endif
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -78,15 +97,17 @@ namespace Journal_Limpet
 
             app.UseRouting();
 
+            app.UseAuthentication();
             app.UseAuthorization();
 
             app.UseSession();
 
+#if !DEBUG
             app.UseHangfireDashboard(options: new DashboardOptions
             {
                 Authorization = new[] { new HangfireAuthorizationFilter(Configuration["Hangfire:AuthKey"]) }
             });
-
+#endif
             app.UseEndpoints(endpoints =>
             {
                 endpoints.MapControllers();
@@ -95,12 +116,21 @@ namespace Journal_Limpet
 
             ServiceProvider = app.ApplicationServices;
 
+#if !DEBUG
             RecurringJob.AddOrUpdate(
                 "journal-limpet:update-tokens",
                 () => AccountTokenRefresher.RefreshUserTokensAsync(null),
                 "*/10 * * * *",
                 TimeZoneInfo.Utc
             );
+
+            RecurringJob.AddOrUpdate(
+                "journal-limpet:download-journals",
+                () => JournalDownloadManager.InitializeJournalDownloadersAsync(null),
+                "*/10 * * * *",
+                TimeZoneInfo.Utc
+            );
+#endif
         }
     }
 }

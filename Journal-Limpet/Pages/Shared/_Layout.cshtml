@@ -16,12 +16,12 @@
                         aria-expanded="false" aria-label="Toggle navigation">
                     <span class="navbar-toggler-icon"></span>
                 </button>
-                <div class="navbar-collapse collapse d-sm-inline-flex flex-sm-row-reverse">
+                <div class="navbar-collapse collapse d-sm-inline-flex flex-sm-row">
                     <ul class="navbar-nav flex-grow-1">
                         <li class="nav-item">
                             <a class="nav-link" asp-area="" asp-page="/Index">Home</a>
                         </li>
-                        @if (ViewData["LoggedIn"] == null)
+                        @if (!User.Identity.IsAuthenticated)
                         {
                             <li class="nav-item">
                                 <a class="nav-link" asp-area="" asp-page="Login">Login</a>
@@ -32,11 +32,17 @@
                             <li class="nav-item">
                                 <a class="nav-link" asp-area="" asp-page="/Journals">My journals</a>
                             </li>
+                            <li class="nav-item">
+                                <a class="nav-link" asp-area="" asp-page="/Settings">Settings</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" asp-area="" asp-page="/Logout">Logout</a>
+                            </li>
                         }
-                        <li class="nav-item">
-                            <a class="nav-link" href="https://stats.journal-limpet.com" target="_blank">Status</a>
-                        </li>
                     </ul>
+                    <span class="navbar-text">
+                        <a class="nav-link" href="https://stats.journal-limpet.com" target="_blank">Status</a>
+                    </span>
                 </div>
             </div>
         </nav>
@@ -49,7 +55,7 @@
 
     <footer class="border-top footer text-muted bg-dark">
         <div class="container">
-            Version: {{version}} &copy; 2020 - Journal Limpet / It's Simple Studios
+            Version: {{version}} &copy; @DateTime.Now.Year - Journal Limpet
         </div>
     </footer>
 
