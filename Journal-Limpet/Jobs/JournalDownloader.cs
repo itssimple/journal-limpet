@@ -51,7 +51,7 @@ namespace Journal_Limpet.Jobs
                     hc.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", authToken);
                     hc.BaseAddress = new Uri("https://companion.orerve.net");
 
-                    DateTime journalDate = DateTime.Today.AddDays(-30);
+                    DateTime journalDate = DateTime.Today.AddDays(-25);
 
                     while (journalDate.Date != DateTime.Today)
                     {
