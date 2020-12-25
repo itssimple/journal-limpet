@@ -1,0 +1,14 @@
+﻿@page
+@model Journal_Limpet.Pages.SettingsModel
+
+<h1>User settings</h1>
+<p><em>For now we only have a small few settings (like where notifications should go)</em></p>
+<hr />
+<form method="post">
+    <div class="form-group">
+        <label asp-for="NotificationEmail">Notification email (optional)</label>
+        <input type="email" asp-for="NotificationEmail" placeholder="Notification email" class="form-control" autocomplete="" />
+        <small class="form-text text-info">The notification email is used to tell you if you need to log in to Journal Limpet (in case the API token is revoked or for some reason couldn't be refreshed)</small>
+    </div>
+    <input type="submit" value="Save changes" class="btn btn-secondary" />
+</form>
