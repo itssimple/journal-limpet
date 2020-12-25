@@ -193,6 +193,8 @@ Response:<br />
 
                     var journalRows = journalContent.Trim().Split('\n', StringSplitOptions.RemoveEmptyEntries);
 
+                    bool updateFileOnS3 = (previousRow?.LastProcessedLineNumber ?? 0) != journalRows.Length && (previousRow?.LastProcessedLine != (journalRows.LastOrDefault() ?? string.Empty));
+
                     if (!string.IsNullOrWhiteSpace(journalContent))
                     {
                         var firstRow = journalRows.FirstOrDefault();
@@ -220,9 +222,12 @@ Response:<br />
                     var journalBytes = Encoding.UTF8.GetBytes(journalContent);
                     string fileName = $"{user.UserIdentifier}/journal/{journalDate.Year}/{journalDate.Month.ToString().PadLeft(2, '0')}/{journalDate.Day.ToString().PadLeft(2, '0')}.journal";
 
-                    using (var ms = new MemoryStream(journalBytes))
+                    if (updateFileOnS3)
                     {
-                        await tu.UploadAsync(ms, "journal-limpet", fileName);
+                        using (var ms = new MemoryStream(journalBytes))
+                        {
+                            await tu.UploadAsync(ms, "journal-limpet", fileName);
+                        }
                     }
 
                     if (previousRow == null)
