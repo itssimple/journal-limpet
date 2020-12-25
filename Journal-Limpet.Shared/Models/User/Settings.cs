@@ -17,5 +17,7 @@ namespace Journal_Limpet.Shared.Models.User
         public string CustomerId { get; set; }
         [JsonPropertyName("email")]
         public string Email { get; set; }
+        [JsonPropertyName("platform")]
+        public string Platform { get; set; }
     }
 }

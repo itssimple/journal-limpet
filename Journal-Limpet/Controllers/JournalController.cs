@@ -113,16 +113,18 @@ namespace Journal_Limpet.Controllers
                 var matchingUser = (await _db.ExecuteListAsync<Shared.Models.User.Profile>(@"
 SELECT *
 FROM user_profile
-WHERE JSON_VALUE(user_settings, '$.FrontierProfile.customer_id') = @customerId;",
-new SqlParameter("@customerId", profile.CustomerId))
+WHERE JSON_VALUE(user_settings, '$.FrontierProfile.customer_id') = @customerId
+  AND JSON_VALUE(user_settings, '$.FrontierProfile.platform')    = @platform",
+new SqlParameter("customerId", profile.CustomerId),
+new SqlParameter("platform", profile.Platform))
                 ).FirstOrDefault();
 
                 if (matchingUser != null)
                 {
                     // Update user with new token info
                     await _db.ExecuteNonQueryAsync("UPDATE user_profile SET user_settings = @settings, last_notification_mail = NULL WHERE user_identifier = @userIdentifier",
-                        new SqlParameter("@settings", JsonSerializer.Serialize(settings)),
-                        new SqlParameter("@userIdentifier", matchingUser.UserIdentifier)
+                        new SqlParameter("settings", JsonSerializer.Serialize(settings)),
+                        new SqlParameter("userIdentifier", matchingUser.UserIdentifier)
                     );
 
                     matchingUser.UserSettings = settings;
@@ -131,7 +133,7 @@ new SqlParameter("@customerId", profile.CustomerId))
                 {
                     // Create new user
                     matchingUser = (await _db.ExecuteListAsync<Shared.Models.User.Profile>("INSERT INTO user_profile (user_settings) OUTPUT INSERTED.* VALUES (@settings)",
-                        new SqlParameter("@settings", JsonSerializer.Serialize(settings))
+                        new SqlParameter("settings", JsonSerializer.Serialize(settings))
                     )).FirstOrDefault();
                 }
 
