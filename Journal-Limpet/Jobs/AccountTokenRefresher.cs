@@ -31,7 +31,8 @@ namespace Journal_Limpet.Jobs
     @"SELECT *
 FROM user_profile
 WHERE DATEDIFF(MINUTE, GETUTCDATE(), CAST(JSON_VALUE(user_settings, '$.TokenExpiration') as DATETIMEOFFSET)) < 60
-AND last_notification_mail IS NULL"
+AND last_notification_mail IS NULL
+AND deleted = 0"
                 );
                 context.WriteLine($"Found {soonExpiringUsers.Count} user(s) to refresh tokens for");
 
