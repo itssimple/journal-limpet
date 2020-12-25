@@ -4,7 +4,7 @@
     ViewData["Title"] = "Main";
 }
 
-    <div class="text-center">
+    <div class="jumbotron">
         @if(!User.Identity.IsAuthenticated)
         {
             await Html.RenderPartialAsync("_IndexUnauthenticated");
