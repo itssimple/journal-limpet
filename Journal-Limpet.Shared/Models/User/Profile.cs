@@ -7,14 +7,14 @@ namespace Journal_Limpet.Shared.Models.User
 {
     public class Profile
     {
-        public Guid UserIdentifier { get; set; }
-        public DateTimeOffset Created { get; set; }
-        public bool Deleted { get; set; }
-        public DateTimeOffset? DeletionDate { get; set; }
+        public Guid UserIdentifier { get; }
+        public DateTimeOffset Created { get; }
+        public bool Deleted { get; }
+        public DateTimeOffset? DeletionDate { get; }
         [JsonIgnore]
         public Settings UserSettings { get; set; }
-        public string NotificationEmail { get; set; }
-        public DateTimeOffset? LastNotificationMail { get; set; }
+        public string NotificationEmail { get; }
+        public DateTimeOffset? LastNotificationMail { get; }
 
         public Profile(DataRow row)
         {
