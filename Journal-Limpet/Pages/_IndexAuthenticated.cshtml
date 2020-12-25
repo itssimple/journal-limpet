@@ -1,1 +1,4 @@
-﻿<h1 class="display-4">Welcome Commander!</h1>
+﻿@model IndexModel
+<h1 class="display-4">Welcome Commander!</h1>
+<p>You have @Model.LoggedInUserJournalCount.ToString("n0") journals stored with us!</p>
+<p>Currently we don't have any apps we're connected to, but you can download your journals at least!</p>

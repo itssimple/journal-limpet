@@ -1,3 +1,4 @@
-﻿<h1 class="display-4">Welcome to Journal Limpet</h1>
+﻿@model IndexModel
+<h1 class="display-4">Welcome to Journal Limpet</h1>
 <p>This project aims to store the player journals from Elite: Dangerous</p>
-<p>Currently we have @Model.UserCount users registered!</p>
+<p>Currently we have @Model.UserCount.ToString("n0") users registered and a total of @Model.TotalUserJournalCount.ToString("n0") (with @Model.TotalUserJournalLines.ToString("n0") lines)!</p>

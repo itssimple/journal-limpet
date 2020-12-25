@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace Journal_Limpet.Shared.Database
@@ -43,6 +44,13 @@ namespace Journal_Limpet.Shared.Database
             }
 
             return items;
+        }
+
+        public async Task<T> ExecuteSingleRowAsync<T>(string sql, params SqlParameter[] parameters)
+        {
+            var rows = await ExecuteListAsync<T>(sql, parameters);
+
+            return rows.FirstOrDefault();
         }
 
         public async Task<int> ExecuteNonQueryAsync(string sql, params SqlParameter[] parameters)
