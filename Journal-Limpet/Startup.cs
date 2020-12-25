@@ -1,3 +1,8 @@
+#if !DEBUG
+using Hangfire;
+using Hangfire.PostgreSql;
+using Journal_Limpet.Jobs;
+#endif
 using Journal_Limpet.Shared;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Builder;
