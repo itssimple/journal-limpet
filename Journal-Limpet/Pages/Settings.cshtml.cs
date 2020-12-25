@@ -21,13 +21,13 @@ namespace Journal_Limpet.Pages
             _db = db;
         }
 
-        public async Task OnGet()
+        public async Task OnGetAsync()
         {
             var profile = await _db.ExecuteSingleRowAsync<Profile>("SELECT * FROM user_profile WHERE user_identifier = @user_identifier", new SqlParameter("user_identifier", User.Identity.Name));
             NotificationEmail = profile.NotificationEmail;
         }
 
-        public async Task OnPost()
+        public async Task OnPostAsync()
         {
             await _db.ExecuteNonQueryAsync(
                 "UPDATE user_profile SET notification_email = @notification_email WHERE user_identifier = @user_identifier",
