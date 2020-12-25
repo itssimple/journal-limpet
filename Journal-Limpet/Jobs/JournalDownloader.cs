@@ -90,7 +90,7 @@ namespace Journal_Limpet.Jobs
         {
             try
             {
-                var res = await GetJournalAsync(journalDate, user, db, hc);
+                var res = await GetJournalAsync(configuration, journalDate, user, db, hc);
                 int loop_counter = 0;
 
                 while (res.code != HttpStatusCode.OK)
@@ -124,10 +124,10 @@ Response:<br />
                         case HttpStatusCode.Unauthorized:
                             // Should never be unauthorized, so lets just sleep 5 seconds extra, for shits and giggles
                             Thread.Sleep(5000);
-                            res = await GetJournalAsync(journalDate, user, db, hc);
+                            res = await GetJournalAsync(configuration, journalDate, user, db, hc);
                             break;
                         case HttpStatusCode.PartialContent:
-                            res = await GetJournalAsync(journalDate, user, db, hc);
+                            res = await GetJournalAsync(configuration, journalDate, user, db, hc);
                             break;
                     }
                     loop_counter++;
@@ -147,7 +147,7 @@ Response:<br />
             return true;
         }
 
-        static async Task<(HttpStatusCode code, HttpResponseMessage message)> GetJournalAsync(DateTime journalDate, Shared.Models.User.Profile user, MSSQLDB db, HttpClient hc)
+        static async Task<(HttpStatusCode code, HttpResponseMessage message)> GetJournalAsync(IConfiguration configuration, DateTime journalDate, Shared.Models.User.Profile user, MSSQLDB db, HttpClient hc)
         {
             var oldJournalRow = await db.ExecuteListAsync<UserJournal>(
                 "SELECT TOP 1 * FROM user_journal WHERE user_identifier = @user_identifier AND journal_date = @journal_date",
@@ -167,7 +167,7 @@ Response:<br />
                 return (HttpStatusCode.OK, null);
             }
 
-            using (var s3Client = new Amazon.S3.AmazonS3Client(new BasicAWSCredentials("AKIAS4FUTBCKC2GVHG4J", "xvYC5P3VzgwByKLe8LXZJyAYpOJyKNH/vnmg/zK6"), RegionEndpoint.EUNorth1))
+            using (var s3Client = new Amazon.S3.AmazonS3Client(new BasicAWSCredentials(configuration["Amazon:AccessKey"], configuration["Amazon:SecretKey"]), RegionEndpoint.EUNorth1))
             {
                 using (var tu = new TransferUtility(s3Client))
                 {
