@@ -30,7 +30,7 @@ namespace Journal_Limpet.Jobs
                 var soonExpiringUsers = await db.ExecuteListAsync<Shared.Models.User.Profile>(
     @"SELECT *
 FROM user_profile
-WHERE CAST(JSON_VALUE(user_settings, '$.TokenExpiration') as DATETIMEOFFSET) > DATEADD(HOUR, -2, GETUTCDATE())
+WHERE CAST(JSON_VALUE(user_settings, '$.TokenExpiration') as DATETIMEOFFSET) < DATEADD(HOUR, 2, GETUTCDATE())
 AND last_notification_mail IS NULL"
                 );
                 context.WriteLine($"Found {soonExpiringUsers.Count} user(s) to refresh tokens for");
