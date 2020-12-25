@@ -153,5 +153,12 @@ new SqlParameter("@customerId", profile.CustomerId))
                 return new JsonResult(await result.Content.ReadAsStringAsync());
             }
         }
+
+        [HttpGet("logout")]
+        public async Task<IActionResult> SignOut()
+        {
+            await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+            return LocalRedirect("~/Index");
+        }
     }
 }
