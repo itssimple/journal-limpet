@@ -5,11 +5,12 @@
 }
 
     <div class="text-center">
-        <h1 class="display-4">Welcome to Journal Limpet</h1>
-        <p>This project aims to store the player journals from Elite: Dangerous</p>
-        <p>Currently we have @Model.UserCount users registered!</p>
-        @if(User.Identity.IsAuthenticated)
+        @if(!User.Identity.IsAuthenticated)
         {
-            <p>Hello</p>
+            await Html.RenderPartialAsync("_IndexUnauthenticated");
+        }
+        else
+        {
+            await Html.RenderPartialAsync("_IndexAuthenticated");
         }
     </div>

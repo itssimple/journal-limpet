@@ -30,6 +30,8 @@ namespace Journal_Limpet
         public void ConfigureServices(IServiceCollection services)
         {
             services.AddDistributedMemoryCache();
+            services.AddResponseCaching();
+            services.AddResponseCompression();
             services.AddSession(options =>
             {
                 options.IdleTimeout = TimeSpan.FromMinutes(20);
@@ -80,6 +82,9 @@ namespace Journal_Limpet
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {
+            app.UseResponseCaching();
+            app.UseResponseCompression();
+
             if (env.IsDevelopment())
             {
                 app.UseDeveloperExceptionPage();
@@ -132,7 +137,7 @@ namespace Journal_Limpet
             RecurringJob.AddOrUpdate(
                 "journal-limpet:download-journals",
                 () => JournalDownloadManager.InitializeJournalDownloadersAsync(null),
-                "*/10 * * * *",
+                "*/30 * * * *",
                 TimeZoneInfo.Utc
             );
 #endif
