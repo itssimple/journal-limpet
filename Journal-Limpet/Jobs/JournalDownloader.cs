@@ -167,101 +167,102 @@ Response:<br />
                 return (HttpStatusCode.OK, null);
             }
 
-            using (var s3Client = new Amazon.S3.AmazonS3Client(new BasicAWSCredentials(configuration["Amazon:AccessKey"], configuration["Amazon:SecretKey"]), RegionEndpoint.EUNorth1))
+
+            var journalRequest = await hc.GetAsync($"/journal/{journalDate.Year}/{journalDate.Month}/{journalDate.Day}");
+            switch (journalRequest.StatusCode)
             {
-                using (var tu = new TransferUtility(s3Client))
+                case HttpStatusCode.Unauthorized:
+                    // Just do a quick re-auth here, if possible, otherwise throw exception
+                    return (journalRequest.StatusCode, journalRequest);
+                case HttpStatusCode.PartialContent:
+                    // Continue to fetch until we get a 200 status
+                    return (journalRequest.StatusCode, journalRequest);
+                case HttpStatusCode.NoContent:
+                // Continue on, no journal stored for this date
+                case HttpStatusCode.OK:
+                    // We got the entire journal! Lets save this to S3
+                    break;
+                default:
+                    throw new Exception($"Status error: {journalRequest.StatusCode}\n{(await journalRequest.Content.ReadAsStringAsync())}");
+            }
+
+            var journalContent = await journalRequest.Content.ReadAsStringAsync();
+
+            var journalRows = journalContent.Trim().Split('\n', StringSplitOptions.RemoveEmptyEntries);
+
+            bool updateFileOnS3 = (previousRow?.LastProcessedLineNumber ?? 0) != journalRows.Length && (previousRow?.LastProcessedLine != (journalRows.LastOrDefault() ?? string.Empty));
+
+            if (!string.IsNullOrWhiteSpace(journalContent))
+            {
+                var firstRow = journalRows.FirstOrDefault();
+                if (!string.IsNullOrWhiteSpace(firstRow))
                 {
-                    var journalRequest = await hc.GetAsync($"/journal/{journalDate.Year}/{journalDate.Month}/{journalDate.Day}");
-                    switch (journalRequest.StatusCode)
+                    var row = JsonDocument.Parse(firstRow).RootElement;
+
+                    var apiFileHeader = new
                     {
-                        case HttpStatusCode.Unauthorized:
-                            // Just do a quick re-auth here, if possible, otherwise throw exception
-                            return (journalRequest.StatusCode, journalRequest);
-                        case HttpStatusCode.PartialContent:
-                            // Continue to fetch until we get a 200 status
-                            return (journalRequest.StatusCode, journalRequest);
-                        case HttpStatusCode.NoContent:
-                        // Continue on, no journal stored for this date
-                        case HttpStatusCode.OK:
-                            // We got the entire journal! Lets save this to S3
-                            break;
-                        default:
-                            throw new Exception($"Status error: {journalRequest.StatusCode}\n{(await journalRequest.Content.ReadAsStringAsync())}");
-                    }
+                        Timestamp = row.GetProperty("timestamp").GetString(),
+                        Event = "JournalLimpetFileheader",
+                        Description = "Missing fileheader from cAPI journal"
+                    };
 
-                    var journalContent = await journalRequest.Content.ReadAsStringAsync();
+                    var serializedApiFileHeader = JsonSerializer.Serialize(apiFileHeader, new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase });
+                    serializedApiFileHeader = serializedApiFileHeader.Insert(serializedApiFileHeader.Length - 1, " ").Insert(1, " ");
 
-                    var journalRows = journalContent.Trim().Split('\n', StringSplitOptions.RemoveEmptyEntries);
+                    journalContent =
+                        serializedApiFileHeader +
+                        Environment.NewLine +
+                        journalContent;
+                }
+            }
 
-                    bool updateFileOnS3 = (previousRow?.LastProcessedLineNumber ?? 0) != journalRows.Length && (previousRow?.LastProcessedLine != (journalRows.LastOrDefault() ?? string.Empty));
+            var journalBytes = Encoding.UTF8.GetBytes(journalContent);
+            string fileName = $"{user.UserIdentifier}/journal/{journalDate.Year}/{journalDate.Month.ToString().PadLeft(2, '0')}/{journalDate.Day.ToString().PadLeft(2, '0')}.journal";
 
-                    if (!string.IsNullOrWhiteSpace(journalContent))
-                    {
-                        var firstRow = journalRows.FirstOrDefault();
-                        if (!string.IsNullOrWhiteSpace(firstRow))
-                        {
-                            var row = JsonDocument.Parse(firstRow).RootElement;
-
-                            var apiFileHeader = new
-                            {
-                                Timestamp = row.GetProperty("timestamp").GetString(),
-                                Event = "JournalLimpetFileheader",
-                                Description = "Missing fileheader from cAPI journal"
-                            };
-
-                            var serializedApiFileHeader = JsonSerializer.Serialize(apiFileHeader, new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase });
-                            serializedApiFileHeader = serializedApiFileHeader.Insert(serializedApiFileHeader.Length - 1, " ").Insert(1, " ");
-
-                            journalContent =
-                                serializedApiFileHeader +
-                                Environment.NewLine +
-                                journalContent;
-                        }
-                    }
-
-                    var journalBytes = Encoding.UTF8.GetBytes(journalContent);
-                    string fileName = $"{user.UserIdentifier}/journal/{journalDate.Year}/{journalDate.Month.ToString().PadLeft(2, '0')}/{journalDate.Day.ToString().PadLeft(2, '0')}.journal";
-
-                    if (updateFileOnS3)
+            if (updateFileOnS3)
+            {
+                using (var s3Client = new Amazon.S3.AmazonS3Client(new BasicAWSCredentials(configuration["Amazon:AccessKey"], configuration["Amazon:SecretKey"]), RegionEndpoint.EUNorth1))
+                {
+                    using (var tu = new TransferUtility(s3Client))
                     {
                         using (var ms = new MemoryStream(journalBytes))
                         {
                             await tu.UploadAsync(ms, "journal-limpet", fileName);
                         }
                     }
+                }
+            }
 
-                    if (previousRow == null)
-                    {
-                        await db.ExecuteNonQueryAsync(@"INSERT INTO user_journal (user_identifier, journal_date, s3_path, last_processed_line, last_processed_line_number, complete_entry, last_update)
+            if (previousRow == null)
+            {
+                await db.ExecuteNonQueryAsync(@"INSERT INTO user_journal (user_identifier, journal_date, s3_path, last_processed_line, last_processed_line_number, complete_entry, last_update)
 VALUES (@user_identifier, @journal_date, @s3_path, @last_processed_line, @last_processed_line_number, @complete_entry, GETUTCDATE())",
-            new SqlParameter("user_identifier", user.UserIdentifier),
-            new SqlParameter("journal_date", journalDate),
-            new SqlParameter("s3_path", fileName),
-            new SqlParameter("last_processed_line", journalRows.LastOrDefault() ?? string.Empty),
-            new SqlParameter("last_processed_line_number", journalRows.Length),
-            new SqlParameter("complete_entry", DateTime.UtcNow.Date > journalDate.Date)
-        );
-                    }
-                    else
-                    {
-                        await db.ExecuteNonQueryAsync(@"UPDATE user_journal SET
+    new SqlParameter("user_identifier", user.UserIdentifier),
+    new SqlParameter("journal_date", journalDate),
+    new SqlParameter("s3_path", fileName),
+    new SqlParameter("last_processed_line", journalRows.LastOrDefault() ?? string.Empty),
+    new SqlParameter("last_processed_line_number", journalRows.Length),
+    new SqlParameter("complete_entry", DateTime.UtcNow.Date > journalDate.Date)
+);
+            }
+            else
+            {
+                await db.ExecuteNonQueryAsync(@"UPDATE user_journal SET
 last_processed_line = @last_processed_line,
 last_processed_line_number = @last_processed_line_number,
 complete_entry = @complete_entry,
 last_update = GETUTCDATE()
 WHERE journal_id = @journal_id AND user_identifier = @user_identifier",
-            new SqlParameter("journal_id", previousRow.JournalId),
-            new SqlParameter("user_identifier", user.UserIdentifier),
-            new SqlParameter("last_processed_line", journalRows.LastOrDefault() ?? string.Empty),
-            new SqlParameter("last_processed_line_number", journalRows.Length),
-            new SqlParameter("complete_entry", DateTime.UtcNow.Date > journalDate.Date)
-        );
-                    }
-
-                    Thread.Sleep(5000);
-                    return (HttpStatusCode.OK, journalRequest);
-                }
+    new SqlParameter("journal_id", previousRow.JournalId),
+    new SqlParameter("user_identifier", user.UserIdentifier),
+    new SqlParameter("last_processed_line", journalRows.LastOrDefault() ?? string.Empty),
+    new SqlParameter("last_processed_line_number", journalRows.Length),
+    new SqlParameter("complete_entry", DateTime.UtcNow.Date > journalDate.Date)
+);
             }
+
+            Thread.Sleep(5000);
+            return (HttpStatusCode.OK, journalRequest);
         }
     }
 }
