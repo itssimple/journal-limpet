@@ -113,10 +113,8 @@ namespace Journal_Limpet.Controllers
                 var matchingUser = (await _db.ExecuteListAsync<Shared.Models.User.Profile>(@"
 SELECT *
 FROM user_profile
-WHERE JSON_VALUE(user_settings, '$.FrontierProfile.customer_id') = @customerId
-  AND JSON_VALUE(user_settings, '$.FrontierProfile.platform')    = @platform",
-new SqlParameter("customerId", profile.CustomerId),
-new SqlParameter("platform", profile.Platform))
+WHERE JSON_VALUE(user_settings, '$.FrontierProfile.customer_id') = @customerId",
+new SqlParameter("customerId", profile.CustomerId))
                 ).FirstOrDefault();
 
                 if (matchingUser != null)
