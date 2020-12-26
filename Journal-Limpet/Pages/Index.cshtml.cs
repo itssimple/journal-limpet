@@ -28,7 +28,12 @@ namespace Journal_Limpet.Pages
 
         public async Task OnGet()
         {
-            var mod = await _db.ExecuteSingleRowAsync<IndexStatsModel>("SELECT CAST(COUNT(DISTINCT user_identifier) AS bigint) user_count, CAST(COUNT(journal_id) AS bigint) journal_count, CAST(SUM(last_processed_line_number) AS bigint) total_number_of_lines FROM user_journal WHERE last_processed_line_number > 0");
+            var mod = await _db.ExecuteSingleRowAsync<IndexStatsModel>(@"SELECT CAST(COUNT(DISTINCT up.user_identifier) AS bigint) user_count, 
+CAST(COUNT(journal_id) AS bigint) journal_count, 
+CAST(SUM(last_processed_line_number) AS bigint) total_number_of_lines
+FROM user_profile up
+LEFT JOIN user_journal uj ON up.user_identifier = uj.user_identifier AND uj.last_processed_line_number > 0
+WHERE up.deleted = 0");
 
             TotalUserJournalCount = mod.TotalUserJournalCount;
             TotalUserJournalLines = mod.TotalUserJournalLines;
