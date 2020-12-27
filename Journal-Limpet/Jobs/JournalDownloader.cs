@@ -1,13 +1,11 @@
-﻿using Amazon;
-using Amazon.Runtime;
-using Amazon.S3.Transfer;
-using Hangfire.Server;
+﻿using Hangfire.Server;
 using Journal_Limpet.Shared;
 using Journal_Limpet.Shared.Database;
 using Journal_Limpet.Shared.Models.Journal;
 using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Minio;
 using SendGrid;
 using SendGrid.Helpers.Mail;
 using System;
@@ -35,6 +33,8 @@ namespace Journal_Limpet.Jobs
                     MSSQLDB db = scope.ServiceProvider.GetRequiredService<MSSQLDB>();
                     IConfiguration configuration = scope.ServiceProvider.GetRequiredService<IConfiguration>();
 
+                    MinioClient minioClient = scope.ServiceProvider.GetRequiredService<MinioClient>();
+
                     var user = (await db.ExecuteListAsync<Shared.Models.User.Profile>(
     @"SELECT * FROM user_profile WHERE user_identifier = @user_identifier AND last_notification_mail IS NULL AND deleted = 0",
     new SqlParameter("user_identifier", userIdentifier)
@@ -55,7 +55,7 @@ namespace Journal_Limpet.Jobs
 
                     while (journalDate.Date != DateTime.Today)
                     {
-                        if (!await TryGetJournalAsync(configuration, journalDate, user, db, hc))
+                        if (!await TryGetJournalAsync(configuration, journalDate, user, db, hc, minioClient))
                         {
                             // Failed to get loop journal
                         }
@@ -64,7 +64,7 @@ namespace Journal_Limpet.Jobs
 
                     }
 
-                    if (!await TryGetJournalAsync(configuration, journalDate, user, db, hc))
+                    if (!await TryGetJournalAsync(configuration, journalDate, user, db, hc, minioClient))
                     {
                         // Failed to get todays journal
                     }
@@ -86,11 +86,11 @@ namespace Journal_Limpet.Jobs
             await sendgridClient.SendEmailAsync(mail);
         }
 
-        static async Task<bool> TryGetJournalAsync(IConfiguration configuration, DateTime journalDate, Shared.Models.User.Profile user, MSSQLDB db, HttpClient hc)
+        static async Task<bool> TryGetJournalAsync(IConfiguration configuration, DateTime journalDate, Shared.Models.User.Profile user, MSSQLDB db, HttpClient hc, MinioClient minioClient)
         {
             try
             {
-                var res = await GetJournalAsync(configuration, journalDate, user, db, hc);
+                var res = await GetJournalAsync(configuration, journalDate, user, db, hc, minioClient);
                 int loop_counter = 0;
 
                 while (res.code != HttpStatusCode.OK)
@@ -124,10 +124,10 @@ Response:<br />
                         case HttpStatusCode.Unauthorized:
                             // Should never be unauthorized, so lets just sleep 5 seconds extra, for shits and giggles
                             Thread.Sleep(5000);
-                            res = await GetJournalAsync(configuration, journalDate, user, db, hc);
+                            res = await GetJournalAsync(configuration, journalDate, user, db, hc, minioClient);
                             break;
                         case HttpStatusCode.PartialContent:
-                            res = await GetJournalAsync(configuration, journalDate, user, db, hc);
+                            res = await GetJournalAsync(configuration, journalDate, user, db, hc, minioClient);
                             break;
                     }
                     loop_counter++;
@@ -147,7 +147,7 @@ Response:<br />
             return true;
         }
 
-        static async Task<(HttpStatusCode code, HttpResponseMessage message)> GetJournalAsync(IConfiguration configuration, DateTime journalDate, Shared.Models.User.Profile user, MSSQLDB db, HttpClient hc)
+        static async Task<(HttpStatusCode code, HttpResponseMessage message)> GetJournalAsync(IConfiguration configuration, DateTime journalDate, Shared.Models.User.Profile user, MSSQLDB db, HttpClient hc, MinioClient minioClient)
         {
             var oldJournalRow = await db.ExecuteListAsync<UserJournal>(
                 "SELECT TOP 1 * FROM user_journal WHERE user_identifier = @user_identifier AND journal_date = @journal_date",
@@ -221,15 +221,9 @@ Response:<br />
 
             if (updateFileOnS3)
             {
-                using (var s3Client = new Amazon.S3.AmazonS3Client(new BasicAWSCredentials(configuration["Amazon:AccessKey"], configuration["Amazon:SecretKey"]), RegionEndpoint.EUNorth1))
+                using (var ms = new MemoryStream(journalBytes))
                 {
-                    using (var tu = new TransferUtility(s3Client))
-                    {
-                        using (var ms = new MemoryStream(journalBytes))
-                        {
-                            await tu.UploadAsync(ms, "journal-limpet", fileName);
-                        }
-                    }
+                    await minioClient.PutObjectAsync("journal-limpet", fileName, ms, ms.Length, "text/jsonl");
                 }
             }
 

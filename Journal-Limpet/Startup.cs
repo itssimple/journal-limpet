@@ -29,6 +29,13 @@ namespace Journal_Limpet
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
+            services.AddExceptional(Configuration.GetSection("Exceptional"), settings =>
+            {
+#if DEBUG
+                settings.UseExceptionalPageOnThrow = true;
+#endif
+            });
+
             services.AddDistributedMemoryCache();
             services.AddResponseCaching();
             services.AddResponseCompression();
@@ -104,6 +111,8 @@ namespace Journal_Limpet
             });
 
             app.UseStaticFiles();
+
+            app.UseExceptional();
 
             app.UseRouting();
 

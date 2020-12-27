@@ -1,10 +1,8 @@
-﻿using Amazon;
-using Amazon.Runtime;
-using Amazon.S3;
-using Journal_Limpet.Shared.Database;
+﻿using Journal_Limpet.Shared.Database;
 using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Minio;
 
 namespace Journal_Limpet.Shared
 {
@@ -14,7 +12,7 @@ namespace Journal_Limpet.Shared
         {
             sc.AddScoped(x => new SqlConnection(configuration["Database:ConnectionString"]));
             sc.AddScoped(x => new MSSQLDB(x.GetRequiredService<SqlConnection>()));
-            sc.AddScoped(x => new AmazonS3Client(new BasicAWSCredentials(configuration["Amazon:AccessKey"], configuration["Amazon:SecretKey"]), RegionEndpoint.EUNorth1));
+            sc.AddSingleton(x => new MinioClient(configuration["Minio:ConnectionString"], configuration["Minio:AccessKey"], configuration["Minio:SecretKey"]));
         }
     }
 }
