@@ -31,10 +31,11 @@ html {
 }
 
 body {
-  /* Margin bottom by footer height */
-  margin-bottom: 60px;
-  background-color: #3b3b3b;
-  color: #f8f8f8;
+    /* Margin bottom by footer height */
+    margin-bottom: 4.5rem;
+    background-color: #3b3b3b;
+    color: #f8f8f8;
+    padding-top: 4.5rem;
 }
 .footer {
   position: absolute;
