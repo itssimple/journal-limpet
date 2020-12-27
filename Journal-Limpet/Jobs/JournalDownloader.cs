@@ -140,7 +140,9 @@ Response:<br />
             }
             catch (Exception ex)
             {
-                await SendAdminNotification(configuration, "Exception", ex.ToString(), ex.ToString());
+                var errorMessage = ex.ToString() + "\n\n" + JsonSerializer.Serialize(user, new JsonSerializerOptions() { WriteIndented = true });
+
+                await SendAdminNotification(configuration, "Exception", errorMessage, errorMessage.Replace("\n", "<br />\n"));
                 return false;
             }
 
