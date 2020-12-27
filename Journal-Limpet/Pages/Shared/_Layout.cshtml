@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>@ViewData["Title"] - Journal Limpet</title>
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
-    <link rel="stylesheet" href="~/css/site.css" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
     <link rel="icon" type="image/svg" href="~/journal-limpet.svg" />
     <link rel="icon" type="image/png" href="~/journal-limpet.png" />
     <partial name="_MetaTags" />
@@ -15,7 +15,7 @@
     <header class="fixed-top">
         <nav class="navbar navbar-expand-sm navbar-toggleable-sm navbar-dark bg-dark border-bottom box-shadow mb-3">
             <div class="container">
-                <a class="navbar-brand" asp-area="" asp-page="/">Journal Limpet</a>
+                <a class="navbar-brand" asp-area="" asp-page="/Index">Journal Limpet</a>
                 <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarTopCollapse" aria-controls="navbarSupportedContent"
                         aria-expanded="false" aria-label="Toggle navigation">
                     <span class="navbar-toggler-icon"></span>
@@ -23,12 +23,12 @@
                 <div class="navbar-collapse collapse d-sm-inline-flex flex-sm-row" id="navbarTopCollapse">
                     <ul class="navbar-nav flex-grow-1">
                         <li class="nav-item">
-                            <a class="nav-link" asp-area="" asp-page="/">Home</a>
+                            <a class="nav-link" asp-area="" asp-page="/Index">Home</a>
                         </li>
                         @if (!User.Identity.IsAuthenticated)
                         {
                             <li class="nav-item">
-                                <a class="nav-link" asp-area="" asp-page="Login">Login</a>
+                                <a class="nav-link" asp-area="" asp-page="/Login">Login</a>
                             </li>
                         }
                         else
