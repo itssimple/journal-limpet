@@ -211,7 +211,7 @@ Response:<br />
 
                     journalContent =
                         serializedApiFileHeader +
-                        Environment.NewLine +
+                        "\n" +
                         journalContent;
                 }
             }
