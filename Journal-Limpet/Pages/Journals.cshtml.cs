@@ -35,7 +35,7 @@ namespace Journal_Limpet.Pages
             public JournalListItem(DataRow row)
             {
                 JournalId = row.Field<int>("journal_id");
-                JournalDate = new DateTimeOffset(row.Field<DateTime>("journal_date"), TimeSpan.Zero).Date.ToShortDateString();
+                JournalDate = new DateTimeOffset(row.Field<DateTime>("journal_date"), TimeSpan.Zero).Date.ToString("yyyy-MM-dd");
                 CompleteEntry = row.Field<bool>("complete_entry") ? "Yes" : "No";
                 NumberOfLines = row.Field<int>("last_processed_line_number");
             }
