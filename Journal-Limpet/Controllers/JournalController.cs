@@ -174,7 +174,7 @@ new SqlParameter("customerId", profile.CustomerId))
 
             MemoryStream outFile = new MemoryStream();
 
-            var journalIdentifier = $"{User.Identity.Name.ToLower()}/journal/{journalDate.Year}/{journalDate.Month.ToString().PadLeft(2, '0')}/{journalDate.Day.ToString().PadLeft(2, '0')}.journal";
+            var journalIdentifier = journalItem.S3Path;
             var f = "Journal." +
                        journalDate.Year.ToString().Substring(2) +
                        journalDate.Month.ToString().PadLeft(2, '0') +
