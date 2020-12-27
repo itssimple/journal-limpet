@@ -15,15 +15,15 @@
     <header>
         <nav class="navbar navbar-expand-sm navbar-toggleable-sm navbar-dark bg-dark border-bottom box-shadow mb-3">
             <div class="container">
-                <a class="navbar-brand" asp-area="" asp-page="/Index">Journal Limpet</a>
-                <button class="navbar-toggler" type="button" data-toggle="collapse" data-target=".navbar-collapse" aria-controls="navbarSupportedContent"
+                <a class="navbar-brand" asp-area="" asp-page="/">Journal Limpet</a>
+                <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarTopCollapse" aria-controls="navbarSupportedContent"
                         aria-expanded="false" aria-label="Toggle navigation">
                     <span class="navbar-toggler-icon"></span>
                 </button>
-                <div class="navbar-collapse collapse d-sm-inline-flex flex-sm-row">
+                <div class="navbar-collapse collapse d-sm-inline-flex flex-sm-row" id="navbarTopCollapse">
                     <ul class="navbar-nav flex-grow-1">
                         <li class="nav-item">
-                            <a class="nav-link" asp-area="" asp-page="/Index">Home</a>
+                            <a class="nav-link" asp-area="" asp-page="/">Home</a>
                         </li>
                         @if (!User.Identity.IsAuthenticated)
                         {
@@ -45,10 +45,9 @@
                         }
                     </ul>
                     <form class="form-inline navbar-nav" style="align-items: start;">
+                        <a class="nav-link" asp-page="/About">About</a>
                         <a class="nav-link" asp-page="/Privacy">Privacy</a>
                         <a class="nav-link" href="https://stats.journal-limpet.com" rel="noreferrer" target="_blank">Status</a>
-                        <a class="nav-link" href="https://discord.gg/0uwCh6R62aQ0eeAX" rel="noreferrer" target="_blank">Discord</a>
-                        <a class="nav-link" href="https://twitter.com/JournalLimpet" rel="noreferrer" target="_blank">Twitter</a>
                     </form>
                 </div>
             </div>
@@ -59,12 +58,22 @@
             @RenderBody()
         </main>
     </div>
-
-    <footer class="border-top footer text-muted bg-dark">
+    <nav class="navbar fixed-bottom navbar-expand-sm navbar-dark bg-dark border-top">
         <div class="container">
-            Version: {{version}} &copy; @DateTime.Now.Year - Journal Limpet
+            <span class="navbar-text">Version: {{version}} &copy; @DateTime.Now.Year</span>
+            <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarBottomCollapse" aria-controls="navbarBottomCollapse" aria-expanded="false" aria-label="Toggle bottom navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarBottomCollapse">
+                <ul class="navbar-nav flex-grow-1"></ul>
+                <form class="form-inline navbar-nav" style="align-items: start;">
+                    <a href="https://www.patreon.com/bePatron?u=36303860" target="_blank" class="nav-link">Patron</a>
+                    <a href="https://twitter.com/JournalLimpet" class="nav-link">Twitter</a>
+                    <a href="https://github.com/itssimple/journal-limpet" class="nav-link">GitHub</a>
+                </form>
+            </div>
         </div>
-    </footer>
+    </nav>
 
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>

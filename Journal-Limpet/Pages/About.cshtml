@@ -1,0 +1,38 @@
+﻿@page
+@model Journal_Limpet.Pages.AboutModel
+@{
+    ViewData["title"] = "About us";
+}
+
+<h1>About Journal Limpet</h1>
+<p><strong>Journal Limpet</strong> is a open source project by NoLifeKing85 (<a href="https://twitter.com/NoLifeKing85" target="_blank" rel="nofollow">Twitter</a>, <a href="https://twitch.tv/NoLifeKing85" target="_blank" rel="nofollow">Twitch</a>)</p>
+<p>The purpose of this web application is to give the commanders of <a href="https://www.elitedangerous.com/" target="_blank" rel="nofollow">Elite: Dangerous</a> the ability to download their journals no matter where they are,
+    and give them the option to push their journals automatically to services like EDSM, EDDN and so on</p>
+
+<h2>The technology used to run this site</h2>
+<p>To be fully transparent of what tech we use to run this site, I thought I might list the dependencies we use</p>
+<ul>
+    <li><a href="https://www.hangfire.io/" target="_blank" rel="nofollow">Hangfire</a> (for background jobs)</li>
+    <li><a href="https://min.io/" target="_blank" rel="nofollow">MinIO</a> (for journal storage)</li>
+    <li><a href="https://sendgrid.com" target="_blank" rel="nofollow">SendGrid</a> (for sending email notifications)</li>
+    <li><a href="https://nickcraver.com/StackExchange.Exceptional/" target="_blank" rel="nofollow">StackExchange.Exceptional</a> (for catching exceptions in a better way)</li>
+    <li><a href="https://dot.net" target="_blank" rel="nofollow">.NET Core</a> (for hosting the website and running the code..)</li>
+</ul>
+
+<h2>The cost of maintaining this service</h2>
+<p>Since I planned ahead while building this, I have a whopping 2 dedicated servers for the purpose of storing your journals.
+    One database/storage server, that keeps all the journals in a safe place, and one webserver that runs the website.</p>
+<p>The running costs of these 2 servers amount to around @(Model.Goal.AmountCents / 100) @Model.Goal.Currency / month, so it ain't that bad. :)</p>
+<p>With the current help from my <a href="https://www.patreon.com/bePatron?u=36303860" target="_blank">Patron</a>, we get about @Model.Goal.CompletedPercentage % of the total running costs,
+    thank you so much everyone for helping out &lt;3
+</p>
+
+<h2>Reach out to us</h2>
+<p>If you ever want to reach out to us, in case you have a great idea, question or want to report something, there are ways to get a hold of us!</p>
+<ul>
+    <li><a href="https://discord.gg/0uwCh6R62aQ0eeAX" target="_blank" rel="nofollow">The EDCD Discord</a></li>
+    <li><a href="https://discord.gg/6fP8vWW" target="_blank" rel="nofollow">NoLifeKing85's Discord</a></li>
+    <li><a href="https://github.com/itssimple/journal-limpet" target="_blank" rel="nofollow">Our GitHub repository</a></li>
+    <li><a href="https://twitter.com/JournalLimpet" target="_blank" rel="nofollow">Journal Limpet twitter</a></li>
+    <li><a href="https://twitter.com/NoLifeKing85" target="_blank" rel="nofollow">NoLifeKing85 twitter</a></li>
+</ul>
