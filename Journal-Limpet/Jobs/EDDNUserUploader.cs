@@ -78,6 +78,7 @@ namespace Journal_Limpet.Jobs
                                         new SqlParameter("journal_id", journalItem.JournalId),
                                         new SqlParameter("line_number", line_number)
                                     );
+                                    await Task.Delay(50);
                                 }
 
                                 if (journalItem.CompleteEntry)
