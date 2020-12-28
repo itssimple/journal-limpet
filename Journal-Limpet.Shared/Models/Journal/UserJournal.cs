@@ -14,6 +14,8 @@ namespace Journal_Limpet.Shared.Models.Journal
         public int? LastProcessedLineNumber { get; }
         public bool CompleteEntry { get; }
         public DateTimeOffset? LastUpdate { get; }
+        public bool SentToEDDN { get; }
+        public int SentToEDDNLine { get; }
 
         public UserJournal(DataRow row)
         {
@@ -26,6 +28,9 @@ namespace Journal_Limpet.Shared.Models.Journal
             LastProcessedLineNumber = row.Field<int?>("last_processed_line_number");
             CompleteEntry = row.Field<bool>("complete_entry");
             LastUpdate = !row.IsNull("last_update") ? new DateTimeOffset(row.Field<DateTime>("last_update"), TimeSpan.Zero) as DateTimeOffset? : null;
+
+            SentToEDDN = row.Field<bool>("sent_to_eddn");
+            SentToEDDNLine = row.Field<int>("sent_to_eddn_line");
         }
     }
 }

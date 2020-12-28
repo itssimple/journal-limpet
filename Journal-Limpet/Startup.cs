@@ -156,6 +156,13 @@ namespace Journal_Limpet
                 "30 0 * * *",
                 TimeZoneInfo.Utc
             );
+
+            RecurringJob.AddOrUpdate(
+                "journal-limpet:upload-to-eddn",
+                () => EDDNUploader.UploadAsync(null),
+                "*/10 * * * *",
+                TimeZoneInfo.Utc
+            );
 #endif
         }
     }
