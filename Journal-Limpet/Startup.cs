@@ -149,6 +149,13 @@ namespace Journal_Limpet
                 "*/30 * * * *",
                 TimeZoneInfo.Utc
             );
+
+            RecurringJob.AddOrUpdate(
+                "journal-limpet:tweet-stats",
+                () => TweetStatSender.SendStatsTweetAsync(null),
+                "30 0 * * *",
+                TimeZoneInfo.Utc
+            );
 #endif
         }
     }

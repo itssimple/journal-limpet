@@ -1,9 +1,9 @@
 ﻿using Journal_Limpet.Shared.Database;
+using Journal_Limpet.Shared.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Logging;
-using System.Data;
 using System.Threading.Tasks;
 
 namespace Journal_Limpet.Pages
@@ -45,20 +45,6 @@ WHERE up.deleted = 0");
                     "SELECT COUNT(journal_id) FROM user_journal WHERE user_identifier = @user_identifier AND last_processed_line_number > 0",
                     new SqlParameter("user_identifier", User.Identity.Name)
                 );
-            }
-        }
-
-        class IndexStatsModel
-        {
-            public long TotalUserCount { get; set; }
-            public long TotalUserJournalCount { get; set; }
-            public long TotalUserJournalLines { get; set; }
-
-            public IndexStatsModel(DataRow row)
-            {
-                TotalUserCount = row.Field<long>("user_count");
-                TotalUserJournalCount = row.Field<long>("journal_count");
-                TotalUserJournalLines = row.Field<long>("total_number_of_lines");
             }
         }
     }
