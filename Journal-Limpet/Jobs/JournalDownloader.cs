@@ -72,7 +72,7 @@ namespace Journal_Limpet.Jobs
             }
         }
 
-        static async Task SendAdminNotification(IConfiguration configuration, string subject, string mailBody, string mailBodyHtml)
+        static async Task SendAdminNotification(IConfiguration configuration, string subject, string mailBody)
         {
             var sendgridClient = new SendGridClient(configuration["SendGrid:ApiKey"]);
             var mail = MailHelper.CreateSingleEmail(
@@ -80,7 +80,7 @@ namespace Journal_Limpet.Jobs
                 new EmailAddress(configuration["ErrorMail"]),
                 subject,
                 mailBody,
-                mailBodyHtml
+                mailBody.Replace("\n", "<br />\n")
             );
 
             await sendgridClient.SendEmailAsync(mail);
@@ -107,13 +107,6 @@ Got response code: {res.code} while trying to grab journals.
 
 Response:
 
-{await res.message.Content.ReadAsStringAsync()}",
-$@"Hey NLK,<br />
-<br />
-Got response code: {res.code} while trying to grab journals.<br />
-<br />
-Response:<br />
-<br />
 {await res.message.Content.ReadAsStringAsync()}"
                         );
                         return false;
@@ -135,14 +128,14 @@ Response:<br />
             }
             catch (TooManyOldJournalItemsException ex)
             {
-                await SendAdminNotification(configuration, "Exception: Too many old journal items", ex.ToString(), ex.ToString());
+                await SendAdminNotification(configuration, "Exception: Too many old journal items", ex.ToString());
                 return false;
             }
             catch (Exception ex)
             {
                 var errorMessage = ex.ToString() + "\n\n" + JsonSerializer.Serialize(user, new JsonSerializerOptions() { WriteIndented = true });
 
-                await SendAdminNotification(configuration, "Exception", errorMessage, errorMessage.Replace("\n", "<br />\n"));
+                await SendAdminNotification(configuration, "Exception", errorMessage);
                 return false;
             }
 

@@ -38,7 +38,7 @@ https://journal-limpet.com");
 
                 if (!res.status)
                 {
-                    await MailSender.SendSingleEmail(configuration, "no-reply+tweet@journal-limpet.com", "Failed to send tweet", res.response, res.response);
+                    await MailSender.SendSingleEmail(configuration, "no-reply+tweet@journal-limpet.com", "Failed to send tweet", res.response);
                 }
             }
         }

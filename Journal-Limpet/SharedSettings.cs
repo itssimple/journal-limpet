@@ -18,7 +18,9 @@ namespace Journal_Limpet
 
         private static ConnectionMultiplexer _redisClient;
 
-        public static ConnectionMultiplexer RedisClient => _redisClient ?? (_redisClient = ConnectionMultiplexer.Connect("localhost:6379"));
+        public static string VersionNumber = "{{version}}";
+
+        public static ConnectionMultiplexer RedisClient => _redisClient ?? (_redisClient = ConnectionMultiplexer.Connect("127.0.0.1:6379"));
 
         public static bool CheckIfTaskIsScheduledOrInProgress(string taskName, string methodName)
         {
