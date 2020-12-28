@@ -3,6 +3,7 @@
   <PropertyGroup>
     <TargetFramework>netcoreapp3.1</TargetFramework>
     <RootNamespace>Journal_Limpet</RootNamespace>
+    <Deterministic>false</Deterministic>
   </PropertyGroup>
 
   <ItemGroup>
