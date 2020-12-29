@@ -80,23 +80,26 @@ namespace Journal_Limpet.Jobs
                                     lastLine = row;
                                     try
                                     {
-                                        var time = await UploadJournalItemToEDDN(hc, row, userIdentifier);
+                                        if (!string.IsNullOrWhiteSpace(row))
+                                        {
+                                            var time = await UploadJournalItemToEDDN(hc, row, userIdentifier);
 
-                                        if (time.TotalMilliseconds > 500)
-                                        {
-                                            delay_time = 500;
-                                        }
-                                        else if (time.TotalMilliseconds > 250)
-                                        {
-                                            delay_time = 250;
-                                        }
-                                        else if (time.TotalMilliseconds > 100)
-                                        {
-                                            delay_time = 100;
-                                        }
-                                        else if (time.TotalMilliseconds < 100)
-                                        {
-                                            delay_time = 50;
+                                            if (time.TotalMilliseconds > 500)
+                                            {
+                                                delay_time = 500;
+                                            }
+                                            else if (time.TotalMilliseconds > 250)
+                                            {
+                                                delay_time = 250;
+                                            }
+                                            else if (time.TotalMilliseconds > 100)
+                                            {
+                                                delay_time = 100;
+                                            }
+                                            else if (time.TotalMilliseconds < 100)
+                                            {
+                                                delay_time = 50;
+                                            }
                                         }
                                     }
                                     catch (Exception ex)
