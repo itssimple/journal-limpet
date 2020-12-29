@@ -55,8 +55,7 @@ namespace Journal_Limpet.Shared
             }
         }
 
-        private static byte[] GZipHeaderBytes = { 0x1f, 0x8b, 8, 0, 0, 0, 0, 0, 4, 0 };
-        private static byte[] GZipLevel10HeaderBytes = { 0x1f, 0x8b, 8, 0, 0, 0, 0, 0, 2, 0 };
+        private static byte[] GZipHeaderBytes = { 0x1f, 0x8b, 8 };
 
         private static bool IsPossiblyGZippedBytes(byte[] a)
         {
@@ -67,9 +66,9 @@ namespace Journal_Limpet.Shared
                 return false;
             }
 
-            var header = a.Take(10);
+            var header = a.Take(3);
 
-            return header.SequenceEqual(GZipHeaderBytes) || header.SequenceEqual(GZipLevel10HeaderBytes);
+            return header.SequenceEqual(GZipHeaderBytes);
         }
     }
 }
