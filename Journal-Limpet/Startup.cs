@@ -82,7 +82,10 @@ namespace Journal_Limpet
                     .UsePostgreSqlStorage(Configuration["Database:HangfireConnection"]);
             });
 
-            services.AddHangfireServer();
+            services.AddHangfireServer(options =>
+            {
+                options.WorkerCount = Environment.ProcessorCount * 5;
+            });
 #endif
         }
 
@@ -126,8 +129,6 @@ namespace Journal_Limpet
             {
                 Authorization = new[] { new HangfireAuthorizationFilter(Configuration["Hangfire:AuthKey"]) }
             });
-
-            app.UseHangfireServer(new BackgroundJobServerOptions { WorkerCount = Environment.ProcessorCount * 5 });
 #endif
             app.UseEndpoints(endpoints =>
             {
