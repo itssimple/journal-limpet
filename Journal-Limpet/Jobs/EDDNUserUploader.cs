@@ -6,9 +6,11 @@ using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Minio;
+using Polly;
 using StackExchange.Redis;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Net.Http;
@@ -69,16 +71,37 @@ namespace Journal_Limpet.Jobs
                                 var journalRows = journalContent.Trim().Split('\n', StringSplitOptions.RemoveEmptyEntries);
 
                                 int line_number = journalItem.SentToEDDNLine;
+
+                                int delay_time = 50;
+
                                 foreach (var row in journalRows.Skip(line_number))
                                 {
-                                    await UploadJournalItemToEDDN(hc, row, userIdentifier);
+                                    var time = await UploadJournalItemToEDDN(hc, row, userIdentifier);
+
+                                    if (time.TotalMilliseconds > 500)
+                                    {
+                                        delay_time = 500;
+                                    }
+                                    else if (time.TotalMilliseconds > 250)
+                                    {
+                                        delay_time = 250;
+                                    }
+                                    else if (time.TotalMilliseconds > 100)
+                                    {
+                                        delay_time = 100;
+                                    }
+                                    else if (time.TotalMilliseconds < 100)
+                                    {
+                                        delay_time = 50;
+                                    }
+
                                     line_number++;
                                     await db.ExecuteNonQueryAsync(
                                         "UPDATE user_journal SET sent_to_eddn_line = @line_number WHERE journal_id = @journal_id",
                                         new SqlParameter("journal_id", journalItem.JournalId),
                                         new SqlParameter("line_number", line_number)
                                     );
-                                    await Task.Delay(50);
+                                    await Task.Delay(delay_time);
                                 }
 
                                 if (journalItem.CompleteEntry)
@@ -136,16 +159,16 @@ namespace Journal_Limpet.Jobs
             @event
         }
 
-        internal static async Task UploadJournalItemToEDDN(HttpClient hc, string journalRow, Guid userIdentifier)
+        internal static async Task<TimeSpan> UploadJournalItemToEDDN(HttpClient hc, string journalRow, Guid userIdentifier)
         {
             var element = JsonDocument.Parse(journalRow).RootElement;
-            if (!element.TryGetProperty("event", out JsonElement journalEvent)) return;
-            if (!System.Enum.TryParse(typeof(AllowedEvents), journalEvent.GetString(), false, out _)) return;
+            if (!element.TryGetProperty("event", out JsonElement journalEvent)) return TimeSpan.Zero;
+            if (!System.Enum.TryParse(typeof(AllowedEvents), journalEvent.GetString(), false, out _)) return TimeSpan.Zero;
 
             element = FixEDDNJson(element);
             element = AddMissingProperties(element);
 
-            if (HasMissingProperties(element)) return;
+            if (HasMissingProperties(element)) return TimeSpan.Zero;
 
             var eddnItem = new Dictionary<string, object>()
     {
@@ -160,13 +183,30 @@ namespace Journal_Limpet.Jobs
 
             var json = JsonSerializer.Serialize(eddnItem, new JsonSerializerOptions() { WriteIndented = true });
 
-            var status = await hc.PostAsync("https://eddn.edcd.io:4430/upload/", new StringContent(json, Encoding.UTF8, "application/json"));
+            Stopwatch sw = new Stopwatch();
+            sw.Start();
+
+            var policy = Policy
+                .Handle<HttpRequestException>()
+                .WaitAndRetryAsync(new[] {
+                    TimeSpan.FromSeconds(1),
+                    TimeSpan.FromSeconds(2),
+                    TimeSpan.FromSeconds(4),
+                    TimeSpan.FromSeconds(8),
+                    TimeSpan.FromSeconds(16),
+                });
+
+            var status = await policy.ExecuteAsync(() => hc.PostAsync("https://eddn.edcd.io:4430/upload/", new StringContent(json, Encoding.UTF8, "application/json")));
+            sw.Stop();
 
             var postResponse = await status.Content.ReadAsStringAsync();
+
             if (!status.IsSuccessStatusCode)
             {
                 throw new Exception("EDDN exception: " + postResponse);
             }
+
+            return sw.Elapsed;
         }
 
         internal static bool HasMissingProperties(JsonElement element)
