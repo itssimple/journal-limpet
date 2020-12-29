@@ -1,4 +1,5 @@
-﻿using Journal_Limpet.Shared.Database;
+﻿using Journal_Limpet.Shared;
+using Journal_Limpet.Shared.Database;
 using Journal_Limpet.Shared.Models;
 using Journal_Limpet.Shared.Models.Journal;
 using Journal_Limpet.Shared.Models.User;
@@ -17,6 +18,7 @@ using System.IO;
 using System.Linq;
 using System.Net.Http;
 using System.Security.Claims;
+using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
 
@@ -198,7 +200,11 @@ new SqlParameter("customerId", profile.CustomerId))
 
                 outFile.Seek(0, SeekOrigin.Begin);
 
-                return File(outFile, "application/octet-stream", f);
+                var journalContent = ZipManager.Unzip(outFile.ToArray());
+
+                MemoryStream unzippedContent = new MemoryStream(Encoding.UTF8.GetBytes(journalContent));
+
+                return File(unzippedContent, "application/octet-stream", f);
             }
             catch (ObjectNotFoundException)
             {

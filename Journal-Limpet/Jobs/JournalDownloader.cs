@@ -14,7 +14,6 @@ using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
-using System.Text;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
@@ -201,14 +200,14 @@ Response:
                 }
             }
 
-            var journalBytes = Encoding.UTF8.GetBytes(journalContent);
+            var journalBytes = ZipManager.Zip(journalContent.Trim());
             string fileName = $"{user.UserIdentifier}/journal/{journalDate.Year}/{journalDate.Month.ToString().PadLeft(2, '0')}/{journalDate.Day.ToString().PadLeft(2, '0')}.journal";
 
             if (updateFileOnS3)
             {
                 using (var ms = new MemoryStream(journalBytes))
                 {
-                    await minioClient.PutObjectAsync("journal-limpet", fileName, ms, ms.Length, "text/jsonl");
+                    await minioClient.PutObjectAsync("journal-limpet", fileName, ms, ms.Length, "application/gzip");
                 }
             }
 

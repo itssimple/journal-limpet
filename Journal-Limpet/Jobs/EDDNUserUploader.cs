@@ -55,8 +55,6 @@ namespace Journal_Limpet.Jobs
                         {
                             using (MemoryStream outFile = new MemoryStream())
                             {
-                                string journalContent = string.Empty;
-
                                 var stats = await _minioClient.StatObjectAsync("journal-limpet", journalItem.S3Path);
 
                                 await _minioClient.GetObjectAsync("journal-limpet", journalItem.S3Path,
@@ -68,10 +66,8 @@ namespace Journal_Limpet.Jobs
                                 );
 
                                 outFile.Seek(0, SeekOrigin.Begin);
-                                using (var sr = new StreamReader(outFile))
-                                {
-                                    journalContent = sr.ReadToEnd();
-                                }
+
+                                var journalContent = ZipManager.Unzip(outFile.ToArray());
 
                                 var journalRows = journalContent.Trim().Split('\n', StringSplitOptions.RemoveEmptyEntries);
 
