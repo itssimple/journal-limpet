@@ -1,4 +1,5 @@
-﻿using Hangfire.Server;
+﻿using Hangfire.Console;
+using Hangfire.Server;
 using Journal_Limpet.Shared;
 using Journal_Limpet.Shared.Database;
 using Journal_Limpet.Shared.Models.Journal;
@@ -44,7 +45,9 @@ namespace Journal_Limpet.Jobs
                             new SqlParameter("user_identifier", userIdentifier)
                         );
 
-                    foreach (var journalItem in userJournals)
+                    context.WriteLine($"Uploading journals for user {userIdentifier}");
+
+                    foreach (var journalItem in userJournals.WithProgress(context))
                     {
                         try
                         {
@@ -74,7 +77,7 @@ namespace Journal_Limpet.Jobs
 
                                 int delay_time = 50;
 
-                                foreach (var row in journalRows.Skip(line_number))
+                                foreach (var row in journalRows.Skip(line_number).WithProgress(context, journalItem.JournalDate.ToString("yyyy-MM-dd")))
                                 {
                                     var time = await UploadJournalItemToEDDN(hc, row, userIdentifier);
 

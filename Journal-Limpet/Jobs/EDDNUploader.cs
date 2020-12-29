@@ -1,4 +1,5 @@
 ﻿using Hangfire;
+using Hangfire.Console;
 using Hangfire.Server;
 using Journal_Limpet.Shared.Database;
 using Microsoft.Extensions.DependencyInjection;
@@ -33,7 +34,7 @@ INNER JOIN UnsentJournals uj ON up.user_identifier = uj.user_identifier
 WHERE up.deleted = 0"
                     );
 
-                    foreach (var user in userToUploadToEDDN)
+                    foreach (var user in userToUploadToEDDN.WithProgress(context))
                     {
                         if (RedisJobLock.IsLocked($"EDDNUserUploader.UploadAsync.{user.UserIdentifier}")) continue;
                         BackgroundJob.Schedule(() => EDDNUserUploader.UploadAsync(user.UserIdentifier, null), TimeSpan.Zero);
