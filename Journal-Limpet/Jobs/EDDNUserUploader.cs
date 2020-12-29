@@ -76,29 +76,36 @@ namespace Journal_Limpet.Jobs
                                 var journalRows = journalContent.Trim().Split('\n', StringSplitOptions.RemoveEmptyEntries);
 
                                 int line_number = journalItem.SentToEDDNLine;
-
                                 int delay_time = 50;
+                                var restOfTheLines = journalRows.Skip(line_number).ToList();
 
-                                foreach (var row in journalRows.Skip(line_number).WithProgress(context, journalItem.JournalDate.ToString("yyyy-MM-dd")))
+                                foreach (var row in restOfTheLines.WithProgress(context, journalItem.JournalDate.ToString("yyyy-MM-dd")))
                                 {
                                     lastLine = row;
-                                    var time = await UploadJournalItemToEDDN(hc, row, userIdentifier);
+                                    try
+                                    {
+                                        var time = await UploadJournalItemToEDDN(hc, row, userIdentifier);
 
-                                    if (time.TotalMilliseconds > 500)
-                                    {
-                                        delay_time = 500;
+                                        if (time.TotalMilliseconds > 500)
+                                        {
+                                            delay_time = 500;
+                                        }
+                                        else if (time.TotalMilliseconds > 250)
+                                        {
+                                            delay_time = 250;
+                                        }
+                                        else if (time.TotalMilliseconds > 100)
+                                        {
+                                            delay_time = 100;
+                                        }
+                                        else if (time.TotalMilliseconds < 100)
+                                        {
+                                            delay_time = 50;
+                                        }
                                     }
-                                    else if (time.TotalMilliseconds > 250)
+                                    catch
                                     {
-                                        delay_time = 250;
-                                    }
-                                    else if (time.TotalMilliseconds > 100)
-                                    {
-                                        delay_time = 100;
-                                    }
-                                    else if (time.TotalMilliseconds < 100)
-                                    {
-                                        delay_time = 50;
+                                        // Ignore rows we cannot parse
                                     }
 
                                     line_number++;
