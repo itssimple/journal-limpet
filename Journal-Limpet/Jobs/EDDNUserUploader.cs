@@ -114,7 +114,7 @@ namespace Journal_Limpet.Jobs
                                         }
                                         else
                                         {
-                                            throw ex;
+                                            throw;
                                         }
                                     }
 
