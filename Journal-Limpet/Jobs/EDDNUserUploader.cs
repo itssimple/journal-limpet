@@ -46,9 +46,11 @@ namespace Journal_Limpet.Jobs
                         );
 
                     context.WriteLine($"Uploading journals for user {userIdentifier}");
+                    string lastLine = string.Empty;
 
                     foreach (var journalItem in userJournals.WithProgress(context))
                     {
+
                         try
                         {
                             using (MemoryStream outFile = new MemoryStream())
@@ -79,6 +81,7 @@ namespace Journal_Limpet.Jobs
 
                                 foreach (var row in journalRows.Skip(line_number).WithProgress(context, journalItem.JournalDate.ToString("yyyy-MM-dd")))
                                 {
+                                    lastLine = row;
                                     var time = await UploadJournalItemToEDDN(hc, row, userIdentifier);
 
                                     if (time.TotalMilliseconds > 500)
@@ -119,7 +122,7 @@ namespace Journal_Limpet.Jobs
                         }
                         catch (Exception ex)
                         {
-                            await MailSender.SendSingleEmail(configuration, "no-reply+eddn@journal-limpet.com", "EDDN error", ex.ToString());
+                            await MailSender.SendSingleEmail(configuration, "no-reply+eddn@journal-limpet.com", "EDDN error", ex.ToString() + "\n\nUser:\n\n" + userIdentifier + "\n\nData:\n\n" + lastLine);
                         }
                     }
                 }
