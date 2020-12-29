@@ -138,7 +138,7 @@ namespace Journal_Limpet.Jobs
                         }
                         catch (Exception ex)
                         {
-                            await MailSender.SendSingleEmail(configuration, "no-reply+eddn@journal-limpet.com", "EDDN error", ex.ToString() + "\n\nUser:\n\n" + userIdentifier + "\n\nData:\n\n" + lastLine);
+                            await MailSender.SendSingleEmail(configuration, "no-reply+eddn@journal-limpet.com", "EDDN error", ex.ToString() + "\n\nUser:\n\n" + userIdentifier + "\n\nData:\n\n" + lastLine + "\n\nJournal: " + journalItem.S3Path);
                         }
                     }
                 }
@@ -184,6 +184,8 @@ namespace Journal_Limpet.Jobs
         internal static async Task<TimeSpan> UploadJournalItemToEDDN(HttpClient hc, string journalRow, Guid userIdentifier)
         {
             var element = JsonDocument.Parse(journalRow).RootElement;
+            if (element.ValueKind != JsonValueKind.Object) return TimeSpan.Zero;
+
             if (!element.TryGetProperty("event", out JsonElement journalEvent)) return TimeSpan.Zero;
             if (!System.Enum.TryParse(typeof(AllowedEvents), journalEvent.GetString(), false, out _)) return TimeSpan.Zero;
 
