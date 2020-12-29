@@ -103,9 +103,12 @@ namespace Journal_Limpet.Jobs
                                             delay_time = 50;
                                         }
                                     }
-                                    catch
+                                    catch (Exception ex)
                                     {
                                         // Ignore rows we cannot parse
+                                        context.WriteLine("Error");
+                                        context.WriteLine(ex.ToString());
+                                        context.WriteLine(row);
                                     }
 
                                     line_number++;
