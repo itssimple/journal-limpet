@@ -96,7 +96,7 @@ namespace Journal_Limpet.Jobs
                 while (res.code != HttpStatusCode.OK)
                 {
                     Thread.Sleep(5000);
-                    if (loop_counter > 10)
+                    if (loop_counter > 100)
                     {
                         await SendAdminNotification(
                             configuration,
@@ -120,6 +120,7 @@ Response:
                             res = await GetJournalAsync(configuration, journalDate, user, db, hc, minioClient);
                             break;
                         case HttpStatusCode.PartialContent:
+                            Thread.Sleep(1000);
                             res = await GetJournalAsync(configuration, journalDate, user, db, hc, minioClient);
                             break;
                     }
