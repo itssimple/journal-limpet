@@ -1,5 +1,6 @@
 #if !DEBUG
 using Hangfire;
+using Hangfire.Console;
 using Journal_Limpet.Jobs;
 #endif
 using Journal_Limpet.Shared;
@@ -78,7 +79,15 @@ namespace Journal_Limpet
                 configuration
                     .UseSimpleAssemblyNameTypeSerializer()
                     .UseRecommendedSerializerSettings()
-                    .UseSqlServerStorage(Configuration["Database:HangfireConnection"]);
+                    .UseSqlServerStorage(Configuration["Database:HangfireConnection"], new Hangfire.SqlServer.SqlServerStorageOptions
+                    {
+                        CommandBatchMaxTimeout = TimeSpan.FromMinutes(5),
+                        SlidingInvisibilityTimeout = TimeSpan.FromMinutes(5),
+                        QueuePollInterval = TimeSpan.Zero,
+                        UseRecommendedIsolationLevel = true,
+                        DisableGlobalLocks = true
+                    })
+                    .UseConsole();
             });
 
             services.AddHangfireServer(options =>
