@@ -6,6 +6,7 @@ using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Minio;
+using Polly;
 using SendGrid;
 using SendGrid.Helpers.Mail;
 using System;
@@ -96,7 +97,7 @@ namespace Journal_Limpet.Jobs
                 while (res.code != HttpStatusCode.OK)
                 {
                     Thread.Sleep(5000);
-                    if (loop_counter > 100)
+                    if (loop_counter > 10)
                     {
                         await SendAdminNotification(
                             configuration,
@@ -114,11 +115,6 @@ Response:
 
                     switch (res.code)
                     {
-                        case HttpStatusCode.Unauthorized:
-                            // Should never be unauthorized, so lets just sleep 5 seconds extra, for shits and giggles
-                            Thread.Sleep(5000);
-                            res = await GetJournalAsync(configuration, journalDate, user, db, hc, minioClient);
-                            break;
                         case HttpStatusCode.PartialContent:
                             Thread.Sleep(1000);
                             res = await GetJournalAsync(configuration, journalDate, user, db, hc, minioClient);
@@ -163,26 +159,19 @@ Response:
                 return (HttpStatusCode.OK, null);
             }
 
+            var pollicy = Policy<HttpResponseMessage>
+                .Handle<HttpRequestException>()
+                .OrResult(r => r.StatusCode == HttpStatusCode.PartialContent)
+                .WaitAndRetryAsync(100, attempt => TimeSpan.FromSeconds(1));
 
-            var journalRequest = await hc.GetAsync($"/journal/{journalDate.Year}/{journalDate.Month}/{journalDate.Day}");
-            switch (journalRequest.StatusCode)
-            {
-                case HttpStatusCode.Unauthorized:
-                    // Just do a quick re-auth here, if possible, otherwise throw exception
-                    return (journalRequest.StatusCode, journalRequest);
-                case HttpStatusCode.PartialContent:
-                    // Continue to fetch until we get a 200 status
-                    return (journalRequest.StatusCode, journalRequest);
-                case HttpStatusCode.NoContent:
-                // Continue on, no journal stored for this date
-                case HttpStatusCode.OK:
-                    // We got the entire journal! Lets save this to S3
-                    break;
-                default:
-                    throw new Exception($"Status error: {journalRequest.StatusCode}\n{(await journalRequest.Content.ReadAsStringAsync())}");
-            }
+            var journalRequest = await pollicy.ExecuteAsync(() => hc.GetAsync($"/journal/{journalDate.Year}/{journalDate.Month}/{journalDate.Day}"));
 
             var journalContent = await journalRequest.Content.ReadAsStringAsync();
+
+            if (!journalRequest.IsSuccessStatusCode || journalRequest.StatusCode == HttpStatusCode.PartialContent)
+            {
+                return (journalRequest.StatusCode, journalRequest);
+            }
 
             var journalRows = journalContent.Trim().Split('\n', StringSplitOptions.RemoveEmptyEntries);
 

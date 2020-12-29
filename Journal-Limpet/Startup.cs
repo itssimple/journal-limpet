@@ -1,6 +1,5 @@
 #if !DEBUG
 using Hangfire;
-using Hangfire.PostgreSql;
 using Journal_Limpet.Jobs;
 #endif
 using Journal_Limpet.Shared;
@@ -79,7 +78,7 @@ namespace Journal_Limpet
                 configuration
                     .UseSimpleAssemblyNameTypeSerializer()
                     .UseRecommendedSerializerSettings()
-                    .UsePostgreSqlStorage(Configuration["Database:HangfireConnection"]);
+                    .UseSqlServerStorage(Configuration["Database:HangfireConnection"]);
             });
 
             services.AddHangfireServer(options =>
