@@ -16,6 +16,8 @@ namespace Journal_Limpet.Shared.Models.User
         public string NotificationEmail { get; }
         public DateTimeOffset? LastNotificationMail { get; }
 
+        public bool SendToEDDN { get; }
+
         public Profile(DataRow row)
         {
             UserIdentifier = row.Field<Guid>("user_identifier");
@@ -25,6 +27,7 @@ namespace Journal_Limpet.Shared.Models.User
             UserSettings = JsonSerializer.Deserialize<Settings>(row.Field<string>("user_settings"));
             NotificationEmail = row.Field<string>("notification_email");
             LastNotificationMail = (!row.IsNull("last_notification_mail") ? new DateTimeOffset(row.Field<DateTime>("last_notification_mail"), TimeSpan.Zero) as DateTimeOffset? : null);
+            SendToEDDN = row.Field<bool>("send_to_eddn");
         }
     }
 }
