@@ -126,6 +126,8 @@ namespace Journal_Limpet
             {
                 Authorization = new[] { new HangfireAuthorizationFilter(Configuration["Hangfire:AuthKey"]) }
             });
+
+            app.UseHangfireServer(new BackgroundJobServerOptions { WorkerCount = Environment.ProcessorCount * 5 });
 #endif
             app.UseEndpoints(endpoints =>
             {
