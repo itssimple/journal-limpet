@@ -105,10 +105,17 @@ namespace Journal_Limpet.Jobs
                                     }
                                     catch (Exception ex)
                                     {
-                                        // Ignore rows we cannot parse
-                                        context.WriteLine("Error");
-                                        context.WriteLine(ex.ToString());
-                                        context.WriteLine(row);
+                                        if (ex.ToString().Contains("JsonReaderException"))
+                                        {
+                                            // Ignore rows we cannot parse
+                                            context.WriteLine("Error");
+                                            context.WriteLine(ex.ToString());
+                                            context.WriteLine(row);
+                                        }
+                                        else
+                                        {
+                                            throw ex;
+                                        }
                                     }
 
                                     line_number++;
