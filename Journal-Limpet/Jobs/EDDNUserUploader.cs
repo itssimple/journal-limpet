@@ -264,6 +264,17 @@ namespace Journal_Limpet.Jobs
                     }),
                     TimeSpan.FromHours(10)
                 );
+
+                _rdb.StringSet(
+                    $"StarSystem:{elementAsDictionary["StarSystem"].GetString()}",
+                    JsonSerializer.Serialize(new
+                    {
+                        SystemAddress = elementAsDictionary["SystemAddress"].GetInt64(),
+                        StarSystem = elementAsDictionary["StarSystem"].GetString(),
+                        StarPos = elementAsDictionary["StarPos"]
+                    }),
+                    TimeSpan.FromHours(10)
+                );
                 return element;
             }
 
@@ -278,6 +289,17 @@ namespace Journal_Limpet.Jobs
             if (!missingProps.Contains("SystemAddress"))
             {
                 var cachedSystem = _rdb.StringGet($"SystemAddress:{elementAsDictionary["SystemAddress"].GetInt64()}");
+                if (cachedSystem != RedisValue.Null)
+                {
+                    var jel = JsonDocument.Parse(cachedSystem.ToString()).RootElement;
+                    elementAsDictionary["SystemAddress"] = jel.GetProperty("SystemAddress");
+                    elementAsDictionary["StarSystem"] = jel.GetProperty("StarSystem");
+                    elementAsDictionary["StarPos"] = jel.GetProperty("StarPos");
+                }
+            }
+            else if (!missingProps.Contains("StarSystem"))
+            {
+                var cachedSystem = _rdb.StringGet($"StarSystem:{elementAsDictionary["StarSystem"].GetString()}");
                 if (cachedSystem != RedisValue.Null)
                 {
                     var jel = JsonDocument.Parse(cachedSystem.ToString()).RootElement;
