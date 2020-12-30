@@ -262,7 +262,7 @@ namespace Journal_Limpet.Jobs
                         StarSystem = elementAsDictionary["StarSystem"].GetString(),
                         StarPos = elementAsDictionary["StarPos"]
                     }),
-                    TimeSpan.FromMinutes(10)
+                    TimeSpan.FromHours(10)
                 );
                 return element;
             }
