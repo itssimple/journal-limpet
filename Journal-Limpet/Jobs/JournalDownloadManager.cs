@@ -24,6 +24,7 @@ namespace Journal_Limpet.Jobs
     @"SELECT *
 FROM user_profile
 WHERE last_notification_mail IS NULL
+AND skip_download = 0
 AND deleted = 0"
                 );
 

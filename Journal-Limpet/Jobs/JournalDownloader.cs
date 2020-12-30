@@ -36,7 +36,7 @@ namespace Journal_Limpet.Jobs
                     MinioClient minioClient = scope.ServiceProvider.GetRequiredService<MinioClient>();
 
                     var user = (await db.ExecuteListAsync<Shared.Models.User.Profile>(
-    @"SELECT * FROM user_profile WHERE user_identifier = @user_identifier AND last_notification_mail IS NULL AND deleted = 0",
+    @"SELECT * FROM user_profile WHERE user_identifier = @user_identifier AND last_notification_mail IS NULL AND deleted = 0 AND skip_download = 0",
     new SqlParameter("user_identifier", userIdentifier)
                 )).FirstOrDefault();
 
@@ -55,18 +55,23 @@ namespace Journal_Limpet.Jobs
 
                     while (journalDate.Date != DateTime.Today)
                     {
-                        if (!await TryGetJournalAsync(configuration, journalDate, user, db, hc, minioClient))
+                        var req = await TryGetJournalAsync(configuration, journalDate, user, db, hc, minioClient);
+                        if (req.shouldBail)
                         {
                             // Failed to get loop journal
+                            return;
                         }
 
                         journalDate = journalDate.AddDays(1);
 
                     }
 
-                    if (!await TryGetJournalAsync(configuration, journalDate, user, db, hc, minioClient))
+                    var reqOut = await TryGetJournalAsync(configuration, journalDate, user, db, hc, minioClient);
+
+                    if (reqOut.shouldBail)
                     {
-                        // Failed to get todays journal
+                        // Failed to get loop journal
+                        return;
                     }
                 }
             }
@@ -86,7 +91,7 @@ namespace Journal_Limpet.Jobs
             await sendgridClient.SendEmailAsync(mail);
         }
 
-        static async Task<bool> TryGetJournalAsync(IConfiguration configuration, DateTime journalDate, Shared.Models.User.Profile user, MSSQLDB db, HttpClient hc, MinioClient minioClient)
+        static async Task<(bool failedRequest, bool shouldBail)> TryGetJournalAsync(IConfiguration configuration, DateTime journalDate, Shared.Models.User.Profile user, MSSQLDB db, HttpClient hc, MinioClient minioClient)
         {
             try
             {
@@ -96,6 +101,15 @@ namespace Journal_Limpet.Jobs
                 while (res.code != HttpStatusCode.OK)
                 {
                     Thread.Sleep(5000);
+
+                    var content = await res.message.Content.ReadAsStringAsync();
+
+                    if (content.Contains("to purchase Elite: Dangerous"))
+                    {
+                        await db.ExecuteNonQueryAsync("UPDATE user_profile SET skip_download = 1 WHERE user_identifier = @user_identifier", new SqlParameter("user_identifier", user.UserIdentifier));
+                        return (false, true);
+                    }
+
                     if (loop_counter > 10)
                     {
                         await SendAdminNotification(
@@ -107,9 +121,12 @@ Got response code: {res.code} while trying to grab journals.
 
 Response:
 
-{await res.message.Content.ReadAsStringAsync()}"
+{content}
+
+User: {user.UserIdentifier}"
                         );
-                        return false;
+
+                        return (false, false);
                     }
 
                     switch (res.code)
@@ -125,17 +142,17 @@ Response:
             catch (TooManyOldJournalItemsException ex)
             {
                 await SendAdminNotification(configuration, "Exception: Too many old journal items", ex.ToString());
-                return false;
+                return (false, true);
             }
             catch (Exception ex)
             {
                 var errorMessage = ex.ToString() + "\n\n" + JsonSerializer.Serialize(user, new JsonSerializerOptions() { WriteIndented = true });
 
                 await SendAdminNotification(configuration, "Exception", errorMessage);
-                return false;
+                return (false, false);
             }
 
-            return true;
+            return (true, false);
         }
 
         static async Task<(HttpStatusCode code, HttpResponseMessage message)> GetJournalAsync(IConfiguration configuration, DateTime journalDate, Shared.Models.User.Profile user, MSSQLDB db, HttpClient hc, MinioClient minioClient)
