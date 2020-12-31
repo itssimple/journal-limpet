@@ -21,7 +21,7 @@ namespace Journal_Limpet.Pages
         public long TotalUserJournalCount = 0;
         public long TotalUserJournalLines = 0;
 
-        public Profile? LoggedInUser { get; set; }
+        public Profile LoggedInUser { get; set; }
 
         public IndexModel(ILogger<IndexModel> logger, MSSQLDB db)
         {
