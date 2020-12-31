@@ -35,6 +35,7 @@ namespace Journal_Limpet.Jobs
                     IConfiguration configuration = scope.ServiceProvider.GetRequiredService<IConfiguration>();
 
                     MinioClient _minioClient = scope.ServiceProvider.GetRequiredService<MinioClient>();
+                    var discordClient = scope.ServiceProvider.GetRequiredService<DiscordWebhook>();
 
                     IHttpClientFactory _hcf = scope.ServiceProvider.GetRequiredService<IHttpClientFactory>();
 
@@ -50,7 +51,6 @@ namespace Journal_Limpet.Jobs
 
                     foreach (var journalItem in userJournals.WithProgress(context))
                     {
-
                         try
                         {
                             using (MemoryStream outFile = new MemoryStream())
@@ -138,7 +138,18 @@ namespace Journal_Limpet.Jobs
                         }
                         catch (Exception ex)
                         {
-                            await MailSender.SendSingleEmail(configuration, "no-reply+eddn@journal-limpet.com", "EDDN error", ex.ToString() + "\n\nUser:\n\n" + userIdentifier + "\n\nData:\n\n" + lastLine + "\n\nJournal: " + journalItem.S3Path);
+                            await discordClient.SendMessageAsync("**[EDDN Upload]** Problem with upload to EDDN", new List<DiscordWebhookEmbed>
+                            {
+                                new DiscordWebhookEmbed
+                                {
+                                    Description = ex.ToString(),
+                                    Fields = new Dictionary<string, string>() {
+                                        { "User identifier", userIdentifier.ToString() },
+                                        { "Last line", lastLine },
+                                        { "Journal", journalItem.S3Path }
+                                    }.Select(k => new DiscordWebhookEmbedField { Name = k.Key, Value = k.Value }).ToList()
+                                }
+                            });
                         }
                     }
                 }

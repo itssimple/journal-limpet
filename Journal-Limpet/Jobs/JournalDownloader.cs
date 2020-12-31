@@ -7,9 +7,8 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Minio;
 using Polly;
-using SendGrid;
-using SendGrid.Helpers.Mail;
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net;
@@ -35,6 +34,8 @@ namespace Journal_Limpet.Jobs
 
                     MinioClient minioClient = scope.ServiceProvider.GetRequiredService<MinioClient>();
 
+                    var discordClient = scope.ServiceProvider.GetRequiredService<DiscordWebhook>();
+
                     var user = (await db.ExecuteListAsync<Shared.Models.User.Profile>(
     @"SELECT * FROM user_profile WHERE user_identifier = @user_identifier AND last_notification_mail IS NULL AND deleted = 0 AND skip_download = 0",
     new SqlParameter("user_identifier", userIdentifier)
@@ -55,7 +56,7 @@ namespace Journal_Limpet.Jobs
 
                     while (journalDate.Date != DateTime.Today)
                     {
-                        var req = await TryGetJournalAsync(configuration, journalDate, user, db, hc, minioClient);
+                        var req = await TryGetJournalAsync(discordClient, journalDate, user, db, hc, minioClient);
                         if (req.shouldBail)
                         {
                             // Failed to get loop journal
@@ -66,7 +67,7 @@ namespace Journal_Limpet.Jobs
 
                     }
 
-                    var reqOut = await TryGetJournalAsync(configuration, journalDate, user, db, hc, minioClient);
+                    var reqOut = await TryGetJournalAsync(discordClient, journalDate, user, db, hc, minioClient);
 
                     if (reqOut.shouldBail)
                     {
@@ -77,25 +78,24 @@ namespace Journal_Limpet.Jobs
             }
         }
 
-        static async Task SendAdminNotification(IConfiguration configuration, string subject, string mailBody)
+        static async Task SendAdminNotification(DiscordWebhook discord, string message, string description, Dictionary<string, string> fields = null)
         {
-            var sendgridClient = new SendGridClient(configuration["SendGrid:ApiKey"]);
-            var mail = MailHelper.CreateSingleEmail(
-                new EmailAddress("no-reply+error-notifications@journal-limpet.com", "Journal Limpet"),
-                new EmailAddress(configuration["ErrorMail"]),
-                subject,
-                mailBody,
-                mailBody.Replace("\n", "<br />\n")
-            );
 
-            await sendgridClient.SendEmailAsync(mail);
+            await discord.SendMessageAsync(message, new List<DiscordWebhookEmbed>
+            {
+                new DiscordWebhookEmbed
+                {
+                    Description = description,
+                    Fields = (fields ?? new Dictionary<string, string>()).Select(k => new DiscordWebhookEmbedField { Name = k.Key, Value = k.Value }).ToList()
+                }
+            });
         }
 
-        static async Task<(bool failedRequest, bool shouldBail)> TryGetJournalAsync(IConfiguration configuration, DateTime journalDate, Shared.Models.User.Profile user, MSSQLDB db, HttpClient hc, MinioClient minioClient)
+        static async Task<(bool failedRequest, bool shouldBail)> TryGetJournalAsync(DiscordWebhook discord, DateTime journalDate, Shared.Models.User.Profile user, MSSQLDB db, HttpClient hc, MinioClient minioClient)
         {
             try
             {
-                var res = await GetJournalAsync(configuration, journalDate, user, db, hc, minioClient);
+                var res = await GetJournalAsync(journalDate, user, db, hc, minioClient);
                 int loop_counter = 0;
 
                 while (res.code != HttpStatusCode.OK)
@@ -107,23 +107,34 @@ namespace Journal_Limpet.Jobs
                     if (content.Contains("to purchase Elite: Dangerous"))
                     {
                         await db.ExecuteNonQueryAsync("UPDATE user_profile SET skip_download = 1 WHERE user_identifier = @user_identifier", new SqlParameter("user_identifier", user.UserIdentifier));
+                        await SendAdminNotification(
+                            discord,
+                            "Failed to download journal, cannot access cAPI",
+                            "User probably has a Epic Games account",
+                            new Dictionary<string, string>
+                            {
+                                { "Response code", res.code.ToString() },
+                                { "Content", content },
+                                { "User identifier", user.UserIdentifier.ToString() },
+                                { "Journal date", journalDate.ToString("yyyy-MM-dd") }
+                            }
+                        );
                         return (false, true);
                     }
 
                     if (loop_counter > 10)
                     {
                         await SendAdminNotification(
-                            configuration,
+                            discord,
                             "Failed to download journal",
-$@"Hey NLK,
-
-Got response code: {res.code} while trying to grab journals.
-
-Response:
-
-{content}
-
-User: {user.UserIdentifier}"
+                            "Encountered an error too many times",
+                            new Dictionary<string, string>
+                            {
+                                { "Response code", res.code.ToString() },
+                                { "Content", content },
+                                { "User identifier", user.UserIdentifier.ToString() },
+                                { "Journal date", journalDate.ToString("yyyy-MM-dd") }
+                            }
                         );
 
                         return (false, false);
@@ -133,7 +144,7 @@ User: {user.UserIdentifier}"
                     {
                         case HttpStatusCode.PartialContent:
                             Thread.Sleep(1000);
-                            res = await GetJournalAsync(configuration, journalDate, user, db, hc, minioClient);
+                            res = await GetJournalAsync(journalDate, user, db, hc, minioClient);
                             break;
                     }
                     loop_counter++;
@@ -141,21 +152,31 @@ User: {user.UserIdentifier}"
             }
             catch (TooManyOldJournalItemsException ex)
             {
-                await SendAdminNotification(configuration, "Exception: Too many old journal items", ex.ToString());
+                await SendAdminNotification(discord,
+                    "**[JOURNAL]** Exception: Too many old journal items",
+                    "The user somehow has duplicates of journals stored for a single date",
+                    new Dictionary<string, string> {
+                        { "Exception", ex.ToString() },
+                        { "User identifier", user.UserIdentifier.ToString() }
+                    }
+                );
                 return (false, true);
             }
             catch (Exception ex)
             {
                 var errorMessage = ex.ToString() + "\n\n" + JsonSerializer.Serialize(user, new JsonSerializerOptions() { WriteIndented = true });
 
-                await SendAdminNotification(configuration, "Exception", errorMessage);
+                await SendAdminNotification(discord,
+                    "**[JOURNAL]** Unhandled exception while downloading journals",
+                    errorMessage
+                    );
                 return (false, false);
             }
 
             return (true, false);
         }
 
-        static async Task<(HttpStatusCode code, HttpResponseMessage message)> GetJournalAsync(IConfiguration configuration, DateTime journalDate, Shared.Models.User.Profile user, MSSQLDB db, HttpClient hc, MinioClient minioClient)
+        static async Task<(HttpStatusCode code, HttpResponseMessage message)> GetJournalAsync(DateTime journalDate, Shared.Models.User.Profile user, MSSQLDB db, HttpClient hc, MinioClient minioClient)
         {
             var oldJournalRow = await db.ExecuteListAsync<UserJournal>(
                 "SELECT TOP 1 * FROM user_journal WHERE user_identifier = @user_identifier AND journal_date = @journal_date",
@@ -236,7 +257,7 @@ VALUES (@user_identifier, @journal_date, @s3_path, @last_processed_line, @last_p
     new SqlParameter("journal_date", journalDate),
     new SqlParameter("s3_path", fileName),
     new SqlParameter("last_processed_line", journalRows.LastOrDefault() ?? string.Empty),
-    new SqlParameter("last_processed_line_number", journalRows.Length),
+    new SqlParameter("last_processed_line_number", journalRows.Length + 1),
     new SqlParameter("complete_entry", DateTime.UtcNow.Date > journalDate.Date)
 );
             }
@@ -251,7 +272,7 @@ WHERE journal_id = @journal_id AND user_identifier = @user_identifier",
     new SqlParameter("journal_id", previousRow.JournalId),
     new SqlParameter("user_identifier", user.UserIdentifier),
     new SqlParameter("last_processed_line", journalRows.LastOrDefault() ?? string.Empty),
-    new SqlParameter("last_processed_line_number", journalRows.Length),
+    new SqlParameter("last_processed_line_number", journalRows.Length + 1),
     new SqlParameter("complete_entry", DateTime.UtcNow.Date > journalDate.Date)
 );
             }

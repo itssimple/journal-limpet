@@ -15,6 +15,8 @@ namespace Journal_Limpet.Shared
             sc.AddSingleton(x => new MinioClient(configuration["Minio:ConnectionString"], configuration["Minio:AccessKey"], configuration["Minio:SecretKey"]));
 
             sc.AddScoped(x => new TwitterSender(configuration["Twitter:ConsumerKey"], configuration["Twitter:ConsumerSecret"], configuration["Twitter:AccessToken"], configuration["Twitter:AccessSecret"]));
+
+            sc.AddScoped(x => new DiscordWebhook(configuration["Discord:ErrorWebhook"]));
         }
     }
 }
