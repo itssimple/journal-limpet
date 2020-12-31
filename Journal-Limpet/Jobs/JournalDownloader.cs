@@ -238,6 +238,8 @@ namespace Journal_Limpet.Jobs
                 }
             }
 
+            var journalLineCount = journalContent.Trim().Split('\n', StringSplitOptions.RemoveEmptyEntries).Length;
+
             var journalBytes = ZipManager.Zip(journalContent.Trim());
             string fileName = $"{user.UserIdentifier}/journal/{journalDate.Year}/{journalDate.Month.ToString().PadLeft(2, '0')}/{journalDate.Day.ToString().PadLeft(2, '0')}.journal";
 
@@ -257,7 +259,7 @@ VALUES (@user_identifier, @journal_date, @s3_path, @last_processed_line, @last_p
     new SqlParameter("journal_date", journalDate),
     new SqlParameter("s3_path", fileName),
     new SqlParameter("last_processed_line", journalRows.LastOrDefault() ?? string.Empty),
-    new SqlParameter("last_processed_line_number", journalRows.Length + 1),
+    new SqlParameter("last_processed_line_number", journalLineCount),
     new SqlParameter("complete_entry", DateTime.UtcNow.Date > journalDate.Date)
 );
             }
@@ -272,7 +274,7 @@ WHERE journal_id = @journal_id AND user_identifier = @user_identifier",
     new SqlParameter("journal_id", previousRow.JournalId),
     new SqlParameter("user_identifier", user.UserIdentifier),
     new SqlParameter("last_processed_line", journalRows.LastOrDefault() ?? string.Empty),
-    new SqlParameter("last_processed_line_number", journalRows.Length + 1),
+    new SqlParameter("last_processed_line_number", journalLineCount),
     new SqlParameter("complete_entry", DateTime.UtcNow.Date > journalDate.Date)
 );
             }
