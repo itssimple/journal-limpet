@@ -2,3 +2,11 @@
 <h1 class="display-4">Welcome Commander!</h1>
 <p>You have @Model.LoggedInUserJournalCount.ToString("n0") journals stored with us!</p>
 <p>Currently we don't have any apps we're connected to, but you can download your journals at least!</p>
+@if (Model.LoggedInUser.SkipDownload)
+{
+    <div class="alert alert-danger" role="alert">
+        <h4 class="alert-heading">Trouble downloading journals</h4>
+        <p>Your account currently has some issues with downloading journals.</p>
+        <p>Please contact NoLifeKing#6976 on the <a href="https://discord.gg/0uwCh6R62aQ0eeAX" target="_blank" rel="nofollow">EDCD Discord</a></p>
+    </div>
+}

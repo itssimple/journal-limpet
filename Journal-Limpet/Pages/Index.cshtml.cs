@@ -1,5 +1,6 @@
 ﻿using Journal_Limpet.Shared.Database;
 using Journal_Limpet.Shared.Models;
+using Journal_Limpet.Shared.Models.User;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.Data.SqlClient;
@@ -19,6 +20,8 @@ namespace Journal_Limpet.Pages
         public long LoggedInUserJournalCount = 0;
         public long TotalUserJournalCount = 0;
         public long TotalUserJournalLines = 0;
+
+        public Profile? LoggedInUser { get; set; }
 
         public IndexModel(ILogger<IndexModel> logger, MSSQLDB db)
         {
@@ -45,6 +48,8 @@ WHERE up.deleted = 0");
                     "SELECT COUNT(journal_id) FROM user_journal WHERE user_identifier = @user_identifier AND last_processed_line_number > 0",
                     new SqlParameter("user_identifier", User.Identity.Name)
                 );
+
+                LoggedInUser = await _db.ExecuteSingleRowAsync<Profile>("SELECT * FROM user_profile WHERE user_identifier = @user_identifier", new SqlParameter("user_identifier", User.Identity.Name));
             }
         }
     }

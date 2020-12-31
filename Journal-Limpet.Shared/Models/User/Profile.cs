@@ -17,6 +17,7 @@ namespace Journal_Limpet.Shared.Models.User
         public DateTimeOffset? LastNotificationMail { get; }
 
         public bool SendToEDDN { get; }
+        public bool SkipDownload { get; }
 
         public Profile(DataRow row)
         {
@@ -28,6 +29,7 @@ namespace Journal_Limpet.Shared.Models.User
             NotificationEmail = row.Field<string>("notification_email");
             LastNotificationMail = (!row.IsNull("last_notification_mail") ? new DateTimeOffset(row.Field<DateTime>("last_notification_mail"), TimeSpan.Zero) as DateTimeOffset? : null);
             SendToEDDN = row.Field<bool>("send_to_eddn");
+            SkipDownload = row.Field<bool>("skip_download");
         }
     }
 }
