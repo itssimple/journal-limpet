@@ -22,6 +22,9 @@ namespace Journal_Limpet
 
         public static ConnectionMultiplexer RedisClient => _redisClient ?? (_redisClient = ConnectionMultiplexer.Connect("127.0.0.1:6379"));
 
+        private static ISubscriber _redisPubsubSubscriber;
+        public static ISubscriber RedisPubsubSubscriber = _redisPubsubSubscriber ?? (_redisPubsubSubscriber = RedisClient.GetSubscriber());
+
         public static bool CheckIfTaskIsScheduledOrInProgress(string taskName, string methodName)
         {
             if (RedisJobLock.IsLocked($"{taskName}.{methodName}"))
@@ -60,6 +63,7 @@ namespace Journal_Limpet
 
         public static ConcurrentDictionary<string, (string className, string methodName, object action, TimeSpan startInterval, TimeSpan subsequentInterval)> ImportantJobs =
             new ConcurrentDictionary<string, (string className, string methodName, object action, TimeSpan startInterval, TimeSpan subsequentInterval)>();
+
 
         public static ILog GetExceptionalLogger()
         {

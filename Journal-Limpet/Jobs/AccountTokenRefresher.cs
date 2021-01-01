@@ -58,12 +58,7 @@ AND deleted = 0"
 
                         if (!string.IsNullOrWhiteSpace(user.NotificationEmail))
                         {
-                            var sendgridClient = new SendGridClient(configuration["SendGrid:ApiKey"]);
-                            var mail = MailHelper.CreateSingleEmail(
-                                new EmailAddress("no-reply+account-notifications@journal-limpet.com", "Journal Limpet"),
-                                new EmailAddress(user.NotificationEmail),
-                                "Login needed for further journal storage",
-    @"Hi there!
+                            var email = @"Hi there!
 
 This is an automated email, since you have logged in to Journal Limpet at least once.
 
@@ -79,29 +74,16 @@ This is the only email we will ever send you (every time that you need to login)
 
 Regards,
 NoLifeKing85
-Journal Limpet",
-    @"<html>
-<body>
-Hi there!<br />
-<br />
-This is an automated email, since you have logged in to Journal Limpet at least once.<br />
-<br />
-I'm sorry that I have to send you this email, but we need you to log in to <a href=""https://journal-limpet.com"" target=""_blank"">Journal-Limpet</a> again.<br />
-<br />
-.. at least if you want us to be able to continue:<br />
-- Storing your Elite: Dangerous journals<br />
-- Sync progress with other applications<br />
-<br />
-And if you don't want us to sync your account any longer, we'll delete your account after 6 months from your last fetched journal.<br />
-<br />
-This is the only email we will ever send you (every time that you need to login)<br />
-<br />
-Regards,<br />
-NoLifeKing85<br />
-Journal Limpet
-</body>
-</html>"
-                    );
+Journal Limpet";
+
+                            var sendgridClient = new SendGridClient(configuration["SendGrid:ApiKey"]);
+                            var mail = MailHelper.CreateSingleEmail(
+                                new EmailAddress("no-reply+account-notifications@journal-limpet.com", "Journal Limpet"),
+                                new EmailAddress(user.NotificationEmail),
+                                "Login needed for further journal storage",
+                                email,
+                               $"<html><head></head><body>{email.Replace("\n", "<br />\n")}</body></html>"
+                            );
 
                             await sendgridClient.SendEmailAsync(mail);
 
