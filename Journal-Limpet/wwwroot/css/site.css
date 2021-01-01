@@ -48,3 +48,27 @@ body {
 .jumbotron {
     background-color:#4d5052;
 }
+
+.journal-limpet.toast-holder {
+    position: fixed;
+    bottom: 4em;
+    right: 0.5em;
+    left: 0.5em;
+    display: flex;
+    flex-direction: column;
+    flex-wrap: wrap-reverse;
+}
+
+.journal-limpet .toast {
+    background-color: rgba(64, 64, 64, 0.75);
+}
+
+    .journal-limpet .toast .toast-header {
+        background-color: rgba(64, 64, 64, 0.75);
+        color: #f8f8f8;
+    }
+
+    .journal-limpet .toast .close {
+        color: #fff;
+        text-shadow: unset;
+    }
