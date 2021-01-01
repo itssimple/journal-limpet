@@ -52,6 +52,22 @@ namespace Journal_Limpet.Jobs
                     hc.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", authToken);
                     hc.BaseAddress = new Uri("https://companion.orerve.net");
 
+                    var profile = await GetProfileAsync(hc);
+
+                    if (!profile.IsSuccessStatusCode)
+                    {
+                        switch (profile.StatusCode)
+                        {
+                            case HttpStatusCode.BadRequest:
+                                // User does not potentially own the game
+                                break;
+                            case HttpStatusCode.Unauthorized:
+                                // Invalid token (or Epic games)
+                                break;
+                        }
+                        return;
+                    }
+
                     DateTime journalDate = DateTime.Today.AddDays(-25);
 
                     while (journalDate.Date != DateTime.Today)
@@ -76,6 +92,11 @@ namespace Journal_Limpet.Jobs
                     }
                 }
             }
+        }
+
+        public static async Task<HttpResponseMessage> GetProfileAsync(HttpClient hc)
+        {
+            return await hc.GetAsync($"/profile");
         }
 
         static async Task SendAdminNotification(DiscordWebhook discord, string message, string description, Dictionary<string, string> fields = null)
