@@ -1,24 +1,28 @@
 ﻿function initializeActivityMonitor() {
     var sse = new EventSource('/api/sse/activity', { withCredentials: true });
-    sse.addEventListener('globalactivity', function (data) {
-        var _data = tryJsonParse(data.data);
-        if (_data) {
-            createToast(_data.title, _data.message, _data.class);
-        }
-    }, false);
+    sse.addEventListener('globalactivity', popMessage, false);
+    sse.addEventListener('useractivity', popMessage, false);
 
-    sse.addEventListener('useractivity', function (data) {
-        var _data = tryJsonParse(data.data);
-        if (_data) {
-            createToast(_data.title, _data.message, _data.class);
+    sse.onerror = function (e) {
+        if (sse.readyState === 2) {
+            sse.removeEventListener('globalactivity', popMessage, false);
+            sse.removeEventListener('useractivity', popMessage, false);
+            setTimeout(initializeActivityMonitor, 5000);
         }
-    }, false);
+    }
 
     function tryJsonParse(data) {
         try {
             return JSON.parse(data);
         } catch {
             return false;
+        }
+    }
+
+    function popMessage(data) {
+        var _data = tryJsonParse(data.data);
+        if (_data) {
+            createToast(_data.title, _data.message, _data.class);
         }
     }
 }
