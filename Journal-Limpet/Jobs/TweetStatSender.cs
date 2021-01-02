@@ -2,7 +2,6 @@
 using Hangfire.Server;
 using Journal_Limpet.Shared;
 using Journal_Limpet.Shared.Database;
-using Journal_Limpet.Shared.Models;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using System.Threading.Tasks;
@@ -21,12 +20,7 @@ namespace Journal_Limpet.Jobs
 
                 var tweetSender = scope.ServiceProvider.GetRequiredService<TwitterSender>();
 
-                var mod = await db.ExecuteSingleRowAsync<IndexStatsModel>(@"SELECT CAST(COUNT(DISTINCT up.user_identifier) AS bigint) user_count, 
-CAST(COUNT(journal_id) AS bigint) journal_count,
-CAST(SUM(last_processed_line_number) AS bigint) total_number_of_lines
-FROM user_profile up
-LEFT JOIN user_journal uj ON up.user_identifier = uj.user_identifier AND uj.last_processed_line_number > 0
-WHERE up.deleted = 0");
+                var mod = await SharedSettings.GetIndexStatsAsync(db);
 
                 var res = await tweetSender.SendAsync(
 $@"Nightly stats #EliteDangerous
