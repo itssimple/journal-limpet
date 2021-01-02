@@ -1,33 +1,22 @@
 ﻿function initializeActivityMonitor() {
     var sse = new EventSource('/api/sse/activity', { withCredentials: true });
     sse.addEventListener('globalactivity', function (data) {
-        var _data = tryJsonParse(data.data) ? JSON.parse(data.data) : data.data;
-        var json = JSON.stringify(_data);
-
-        console.log('globalactivity', _data);
-        createToast('Global activity', json);
+        var _data = tryJsonParse(data.data);
+        if (_data) {
+            createToast(_data.title, _data.message);
+        }
     }, false);
 
     sse.addEventListener('useractivity', function (data) {
-        var _data = tryJsonParse(data.data) ? JSON.parse(data.data) : data.data;
-        var json = JSON.stringify(_data);
-
-        console.log('useractivity', _data);
-        createToast('User activity', json);
+        var _data = tryJsonParse(data.data);
+        if (_data) {
+            createToast(_data.title, _data.message);
+        }
     }, false);
-
-    sse.onmessage = function (event) {
-        var _data = tryJsonParse(event.data) ? JSON.parse(event.data) : event.data;
-        var json = JSON.stringify(_data);
-
-        console.log('message: ', _data);
-        createToast('Message', json);
-    }
 
     function tryJsonParse(data) {
         try {
-            let jobj = JSON.parse(data);
-            return true;
+            return JSON.parse(data);
         } catch {
             return false;
         }
