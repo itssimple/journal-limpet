@@ -24,7 +24,7 @@ namespace Journal_Limpet.Controllers
         {
             var response = Response;
 
-            response.Headers.Add("Content-type", "text/event-stream");
+            response.Headers.Add("Content-Type", "text/event-stream");
             response.Headers.Add("X-Accel-Buffering", "no");
             response.Headers.Add("Cache-Control", "no-cache");
 
