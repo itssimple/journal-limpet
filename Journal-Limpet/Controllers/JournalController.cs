@@ -133,9 +133,14 @@ new SqlParameter("customerId", profile.CustomerId))
                 else
                 {
                     // Create new user
-                    matchingUser = (await _db.ExecuteListAsync<Shared.Models.User.Profile>("INSERT INTO user_profile (user_settings) OUTPUT INSERTED.* VALUES (@settings)",
+                    matchingUser = await _db.ExecuteSingleRowAsync<Shared.Models.User.Profile>("INSERT INTO user_profile (user_settings) OUTPUT INSERTED.* VALUES (@settings)",
                         new SqlParameter("settings", JsonSerializer.Serialize(settings))
-                    )).FirstOrDefault();
+                    );
+
+                    var userCount = await _db.ExecuteScalarAsync<int>("SELECT COUNT(user_identifier) FROM user_profile WHERE deleted = 0");
+
+                    await SSEActivitySender.SendGlobalActivityAsync("A new user has registered!", $"We now have {userCount:N0} users registered!");
+                    await SSEActivitySender.SendStatsActivityAsync(_db);
                 }
 
                 var claims = new List<Claim>()

@@ -312,9 +312,11 @@ WHERE journal_id = @journal_id AND user_identifier = @user_identifier",
 
             await SSEActivitySender.SendUserActivityAsync(user.UserIdentifier,
                 $"Downloaded journals for {journalDate:yyyy-MM-dd}",
-                $"We downloaded {journalLineCount:N0} lines of journal for this item",
+                $"We downloaded {journalLineCount:N0} lines of journal for this day",
                 "success"
             );
+
+            await SSEActivitySender.SendStatsActivityAsync(db);
 
             Thread.Sleep(5000);
             return (HttpStatusCode.OK, journalRequest);

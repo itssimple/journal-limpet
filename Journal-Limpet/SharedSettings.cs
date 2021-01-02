@@ -1,5 +1,7 @@
 ﻿using Hangfire;
 using Hangfire.Logging;
+using Journal_Limpet.Shared.Database;
+using Journal_Limpet.Shared.Models;
 using StackExchange.Redis;
 using System;
 using System.Collections.Concurrent;
@@ -41,6 +43,16 @@ namespace Journal_Limpet
             var jobs = processing.Concat(scheduled).Concat(enqueued);
 
             return jobs.Any(s => s == $"{taskName}.{methodName}");
+        }
+
+        public static async Task<IndexStatsModel> GetIndexStatsAsync(MSSQLDB _db)
+        {
+            return await _db.ExecuteSingleRowAsync<IndexStatsModel>(@"SELECT CAST(COUNT(DISTINCT up.user_identifier) AS bigint) user_count, 
+CAST(COUNT(journal_id) AS bigint) journal_count,
+CAST(SUM(last_processed_line_number) AS bigint) total_number_of_lines
+FROM user_profile up
+LEFT JOIN user_journal uj ON up.user_identifier = uj.user_identifier AND uj.last_processed_line_number > 0
+WHERE up.deleted = 0");
         }
 
         public static void AddImportantJob(string className, string methodName, Expression<Action> action, TimeSpan startInterval, TimeSpan? subsequentInterval = null)

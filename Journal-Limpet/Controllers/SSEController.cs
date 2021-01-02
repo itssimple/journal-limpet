@@ -38,6 +38,13 @@ namespace Journal_Limpet.Controllers
                 response.Body.Flush();
             });
 
+            await _pubsub.SubscribeAsync("stats-activity", (channel, data) =>
+            {
+                response.WriteAsync("event: statsactivity\r");
+                response.WriteAsync($"data: {data}\r\r");
+                response.Body.Flush();
+            });
+
             if (User.Identity.IsAuthenticated)
             {
                 await response.WriteAsync($"data: Signed in as {User.Identity.Name}\r\r");

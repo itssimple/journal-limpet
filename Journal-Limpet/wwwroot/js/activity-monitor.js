@@ -3,10 +3,13 @@
     sse.addEventListener('globalactivity', popMessage, false);
     sse.addEventListener('useractivity', popMessage, false);
 
+    sse.addEventListener('statsactivity', updateStats, false);
+
     sse.onerror = function (e) {
         if (sse.readyState === 2) {
             sse.removeEventListener('globalactivity', popMessage, false);
             sse.removeEventListener('useractivity', popMessage, false);
+            sse.removeEventListener('statsactivity', updateStats, false);
             setTimeout(initializeActivityMonitor, 5000);
         }
     }
@@ -20,17 +23,40 @@
     }
 
     function popMessage(data) {
-        var _data = tryJsonParse(data.data);
+        let _data = tryJsonParse(data.data);
         if (_data) {
             createToast(_data.title, _data.message, _data.class);
         }
     }
-}
 
-function createToast(title, message, spinnerClass) {
-    if (!spinnerClass) spinnerClass = 'warning';
+    function updateStats(data) {
+        let _data = tryJsonParse(data.data);
+        let statsAvailableOnPage = document.querySelectorAll('.index-stats');
+        if (statsAvailableOnPage.length > 0) {
+            let userCount = document.querySelector('#stat-usercount');
 
-    var toast = $(`<div class="toast">
+            if (_data.TotalUserCount) {
+                userCount.innerHTML = `${_data.TotalUserCount.toLocaleString()} users registered`;
+            }
+
+            let journalCount = document.querySelector('#stat-journalcount');
+
+            if (_data.TotalUserJournalCount) {
+                journalCount.innerHTML = `${_data.TotalUserJournalCount.toLocaleString()} journals saved`;
+            }
+
+            let journalLines = document.querySelector('#stat-journallines');
+
+            if (_data.TotalUserJournalLines) {
+                journalLines.innerHTML = `${_data.TotalUserJournalLines.toLocaleString()} lines of journal`;
+            }
+        }
+    }
+
+    function createToast(title, message, spinnerClass) {
+        if (!spinnerClass) spinnerClass = 'warning';
+
+        let toast = $(`<div class="toast">
     <div class="toast-header">
         <div class="spinner-border text-${spinnerClass} spinner-border-sm" role="status">
             <span class="sr-only">Activity...</span>
@@ -46,12 +72,13 @@ function createToast(title, message, spinnerClass) {
     </div>
 </div>`);
 
-    $('.journal-limpet.toast-holder').append(toast);
+        $('.journal-limpet.toast-holder').append(toast);
 
-    toast.toast({
-        autohide: true,
-        delay: 3000
-    }).toast('show')
+        toast.toast({
+            autohide: true,
+            delay: 5000
+        }).toast('show')
+    }
 }
 
 (function () {
