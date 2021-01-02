@@ -1,7 +1,7 @@
 ﻿function initializeActivityMonitor() {
     var sse = new EventSource('/api/sse/activity', { withCredentials: true });
     sse.addEventListener('globalactivity', function (data) {
-        var _data = JSON.parse(data.data);
+        var _data = tryJsonParse(data.data) ? JSON.parse(data.data) : data.data;
         var json = JSON.stringify(_data);
 
         console.log('globalactivity', _data);
@@ -9,7 +9,7 @@
     }, false);
 
     sse.addEventListener('useractivity', function (data) {
-        var _data = JSON.parse(data.data);
+        var _data = tryJsonParse(data.data) ? JSON.parse(data.data) : data.data;
         var json = JSON.stringify(_data);
 
         console.log('useractivity', _data);
@@ -17,15 +17,20 @@
     }, false);
 
     sse.onmessage = function (event) {
-        var _data = JSON.parse(event.data);
+        var _data = tryJsonParse(event.data) ? JSON.parse(event.data) : event.data;
         var json = JSON.stringify(_data);
 
         console.log('message: ', _data);
         createToast('Message', json);
     }
 
-    sse.onopen = function (event) {
-        console.log('SSE connection opened');
+    function tryJsonParse(data) {
+        try {
+            let jobj = JSON.parse(data);
+            return true;
+        } catch {
+            return false;
+        }
     }
 }
 
