@@ -290,6 +290,14 @@ namespace Journal_Limpet.Jobs
                 {
                     await minioClient.PutObjectAsync("journal-limpet", fileName, ms, ms.Length, "application/gzip");
                 }
+
+                await SSEActivitySender.SendUserActivityAsync(user.UserIdentifier,
+                    $"Downloaded journals for {journalDate:yyyy-MM-dd}",
+                    $"We downloaded {journalLineCount:N0} lines of journal for this day",
+                    "success"
+                );
+
+                await SSEActivitySender.SendStatsActivityAsync(db);
             }
 
             if (previousRow == null)
@@ -319,14 +327,6 @@ WHERE journal_id = @journal_id AND user_identifier = @user_identifier",
     new SqlParameter("complete_entry", DateTime.UtcNow.Date > journalDate.Date)
 );
             }
-
-            await SSEActivitySender.SendUserActivityAsync(user.UserIdentifier,
-                $"Downloaded journals for {journalDate:yyyy-MM-dd}",
-                $"We downloaded {journalLineCount:N0} lines of journal for this day",
-                "success"
-            );
-
-            await SSEActivitySender.SendStatsActivityAsync(db);
 
             Thread.Sleep(5000);
             return (HttpStatusCode.OK, journalRequest);
