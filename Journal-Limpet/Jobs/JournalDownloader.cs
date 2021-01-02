@@ -1,4 +1,5 @@
-﻿using Hangfire.Server;
+﻿using Hangfire.Console;
+using Hangfire.Server;
 using Journal_Limpet.Shared;
 using Journal_Limpet.Shared.Database;
 using Journal_Limpet.Shared.Models.Journal;
@@ -26,6 +27,8 @@ namespace Journal_Limpet.Jobs
             using (var rlock = new RedisJobLock($"JournalDownloader.DownloadJournal.{userIdentifier}"))
             {
                 if (!rlock.TryTakeLock()) return;
+
+                context.WriteLine($"Looking for journals for user {userIdentifier}");
 
                 using (var scope = Startup.ServiceProvider.CreateScope())
                 {
@@ -70,6 +73,8 @@ namespace Journal_Limpet.Jobs
                             "Could not authorize you",
                             "Sorry, but there seems to be something wrong with your account. Please contact us so we can try and figure out what's wrong!"
                         );
+
+                        context.WriteLine("Bailing out early, user doesn't own Elite or has issues with cAPI auth");
                         return;
                     }
 
@@ -82,24 +87,29 @@ namespace Journal_Limpet.Jobs
 
                     while (journalDate.Date != DateTime.Today)
                     {
+                        context.WriteLine($"Fetching data for {journalDate.ToString("yyyy-MM-dd")}");
                         var req = await TryGetJournalAsync(discordClient, journalDate, user, db, hc, minioClient);
                         if (req.shouldBail)
                         {
                             // Failed to get loop journal
+                            context.WriteLine($"Bailing because of errors");
                             return;
                         }
 
                         journalDate = journalDate.AddDays(1);
-
                     }
 
+                    context.WriteLine($"Fetching data for {journalDate.ToString("yyyy-MM-dd")}");
                     var reqOut = await TryGetJournalAsync(discordClient, journalDate, user, db, hc, minioClient);
 
                     if (reqOut.shouldBail)
                     {
                         // Failed to get loop journal
+                        context.WriteLine($"Bailing because of errors");
                         return;
                     }
+
+                    context.WriteLine("All done!");
                 }
             }
         }
