@@ -40,6 +40,9 @@ namespace Journal_Limpet.Controllers
 
             if (User.Identity.IsAuthenticated)
             {
+                await response.WriteAsync($"data: Signed in as {User.Identity.Name}\r\r");
+                await response.Body.FlushAsync();
+
                 await _pubsub.SubscribeAsync($"user-activity-{User.Identity.Name}", (channel, data) =>
                 {
                     response.WriteAsync("event: useractivity\r");
