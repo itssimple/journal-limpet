@@ -1,4 +1,6 @@
-﻿using Journal_Limpet.Shared;
+﻿using Hangfire;
+using Journal_Limpet.Jobs;
+using Journal_Limpet.Shared;
 using Journal_Limpet.Shared.Database;
 using Journal_Limpet.Shared.Models;
 using Journal_Limpet.Shared.Models.Journal;
@@ -141,6 +143,8 @@ new SqlParameter("customerId", profile.CustomerId))
 
                     await SSEActivitySender.SendGlobalActivityAsync("A new user has registered!", $"We now have {userCount:N0} users registered!");
                     await SSEActivitySender.SendStatsActivityAsync(_db);
+
+                    BackgroundJob.Enqueue(() => JournalDownloader.DownloadJournalAsync(matchingUser.UserIdentifier, null));
                 }
 
                 var claims = new List<Claim>()
