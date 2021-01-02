@@ -25,7 +25,7 @@ namespace Journal_Limpet.Jobs
         @"WITH UnsentJournals AS (
 	SELECT uj.user_identifier, COUNT(uj.journal_id) journal_count
 	FROM user_journal uj
-	WHERE uj.last_processed_line_number > 0 AND uj.sent_to_eddn = 0
+	WHERE uj.last_processed_line_number > uj.sent_to_eddn_line AND uj.sent_to_eddn = 0
 	GROUP BY uj.user_identifier
 )
 select uj.*
@@ -36,7 +36,7 @@ WHERE up.deleted = 0"
 
                     if (userToUploadToEDDN.Count > 0)
                     {
-                        await SSEActivitySender.SendGlobalActivityAsync("Sending data to EDDN", $"Uploading {userToUploadToEDDN.Count} users data to EDDN");
+                        await SSEActivitySender.SendGlobalActivityAsync("Sending data to EDDN", $"Uploading journals from {userToUploadToEDDN.Count:N0} users to EDDN");
                     }
 
                     foreach (var user in userToUploadToEDDN.WithProgress(context))

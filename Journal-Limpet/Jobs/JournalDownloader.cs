@@ -65,10 +65,20 @@ namespace Journal_Limpet.Jobs
                                 // Invalid token (or Epic games)
                                 break;
                         }
+
+                        await SSEActivitySender.SendUserActivityAsync(user.UserIdentifier,
+                            "Could not authorize you",
+                            "Sorry, but there seems to be something wrong with your account. Please contact us so we can try and figure out what's wrong!"
+                        );
                         return;
                     }
 
                     DateTime journalDate = DateTime.Today.AddDays(-25);
+
+                    await SSEActivitySender.SendUserActivityAsync(user.UserIdentifier,
+                            "Downloading your journals",
+                            "We're beginning to download your journals now, a few notifications may pop up."
+                        );
 
                     while (journalDate.Date != DateTime.Today)
                     {
@@ -299,6 +309,12 @@ WHERE journal_id = @journal_id AND user_identifier = @user_identifier",
     new SqlParameter("complete_entry", DateTime.UtcNow.Date > journalDate.Date)
 );
             }
+
+            await SSEActivitySender.SendUserActivityAsync(user.UserIdentifier,
+                $"Downloaded journals for {journalDate:yyyy-MM-dd}",
+                $"We downloaded {journalLineCount:N0} lines of journal for this item",
+                "success"
+            );
 
             Thread.Sleep(5000);
             return (HttpStatusCode.OK, journalRequest);

@@ -3,14 +3,14 @@
     sse.addEventListener('globalactivity', function (data) {
         var _data = tryJsonParse(data.data);
         if (_data) {
-            createToast(_data.title, _data.message);
+            createToast(_data.title, _data.message, _data.class);
         }
     }, false);
 
     sse.addEventListener('useractivity', function (data) {
         var _data = tryJsonParse(data.data);
         if (_data) {
-            createToast(_data.title, _data.message);
+            createToast(_data.title, _data.message, _data.class);
         }
     }, false);
 
