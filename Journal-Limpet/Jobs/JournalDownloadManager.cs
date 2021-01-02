@@ -28,6 +28,11 @@ AND skip_download = 0
 AND deleted = 0"
                 );
 
+                if (usersToDownloadJournalsFor.Count > 0)
+                {
+                    await SSEActivitySender.SendGlobalActivityAsync("Fetching journals from Elite", $"Downloading journals for {usersToDownloadJournalsFor.Count} users");
+                }
+
                 foreach (var user in usersToDownloadJournalsFor)
                 {
                     if (RedisJobLock.IsLocked($"JournalDownloader.DownloadJournal.{user.UserIdentifier}")) continue;

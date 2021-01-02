@@ -34,6 +34,11 @@ INNER JOIN UnsentJournals uj ON up.user_identifier = uj.user_identifier
 WHERE up.deleted = 0"
                     );
 
+                    if (userToUploadToEDDN.Count > 0)
+                    {
+                        await SSEActivitySender.SendGlobalActivityAsync("Sending data to EDDN", $"Uploading {userToUploadToEDDN.Count} users data to EDDN");
+                    }
+
                     foreach (var user in userToUploadToEDDN.WithProgress(context))
                     {
                         if (RedisJobLock.IsLocked($"EDDNUserUploader.UploadAsync.{user.UserIdentifier}")) continue;
