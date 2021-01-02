@@ -26,6 +26,7 @@ namespace Journal_Limpet.Controllers
 
             response.Headers.Add("Content-type", "text/event-stream");
             response.Headers.Add("X-Accel-Buffering", "no");
+            response.Headers.Add("Cache-Control", "no-cache");
 
             await response.WriteAsync("data: Connected to Activity SSE endpoint\r\r");
             await response.Body.FlushAsync();
