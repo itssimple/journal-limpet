@@ -36,8 +36,15 @@ namespace Journal_Limpet
 
         public static async Task SendStatsActivityAsync(MSSQLDB _db)
         {
-            var stats = await SharedSettings.GetIndexStatsAsync(_db);
-            await GetRedisRetryPolicy().ExecuteAsync(() => SharedSettings.RedisPubsubSubscriber.PublishAsync($"stats-activity", JsonSerializer.Serialize(stats)));
+            try
+            {
+                var stats = await SharedSettings.GetIndexStatsAsync(_db);
+                await SharedSettings.RedisPubsubSubscriber.PublishAsync($"stats-activity", JsonSerializer.Serialize(stats));
+            }
+            catch
+            {
+                // It is better is we don't send stats, instead of possibly sending the wrong one
+            }
         }
 
         private static AsyncRetryPolicy<long> GetRedisRetryPolicy()
