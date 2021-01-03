@@ -19,7 +19,7 @@ namespace Journal_Limpet
                 @class
             };
 
-            await GetRedisRetryPolicy().ExecuteAsync(() => SharedSettings.RedisPubsubSubscriber.PublishAsync("global-activity", JsonSerializer.Serialize(msg)));
+            await GetRedisRetryPolicy().ExecuteAsync(() => SharedSettings.RedisPubsubSubscriber.PublishAsync("global-activity", JsonSerializer.Serialize(msg), CommandFlags.FireAndForget));
         }
 
         public static async Task SendUserActivityAsync(Guid userIdentifier, string title, string message, string @class = "warning")
@@ -31,7 +31,7 @@ namespace Journal_Limpet
                 @class
             };
 
-            await GetRedisRetryPolicy().ExecuteAsync(() => SharedSettings.RedisPubsubSubscriber.PublishAsync($"user-activity-{userIdentifier}", JsonSerializer.Serialize(msg)));
+            await GetRedisRetryPolicy().ExecuteAsync(() => SharedSettings.RedisPubsubSubscriber.PublishAsync($"user-activity-{userIdentifier}", JsonSerializer.Serialize(msg), CommandFlags.FireAndForget));
         }
 
         public static async Task SendStatsActivityAsync(MSSQLDB _db)
@@ -39,7 +39,7 @@ namespace Journal_Limpet
             try
             {
                 var stats = await SharedSettings.GetIndexStatsAsync(_db);
-                await SharedSettings.RedisPubsubSubscriber.PublishAsync($"stats-activity", JsonSerializer.Serialize(stats));
+                await SharedSettings.RedisPubsubSubscriber.PublishAsync($"stats-activity", JsonSerializer.Serialize(stats), CommandFlags.FireAndForget);
             }
             catch
             {
