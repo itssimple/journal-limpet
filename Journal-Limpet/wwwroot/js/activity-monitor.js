@@ -2,16 +2,14 @@
     var sse = new EventSource('/api/sse/activity', { withCredentials: true });
     sse.addEventListener('globalactivity', popMessage, false);
     sse.addEventListener('useractivity', popMessage, false);
-
     sse.addEventListener('statsactivity', updateStats, false);
 
     sse.onerror = function (e) {
-        if (sse.readyState === 2) {
-            sse.removeEventListener('globalactivity', popMessage, false);
-            sse.removeEventListener('useractivity', popMessage, false);
-            sse.removeEventListener('statsactivity', updateStats, false);
-            setTimeout(initializeActivityMonitor, 5000);
-        }
+        sse.removeEventListener('globalactivity', popMessage, false);
+        sse.removeEventListener('useractivity', popMessage, false);
+        sse.removeEventListener('statsactivity', updateStats, false);
+        sse.close();
+        setTimeout(initializeActivityMonitor, 5000);
     }
 
     function tryJsonParse(data) {
