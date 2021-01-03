@@ -10,18 +10,18 @@ namespace Journal_Limpet.Controllers
     [ApiController]
     public class SSEController : ControllerBase
     {
-        private readonly IDatabase _rdb;
         private readonly ISubscriber _pubsub;
 
         public SSEController()
         {
-            _rdb = SharedSettings.RedisClient.GetDatabase(2);
             _pubsub = SharedSettings.RedisClient.GetSubscriber();
         }
 
         [HttpGet("activity")]
         public async Task SSEActivityAsync(CancellationToken ct)
         {
+            NewRelic.Api.Agent.NewRelic.IgnoreTransaction();
+
             var response = Response;
 
             response.Headers.Add("Content-Type", "text/event-stream");
