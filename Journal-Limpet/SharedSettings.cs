@@ -47,7 +47,7 @@ namespace Journal_Limpet
 
         public static async Task<IndexStatsModel> GetIndexStatsAsync(MSSQLDB _db)
         {
-            return await _db.ExecuteSingleRowAsync<IndexStatsModel>(@"SELECT CAST(COUNT(DISTINCT up.user_identifier) AS bigint) user_count, 
+            return await _db.ExecuteSingleRowAsync<IndexStatsModel>(@"SELECT CAST(COUNT(DISTINCT up.user_identifier) AS bigint) user_count,
 CAST(COUNT(journal_id) AS bigint) journal_count,
 CAST(SUM(last_processed_line_number) AS bigint) total_number_of_lines
 FROM user_profile up
