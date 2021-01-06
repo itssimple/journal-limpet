@@ -61,7 +61,7 @@ namespace Journal_Limpet
                 options.Cookie.SameSite = Microsoft.AspNetCore.Http.SameSiteMode.Lax;
                 options.Cookie.Name = "journal-limpet-auth";
 
-                options.ExpireTimeSpan = TimeSpan.FromMinutes(20);
+                options.ExpireTimeSpan = TimeSpan.FromDays(20);
 
                 options.LoginPath = "/Login";
                 options.LogoutPath = "/Logout";
