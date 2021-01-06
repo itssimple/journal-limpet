@@ -1,5 +1,7 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Data;
+using System.Text.Json;
 
 namespace Journal_Limpet.Shared.Models.Journal
 {
@@ -16,6 +18,7 @@ namespace Journal_Limpet.Shared.Models.Journal
         public DateTimeOffset? LastUpdate { get; }
         public bool SentToEDDN { get; }
         public int SentToEDDNLine { get; }
+        public Dictionary<string, IntegrationJournalData> IntegrationData { get; }
 
         public UserJournal(DataRow row)
         {
@@ -31,6 +34,9 @@ namespace Journal_Limpet.Shared.Models.Journal
 
             SentToEDDN = row.Field<bool>("sent_to_eddn");
             SentToEDDNLine = row.Field<int>("sent_to_eddn_line");
+            IntegrationData = !row.IsNull("integration_data") ?
+                JsonSerializer.Deserialize<Dictionary<string, IntegrationJournalData>>(row["integration_data"].ToString()) :
+                new Dictionary<string, IntegrationJournalData>();
         }
     }
 }

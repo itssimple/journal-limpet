@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Data;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -18,6 +19,8 @@ namespace Journal_Limpet.Shared.Models.User
 
         public bool SendToEDDN { get; }
         public bool SkipDownload { get; }
+        [JsonIgnore]
+        public Dictionary<string, JsonElement> IntegrationSettings { get; }
 
         public Profile(DataRow row)
         {
@@ -30,6 +33,9 @@ namespace Journal_Limpet.Shared.Models.User
             LastNotificationMail = (!row.IsNull("last_notification_mail") ? new DateTimeOffset(row.Field<DateTime>("last_notification_mail"), TimeSpan.Zero) as DateTimeOffset? : null);
             SendToEDDN = row.Field<bool>("send_to_eddn");
             SkipDownload = row.Field<bool>("skip_download");
+            IntegrationSettings = !row.IsNull("integration_settings") ?
+                JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(row["integration_settings"].ToString()) :
+                new Dictionary<string, JsonElement>();
         }
     }
 }

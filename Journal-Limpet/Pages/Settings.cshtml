@@ -13,5 +13,30 @@
         <input type="email" asp-for="NotificationEmail" placeholder="Notification email" class="form-control" autocomplete="" />
         <small class="form-text text-info">The notification email is used to tell you if you need to log in to Journal Limpet (in case the API token is revoked or for some reason couldn't be refreshed)</small>
     </div>
+    <hr />
+    <fieldset>
+        <h2>Integration settings</h2>
+        <small class="form-text text-info">These settings will control all the available integrations that we have made for use with Journal Limpet!</small>
+        <hr />
+        <h3>Elite Dangerous Star Map - Journal import</h3>
+        <small class="form-text text-info">Enabling this integration, will send your journals automatically to <a href="https://www.edsm.net/" target="_blank">Elite Dangerous Star Map (EDSM)</a>.</small>
+        <small class="form-text text-info">You can find these details in the <a href="https://www.edsm.net/en/settings/api" target="_blank">API key-page on EDSM</a></small>
+        <br />
+        <div class="form-group">
+            <label asp-for="EDSM.CommanderName">EDSM Commander name</label>
+            <input type="text" placeholder="EDSM Commander name" asp-for="EDSM.CommanderName" class="form-control" autocomplete="off" />
+        </div>
+        <div class="form-group">
+            <label asp-for="EDSM.ApiKey">EDSM Api key</label>
+            <input type="text" placeholder="EDSM Api key" asp-for="EDSM.ApiKey" class="form-control" autocomplete="off" />
+        </div>
+        <div class="form-group">
+            <label asp-for="EDSM.Enabled" title="Currently you cannot enable/disable the integration">
+                <input type="checkbox" disabled="disabled" asp-for="EDSM.Enabled" />
+                Enabled
+            </label>
+        </div>
+    </fieldset>
+    <hr />
     <input type="submit" value="Save changes" class="btn btn-secondary" />
 </form>

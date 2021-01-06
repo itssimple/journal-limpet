@@ -1,9 +1,11 @@
+using Journal_Limpet.Shared;
 using Journal_Limpet.Shared.Database;
 using Journal_Limpet.Shared.Models.User;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.Data.SqlClient;
+using System.Text.Json;
 using System.Threading.Tasks;
 
 namespace Journal_Limpet.Pages
@@ -15,6 +17,8 @@ namespace Journal_Limpet.Pages
 
         [BindProperty]
         public string NotificationEmail { get; set; }
+        [BindProperty]
+        public EDSMIntegrationSettings EDSM { get; set; }
 
         public SettingsModel(MSSQLDB db)
         {
@@ -25,14 +29,28 @@ namespace Journal_Limpet.Pages
         {
             var profile = await _db.ExecuteSingleRowAsync<Profile>("SELECT * FROM user_profile WHERE user_identifier = @user_identifier", new SqlParameter("user_identifier", User.Identity.Name));
             NotificationEmail = profile.NotificationEmail;
+
+            if (profile.IntegrationSettings.ContainsKey("EDSM"))
+            {
+                var edsmSettings = profile.IntegrationSettings["EDSM"].GetTypedObject<EDSMIntegrationSettings>();
+                EDSM = edsmSettings;
+            }
         }
 
         public async Task OnPostAsync()
         {
+            var profile = await _db.ExecuteSingleRowAsync<Profile>("SELECT * FROM user_profile WHERE user_identifier = @user_identifier", new SqlParameter("user_identifier", User.Identity.Name));
+
+            var integrationSettings = profile.IntegrationSettings;
+            integrationSettings["EDSM"] = EDSM.AsJsonElement();
+
+            var integrationJson = JsonSerializer.Serialize(integrationSettings);
+
             await _db.ExecuteNonQueryAsync(
-                "UPDATE user_profile SET notification_email = @notification_email WHERE user_identifier = @user_identifier",
+                "UPDATE user_profile SET notification_email = @notification_email, integration_settings = @integration_settings WHERE user_identifier = @user_identifier",
                 new SqlParameter("user_identifier", User.Identity.Name),
-                new SqlParameter("notification_email", NotificationEmail)
+                new SqlParameter("notification_email", NotificationEmail),
+                new SqlParameter("integration_settings", integrationJson)
             );
         }
     }
