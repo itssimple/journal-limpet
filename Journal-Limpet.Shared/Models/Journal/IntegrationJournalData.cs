@@ -7,7 +7,7 @@ namespace Journal_Limpet.Shared.Models.Journal
         [JsonPropertyName("fullySent")]
         public bool FullySent { get; set; }
         [JsonPropertyName("lastSentLineNumber")]
-        public long LastSentLineNumber { get; set; }
+        public int LastSentLineNumber { get; set; }
         [JsonPropertyName("currentGameState")]
         public EDGameState CurrentGameState { get; set; }
     }

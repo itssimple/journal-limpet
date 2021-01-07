@@ -184,7 +184,7 @@ namespace Journal_Limpet.Jobs
                     switch (res.code)
                     {
                         case HttpStatusCode.PartialContent:
-                            Thread.Sleep(1000);
+                            Thread.Sleep(5000);
                             res = await GetJournalAsync(journalDate, user, db, hc, minioClient);
                             break;
                     }
@@ -240,7 +240,7 @@ namespace Journal_Limpet.Jobs
             var pollicy = Policy<HttpResponseMessage>
                 .Handle<HttpRequestException>()
                 .OrResult(r => r.StatusCode == HttpStatusCode.PartialContent)
-                .WaitAndRetryAsync(100, attempt => TimeSpan.FromSeconds(1));
+                .WaitAndRetryAsync(100, attempt => TimeSpan.FromSeconds(5));
 
             var journalRequest = await pollicy.ExecuteAsync(() => hc.GetAsync($"/journal/{journalDate.Year}/{journalDate.Month}/{journalDate.Day}"));
 

@@ -1,21 +1,26 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Text.Json;
 using System.Text.Json.Serialization;
 
 namespace Journal_Limpet.Shared.Models.Journal
 {
     public class EDGameState
     {
+        [JsonPropertyName("timestamp")]
+        public DateTimeOffset Timestamp { get; set; }
         [JsonPropertyName("systemAddress")]
-        public long SystemAddress { get; set; }
+        public long? SystemAddress { get; set; }
         [JsonPropertyName("systemName")]
         public string SystemName { get; set; }
         [JsonPropertyName("systemCoordinates")]
-        public List<float> SystemCoordinates { get; set; }
+        public JsonElement? SystemCoordinates { get; set; }
         [JsonPropertyName("marketId")]
-        public long MarketId { get; set; }
+        public long? MarketId { get; set; }
         [JsonPropertyName("stationName")]
         public string StationName { get; set; }
         [JsonPropertyName("shipId")]
-        public long ShipId { get; set; }
+        public long? ShipId { get; set; }
+        [JsonPropertyName("sendEvents")]
+        public bool SendEvents { get; set; } = true;
     }
 }

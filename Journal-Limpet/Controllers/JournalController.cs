@@ -47,7 +47,7 @@ namespace Journal_Limpet.Controllers
         [HttpGet("info")]
         public async Task<JsonResult> GetInfo([FromQuery] string uuid)
         {
-            var user = (await _db.ExecuteListAsync<Shared.Models.User.Profile>(
+            var user = (await _db.ExecuteListAsync<Profile>(
                 "SELECT * FROM user_profile WHERE user_identifier = @id",
                 new SqlParameter("@id", Guid.Parse(uuid))))
                 .FirstOrDefault();
@@ -115,7 +115,7 @@ namespace Journal_Limpet.Controllers
                 };
 
                 // Move this so a service later
-                var matchingUser = (await _db.ExecuteListAsync<Shared.Models.User.Profile>(@"
+                var matchingUser = (await _db.ExecuteListAsync<Profile>(@"
 SELECT *
 FROM user_profile
 WHERE JSON_VALUE(user_settings, '$.FrontierProfile.customer_id') = @customerId",
@@ -135,7 +135,7 @@ new SqlParameter("customerId", profile.CustomerId))
                 else
                 {
                     // Create new user
-                    matchingUser = await _db.ExecuteSingleRowAsync<Shared.Models.User.Profile>("INSERT INTO user_profile (user_settings) OUTPUT INSERTED.* VALUES (@settings)",
+                    matchingUser = await _db.ExecuteSingleRowAsync<Profile>("INSERT INTO user_profile (user_settings) OUTPUT INSERTED.* VALUES (@settings)",
                         new SqlParameter("settings", JsonSerializer.Serialize(settings))
                     );
 

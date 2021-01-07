@@ -2,9 +2,9 @@
 using Hangfire.Console;
 using Hangfire.Server;
 using Journal_Limpet.Shared.Database;
+using Journal_Limpet.Shared.Models;
 using Microsoft.Extensions.DependencyInjection;
 using System;
-using System.Data;
 using System.Threading.Tasks;
 
 namespace Journal_Limpet.Jobs
@@ -45,18 +45,6 @@ WHERE up.deleted = 0"
                         BackgroundJob.Schedule(() => EDDNUserUploader.UploadAsync(user.UserIdentifier, null), TimeSpan.Zero);
                     }
                 }
-            }
-        }
-
-        public class UnsentJournalInfo
-        {
-            public Guid UserIdentifier { get; set; }
-            public int JournalCount { get; set; }
-
-            public UnsentJournalInfo(DataRow row)
-            {
-                UserIdentifier = row.Field<Guid>("user_identifier");
-                JournalCount = row.Field<int>("journal_count");
             }
         }
     }

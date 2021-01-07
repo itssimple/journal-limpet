@@ -157,7 +157,7 @@ namespace Journal_Limpet
             RecurringJob.AddOrUpdate(
                 "journal-limpet:download-journals",
                 () => JournalDownloadManager.InitializeJournalDownloadersAsync(null),
-                "*/30 * * * *",
+                "*/10 * * * *",
                 TimeZoneInfo.Utc
             );
 
@@ -171,6 +171,13 @@ namespace Journal_Limpet
             RecurringJob.AddOrUpdate(
                 "journal-limpet:upload-to-eddn",
                 () => EDDNUploader.UploadAsync(null),
+                "*/10 * * * *",
+                TimeZoneInfo.Utc
+            );
+
+            RecurringJob.AddOrUpdate(
+                "journal-limpet:upload-to-edsm",
+                () => EDSMUploader.UploadAsync(null),
                 "*/10 * * * *",
                 TimeZoneInfo.Utc
             );
