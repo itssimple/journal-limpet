@@ -7,3 +7,9 @@ with the ability to sync to different services and push to EDDN.
 - We pull your journals in the background
 - You have the ability to download all stored journals
 - We publish the journals to EDDN automatically
+
+---
+
+[Journal Limpet - Twitter](https://twitter.com/JournalLimpet)
+
+Project made by [NoLifeKing85](https://nolifeking85.tv) / [itssimple](https://github.com/itssimple)
