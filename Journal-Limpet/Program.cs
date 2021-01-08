@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
+using System.Threading;
 
 namespace Journal_Limpet
 {
@@ -8,6 +9,7 @@ namespace Journal_Limpet
     {
         public static void Main(string[] args)
         {
+            ThreadPool.SetMinThreads(200, 200);
             CreateHostBuilder(args).Build().Run();
         }
 
