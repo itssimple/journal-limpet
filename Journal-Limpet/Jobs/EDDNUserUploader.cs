@@ -201,7 +201,7 @@ namespace Journal_Limpet.Jobs
             if (!System.Enum.TryParse(typeof(AllowedEvents), journalEvent.GetString(), false, out _)) return TimeSpan.Zero;
 
             element = FixEDDNJson(element);
-            element = AddMissingProperties(element);
+            element = await AddMissingProperties(element);
 
             if (HasMissingProperties(element)) return TimeSpan.Zero;
 
@@ -251,7 +251,7 @@ namespace Journal_Limpet.Jobs
             return requiredProperties.Count() < 5;
         }
 
-        internal static JsonElement AddMissingProperties(JsonElement element)
+        internal async static Task<JsonElement> AddMissingProperties(JsonElement element)
         {
             var _rdb = SharedSettings.RedisClient.GetDatabase(1);
 
@@ -265,7 +265,7 @@ namespace Journal_Limpet.Jobs
 
             if (!missingProps.Any())
             {
-                _rdb.StringSet(
+                await _rdb.StringSetAsyncWithRetries(
                     $"SystemAddress:{elementAsDictionary["SystemAddress"].GetInt64()}",
                     JsonSerializer.Serialize(new
                     {
@@ -277,7 +277,7 @@ namespace Journal_Limpet.Jobs
                     flags: CommandFlags.FireAndForget
                 );
 
-                _rdb.StringSet(
+                await _rdb.StringSetAsyncWithRetries(
                     $"StarSystem:{elementAsDictionary["StarSystem"].GetString()}",
                     JsonSerializer.Serialize(new
                     {
@@ -301,7 +301,7 @@ namespace Journal_Limpet.Jobs
 
             if (!missingProps.Contains("SystemAddress"))
             {
-                var cachedSystem = _rdb.StringGet($"SystemAddress:{elementAsDictionary["SystemAddress"].GetInt64()}");
+                var cachedSystem = await _rdb.StringGetAsyncWithRetries($"SystemAddress:{elementAsDictionary["SystemAddress"].GetInt64()}");
                 if (cachedSystem != RedisValue.Null)
                 {
                     var jel = JsonDocument.Parse(cachedSystem.ToString()).RootElement;
@@ -312,7 +312,7 @@ namespace Journal_Limpet.Jobs
             }
             else if (!missingProps.Contains("StarSystem"))
             {
-                var cachedSystem = _rdb.StringGet($"StarSystem:{elementAsDictionary["StarSystem"].GetString()}");
+                var cachedSystem = await _rdb.StringGetAsyncWithRetries($"StarSystem:{elementAsDictionary["StarSystem"].GetString()}");
                 if (cachedSystem != RedisValue.Null)
                 {
                     var jel = JsonDocument.Parse(cachedSystem.ToString()).RootElement;

@@ -410,7 +410,7 @@ namespace Journal_Limpet.Jobs
             Stopwatch sw = new Stopwatch();
             sw.Start();
 
-            element = SetGamestateProperties(element, gameState, edsmSettings.CommanderName);
+            element = await SetGamestateProperties(element, gameState, edsmSettings.CommanderName);
 
             if (!gameState.SendEvents)
                 return (104, string.Empty, TimeSpan.Zero);
@@ -469,7 +469,7 @@ namespace Journal_Limpet.Jobs
             @event
         }
 
-        public static JsonElement SetGamestateProperties(JsonElement element, EDGameState gameState, string commander)
+        public static async Task<JsonElement> SetGamestateProperties(JsonElement element, EDGameState gameState, string commander)
         {
             var _rdb = SharedSettings.RedisClient.GetDatabase(1);
             var elementAsDictionary = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(element.GetRawText());
@@ -483,7 +483,7 @@ namespace Journal_Limpet.Jobs
 
             if (!missingProps.Any())
             {
-                _rdb.StringSet(
+                await _rdb.StringSetAsyncWithRetries(
                     $"SystemAddress:{elementAsDictionary["SystemAddress"].GetInt64()}",
                     JsonSerializer.Serialize(new
                     {
@@ -495,7 +495,7 @@ namespace Journal_Limpet.Jobs
                     flags: CommandFlags.FireAndForget
                 );
 
-                _rdb.StringSet(
+                await _rdb.StringSetAsyncWithRetries(
                     $"StarSystem:{elementAsDictionary["StarSystem"].GetString()}",
                     JsonSerializer.Serialize(new
                     {
@@ -514,7 +514,7 @@ namespace Journal_Limpet.Jobs
 
             if (!missingProps.Contains("SystemAddress"))
             {
-                var cachedSystem = _rdb.StringGet($"SystemAddress:{elementAsDictionary["SystemAddress"].GetInt64()}");
+                var cachedSystem = await _rdb.StringGetAsyncWithRetries($"SystemAddress:{elementAsDictionary["SystemAddress"].GetInt64()}");
                 if (cachedSystem != RedisValue.Null)
                 {
                     var jel = JsonDocument.Parse(cachedSystem.ToString()).RootElement;
@@ -527,7 +527,7 @@ namespace Journal_Limpet.Jobs
             }
             else if (!missingProps.Contains("StarSystem"))
             {
-                var cachedSystem = _rdb.StringGet($"StarSystem:{elementAsDictionary["StarSystem"].GetString()}");
+                var cachedSystem = await _rdb.StringGetAsyncWithRetries($"StarSystem:{elementAsDictionary["StarSystem"].GetString()}");
                 if (cachedSystem != RedisValue.Null)
                 {
                     var jel = JsonDocument.Parse(cachedSystem.ToString()).RootElement;
@@ -661,7 +661,7 @@ namespace Journal_Limpet.Jobs
 
             if (!setCache && gameState.SystemAddress.HasValue && gameState.SystemCoordinates.HasValue && !string.IsNullOrWhiteSpace(gameState.SystemName))
             {
-                _rdb.StringSet(
+                await _rdb.StringSetAsyncWithRetries(
                     $"SystemAddress:{gameState.SystemAddress}",
                     JsonSerializer.Serialize(new
                     {
@@ -673,7 +673,7 @@ namespace Journal_Limpet.Jobs
                     flags: CommandFlags.FireAndForget
                 );
 
-                _rdb.StringSet(
+                await _rdb.StringSetAsyncWithRetries(
                     $"StarSystem:{gameState.SystemName}",
                     JsonSerializer.Serialize(new
                     {
