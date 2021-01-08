@@ -273,7 +273,8 @@ namespace Journal_Limpet.Jobs
                         StarSystem = elementAsDictionary["StarSystem"].GetString(),
                         StarPos = elementAsDictionary["StarPos"]
                     }),
-                    TimeSpan.FromHours(10)
+                    TimeSpan.FromHours(10),
+                    flags: CommandFlags.FireAndForget
                 );
 
                 _rdb.StringSet(
@@ -284,7 +285,8 @@ namespace Journal_Limpet.Jobs
                         StarSystem = elementAsDictionary["StarSystem"].GetString(),
                         StarPos = elementAsDictionary["StarPos"]
                     }),
-                    TimeSpan.FromHours(10)
+                    TimeSpan.FromHours(10),
+                    flags: CommandFlags.FireAndForget
                 );
                 return element;
             }
