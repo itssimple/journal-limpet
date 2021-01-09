@@ -32,6 +32,6 @@ jobs:
     - name: Build and package site for publish
       run: |
         cd Journal-Limpet && \
-        dotnet publish Journal-Limpet.csproj --output published-app --verbosity q --configuration Release && \
+        dotnet publish Journal-Limpet.csproj --output published-app --verbosity q --configuration Release -p:FileVersion="$PACKAGE_VERSION" -p:AssemblyVersion="$PACKAGE_VERSION" && \
         octo pack --id="journal-limpet" --version="$PACKAGE_VERSION" --basePath="./published-app" --outFolder="./published-app" && \
         octo push --package="./published-app/journal-limpet.$PACKAGE_VERSION.nupkg" --server="${{ secrets.OCTOPUS_SERVER_URL }}" --apiKey="${{ secrets.OCTOPUS_API_KEY }}"
