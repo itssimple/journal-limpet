@@ -44,9 +44,9 @@ namespace Journal_Limpet.Jobs
 
                     var user = await db.ExecuteSingleRowAsync<Profile>(
 @"SELECT *
-FROM user_profile
-WHERE user_identifier = @user_identifier
-AND deleted = 0
+FROM user_profile up
+WHERE up.user_identifier = @user_identifier
+AND up.deleted = 0
 AND ISNULL(JSON_VALUE(up.integration_settings, '$.EDSM.enabled'), 'false') = 'true'
 AND JSON_VALUE(up.integration_settings, '$.EDSM.apiKey') IS NOT NULL
 AND JSON_VALUE(up.integration_settings, '$.EDSM.cmdrName') IS NOT NULL",
