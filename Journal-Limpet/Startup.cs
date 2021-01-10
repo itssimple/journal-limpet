@@ -6,6 +6,7 @@ using Journal_Limpet.Jobs;
 using Journal_Limpet.Shared;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.Extensions.Configuration;
@@ -35,6 +36,13 @@ namespace Journal_Limpet
                 settings.UseExceptionalPageOnThrow = true;
 #endif
             });
+
+            services.AddDataProtection()
+                .SetApplicationName("JournalLimpet")
+                .PersistKeysToStackExchangeRedis(
+                    () => SharedSettings.RedisClient.GetDatabase(2),
+                    "DataProtection-Keys"
+                );
 
             services.AddDistributedMemoryCache();
             services.AddResponseCaching();
