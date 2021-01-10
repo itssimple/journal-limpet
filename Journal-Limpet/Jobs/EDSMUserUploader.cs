@@ -42,7 +42,16 @@ namespace Journal_Limpet.Jobs
 
                     var hc = _hcf.CreateClient();
 
-                    var user = await db.ExecuteSingleRowAsync<Profile>("SELECT * FROM user_profile WHERE user_identifier = @user_identifier AND deleted = 0", new SqlParameter("user_identifier", userIdentifier));
+                    var user = await db.ExecuteSingleRowAsync<Profile>(
+@"SELECT *
+FROM user_profile
+WHERE user_identifier = @user_identifier
+AND deleted = 0
+AND ISNULL(JSON_VALUE(up.integration_settings, '$.EDSM.enabled'), 'false') = 'true'
+AND JSON_VALUE(up.integration_settings, '$.EDSM.apiKey') IS NOT NULL
+AND JSON_VALUE(up.integration_settings, '$.EDSM.cmdrName') IS NOT NULL",
+new SqlParameter("user_identifier", userIdentifier)
+                    );
                     var edsmSettings = user.IntegrationSettings["EDSM"].GetTypedObject<EDSMIntegrationSettings>();
 
                     if (!edsmSettings.Enabled || string.IsNullOrWhiteSpace(edsmSettings.CommanderName) || string.IsNullOrWhiteSpace(edsmSettings.ApiKey))
