@@ -4,6 +4,7 @@ using Hangfire.Server;
 using Journal_Limpet.Shared;
 using Journal_Limpet.Shared.Database;
 using Journal_Limpet.Shared.Models.Journal;
+using Journal_Limpet.Shared.Models.User;
 using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -40,10 +41,10 @@ namespace Journal_Limpet.Jobs
 
                     var discordClient = scope.ServiceProvider.GetRequiredService<DiscordWebhook>();
 
-                    var user = (await db.ExecuteListAsync<Shared.Models.User.Profile>(
+                    var user = await db.ExecuteSingleRowAsync<Profile>(
     @"SELECT * FROM user_profile WHERE user_identifier = @user_identifier AND last_notification_mail IS NULL AND deleted = 0 AND skip_download = 0",
-    new SqlParameter("user_identifier", userIdentifier)
-                )).FirstOrDefault();
+                        new SqlParameter("user_identifier", userIdentifier)
+                    );
 
                     if (user == null) return;
 
@@ -110,11 +111,31 @@ namespace Journal_Limpet.Jobs
                         return;
                     }
 
-                    if (!RedisJobLock.IsLocked($"EDDNUserUploader.UploadAsync.{user.UserIdentifier}"))
-                        BackgroundJob.Enqueue(() => EDDNUserUploader.UploadAsync(user.UserIdentifier, null));
+                    if (user.SendToEDDN && !RedisJobLock.IsLocked($"EDDNUserUploader.UploadAsync.{user.UserIdentifier}"))
+                    {
+                        var userJournals = await db.ExecuteScalarAsync<int>(
+                        "SELECT COUNT(journal_id) FROM user_journal WHERE user_identifier = @user_identifier AND sent_to_eddn = 0 AND last_processed_line_number > sent_to_eddn_line ORDER BY journal_date ASC",
+                            new SqlParameter("user_identifier", userIdentifier)
+                        );
+                        if (userJournals > 0)
+                        {
+                            BackgroundJob.Enqueue(() => EDDNUserUploader.UploadAsync(user.UserIdentifier, null));
+                        }
+                    }
 
-                    if (!RedisJobLock.IsLocked($"EDSMUserUploader.UploadAsync.{user.UserIdentifier}"))
-                        BackgroundJob.Enqueue(() => EDSMUserUploader.UploadAsync(user.UserIdentifier, null));
+                    if (user.IntegrationSettings.ContainsKey("EDSM") && user.IntegrationSettings["EDSM"].GetTypedObject<EDSMIntegrationSettings>().Enabled)
+                    {
+                        var userJournals = await db.ExecuteScalarAsync<int>(
+                            "SELECT COUNT(journal_id) FROM user_journal WHERE user_identifier = @user_identifier AND last_processed_line_number > ISNULL(JSON_VALUE(integration_data, '$.EDSM.lastSentLineNumber'), 0) ORDER BY journal_date ASC",
+                            new SqlParameter("user_identifier", userIdentifier)
+                        );
+
+                        if (userJournals > 0)
+                        {
+                            if (!RedisJobLock.IsLocked($"EDSMUserUploader.UploadAsync.{user.UserIdentifier}"))
+                                BackgroundJob.Enqueue(() => EDSMUserUploader.UploadAsync(user.UserIdentifier, null));
+                        }
+                    }
 
                     context.WriteLine("All done!");
                 }
