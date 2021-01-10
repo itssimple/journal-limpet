@@ -1,4 +1,5 @@
-﻿using Hangfire.Console;
+﻿using Hangfire;
+using Hangfire.Console;
 using Hangfire.Server;
 using Journal_Limpet.Shared;
 using Journal_Limpet.Shared.Database;
@@ -108,6 +109,12 @@ namespace Journal_Limpet.Jobs
                         context.WriteLine($"Bailing because of errors");
                         return;
                     }
+
+                    if (!RedisJobLock.IsLocked($"EDDNUserUploader.UploadAsync.{user.UserIdentifier}"))
+                        BackgroundJob.Enqueue(() => EDDNUserUploader.UploadAsync(user.UserIdentifier, null));
+
+                    if (!RedisJobLock.IsLocked($"EDSMUserUploader.UploadAsync.{user.UserIdentifier}"))
+                        BackgroundJob.Enqueue(() => EDSMUserUploader.UploadAsync(user.UserIdentifier, null));
 
                     context.WriteLine("All done!");
                 }

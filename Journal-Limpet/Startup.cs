@@ -168,19 +168,19 @@ namespace Journal_Limpet
                 TimeZoneInfo.Utc
             );
 
-            RecurringJob.AddOrUpdate(
-                "journal-limpet:upload-to-eddn",
-                () => EDDNUploader.UploadAsync(null),
-                "*/10 * * * *",
-                TimeZoneInfo.Utc
-            );
+            //RecurringJob.AddOrUpdate(
+            //    "journal-limpet:upload-to-eddn",
+            //    () => EDDNUploader.UploadAsync(null),
+            //    "*/10 * * * *",
+            //    TimeZoneInfo.Utc
+            //);
 
-            RecurringJob.AddOrUpdate(
-                "journal-limpet:upload-to-edsm",
-                () => EDSMUploader.UploadAsync(null),
-                "*/10 * * * *",
-                TimeZoneInfo.Utc
-            );
+            //RecurringJob.AddOrUpdate(
+            //    "journal-limpet:upload-to-edsm",
+            //    () => EDSMUploader.UploadAsync(null),
+            //    "*/10 * * * *",
+            //    TimeZoneInfo.Utc
+            //);
 #endif
         }
     }

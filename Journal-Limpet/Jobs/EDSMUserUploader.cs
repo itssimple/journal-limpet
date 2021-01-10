@@ -43,13 +43,17 @@ namespace Journal_Limpet.Jobs
                     var hc = _hcf.CreateClient();
 
                     var user = await db.ExecuteSingleRowAsync<Profile>("SELECT * FROM user_profile WHERE user_identifier = @user_identifier AND deleted = 0", new SqlParameter("user_identifier", userIdentifier));
+                    var edsmSettings = user.IntegrationSettings["EDSM"].GetTypedObject<EDSMIntegrationSettings>();
+
+                    if (!edsmSettings.Enabled || string.IsNullOrWhiteSpace(edsmSettings.CommanderName) || string.IsNullOrWhiteSpace(edsmSettings.ApiKey))
+                    {
+                        return;
+                    }
 
                     var userJournals = await db.ExecuteListAsync<UserJournal>(
                         "SELECT * FROM user_journal WHERE user_identifier = @user_identifier AND last_processed_line_number > ISNULL(JSON_VALUE(integration_data, '$.EDSM.lastSentLineNumber'), 0) ORDER BY journal_date ASC",
                         new SqlParameter("user_identifier", userIdentifier)
                     );
-
-                    var edsmSettings = user.IntegrationSettings["EDSM"].GetTypedObject<EDSMIntegrationSettings>();
 
                     EDGameState previousGameState = null;
 
