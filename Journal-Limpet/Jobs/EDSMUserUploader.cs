@@ -52,6 +52,10 @@ AND JSON_VALUE(up.integration_settings, '$.EDSM.apiKey') IS NOT NULL
 AND JSON_VALUE(up.integration_settings, '$.EDSM.cmdrName') IS NOT NULL",
 new SqlParameter("user_identifier", userIdentifier)
                     );
+
+                    if (user == null)
+                        return;
+
                     var edsmSettings = user.IntegrationSettings["EDSM"].GetTypedObject<EDSMIntegrationSettings>();
 
                     if (!edsmSettings.Enabled || string.IsNullOrWhiteSpace(edsmSettings.CommanderName) || string.IsNullOrWhiteSpace(edsmSettings.ApiKey))
