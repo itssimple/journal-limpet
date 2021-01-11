@@ -14,10 +14,13 @@ namespace Journal_Limpet.Shared.Models.User
         public DateTimeOffset? DeletionDate { get; }
         [JsonIgnore]
         public Settings UserSettings { get; set; }
+        [JsonIgnore]
         public string NotificationEmail { get; }
+        [JsonIgnore]
         public DateTimeOffset? LastNotificationMail { get; }
-
+        [JsonIgnore]
         public bool SendToEDDN { get; }
+        [JsonIgnore]
         public bool SkipDownload { get; }
         [JsonIgnore]
         public Dictionary<string, JsonElement> IntegrationSettings { get; }
