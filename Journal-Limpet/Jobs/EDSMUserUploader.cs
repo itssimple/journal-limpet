@@ -89,6 +89,7 @@ new SqlParameter("user_identifier", userIdentifier)
                     UserJournal lastJournal = null;
 
                     bool disableIntegration = false;
+                    bool stopProcessingJournals = false;
 
                     foreach (var journalItem in userJournals)
                     {
@@ -146,6 +147,23 @@ new SqlParameter("user_identifier", userIdentifier)
 
                                             switch (res.errorCode)
                                             {
+                                                // This is an error from the server, stop working on journals now
+                                                case -1:
+                                                    breakJournal = true;
+                                                    await discordClient.SendMessageAsync("**[EDSM Upload]** Error code from API", new List<DiscordWebhookEmbed>
+                                                    {
+                                                        new DiscordWebhookEmbed
+                                                        {
+                                                            Description = res.resultContent,
+                                                            Fields = new Dictionary<string, string>() {
+                                                                { "User identifier", userIdentifier.ToString() },
+                                                                { "Last line", lastLine },
+                                                                { "Journal", journalItem.S3Path }
+                                                            }.Select(k => new DiscordWebhookEmbedField { Name = k.Key, Value = k.Value }).ToList()
+                                                        }
+                                                    });
+                                                    break;
+
                                                 // These codes are OK
                                                 case 100: // OK
                                                 case 101: // Message already stored
@@ -457,7 +475,7 @@ new SqlParameter("user_identifier", userIdentifier)
             var postResponse = await status.Content.ReadAsStringAsync();
             if (!status.IsSuccessStatusCode)
             {
-                return (-1, string.Empty, TimeSpan.FromSeconds(30));
+                return (-1, postResponse, TimeSpan.FromSeconds(30));
             }
 
             var resp = JsonSerializer.Deserialize<EDSMApiResponse>(postResponse);

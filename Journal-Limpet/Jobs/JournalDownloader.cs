@@ -126,7 +126,7 @@ namespace Journal_Limpet.Jobs
                     if (user.IntegrationSettings.ContainsKey("EDSM") && user.IntegrationSettings["EDSM"].GetTypedObject<EDSMIntegrationSettings>().Enabled)
                     {
                         var userJournals = await db.ExecuteScalarAsync<int>(
-                            "SELECT COUNT(journal_id) FROM user_journal WHERE user_identifier = @user_identifier AND last_processed_line_number > ISNULL(JSON_VALUE(integration_data, '$.EDSM.lastSentLineNumber'), 0)",
+                            "SELECT COUNT(journal_id) FROM user_journal WHERE user_identifier = @user_identifier AND last_processed_line_number > ISNULL(JSON_VALUE(integration_data, '$.EDSM.lastSentLineNumber'), 0) AND ISNULL(JSON_VALUE(integration_data, '$.EDSM.fullySent'), 'false') = 'false'",
                             new SqlParameter("user_identifier", userIdentifier)
                         );
 
