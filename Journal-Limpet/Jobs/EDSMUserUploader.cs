@@ -64,7 +64,7 @@ new SqlParameter("user_identifier", userIdentifier)
                     }
 
                     var userJournals = await db.ExecuteListAsync<UserJournal>(
-                        "SELECT * FROM user_journal WHERE user_identifier = @user_identifier AND last_processed_line_number > ISNULL(JSON_VALUE(integration_data, '$.EDSM.lastSentLineNumber'), 0) ORDER BY journal_date ASC",
+                        "SELECT * FROM user_journal WHERE user_identifier = @user_identifier AND last_processed_line_number > 0 AND ISNULL(JSON_VALUE(integration_data, '$.EDSM.fullySent'), 'false') = 'false' ORDER BY journal_date ASC",
                         new SqlParameter("user_identifier", userIdentifier)
                     );
 

@@ -51,7 +51,7 @@ namespace Journal_Limpet.Jobs
                         return;
 
                     var userJournals = await db.ExecuteListAsync<UserJournal>(
-                        "SELECT * FROM user_journal WHERE user_identifier = @user_identifier AND sent_to_eddn = 0 AND last_processed_line_number > sent_to_eddn_line ORDER BY journal_date ASC",
+                        "SELECT * FROM user_journal WHERE user_identifier = @user_identifier AND sent_to_eddn = 0 AND last_processed_line_number > 0 ORDER BY journal_date ASC",
                             new SqlParameter("user_identifier", userIdentifier)
                         );
 
