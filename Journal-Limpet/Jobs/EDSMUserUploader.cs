@@ -1,4 +1,5 @@
-﻿using Hangfire.Server;
+﻿using Hangfire.Console;
+using Hangfire.Server;
 using Journal_Limpet.Shared;
 using Journal_Limpet.Shared.Database;
 using Journal_Limpet.Shared.Models;
@@ -68,6 +69,8 @@ new SqlParameter("user_identifier", userIdentifier)
                         new SqlParameter("user_identifier", userIdentifier)
                     );
 
+                    context.WriteLine($"Found {userJournals.Count} to send to EDSM!");
+
                     EDGameState previousGameState = null;
 
                     var firstAvailableGameState = userJournals.FirstOrDefault();
@@ -82,6 +85,8 @@ new SqlParameter("user_identifier", userIdentifier)
                         if (previousJournal != null && previousJournal.IntegrationData.ContainsKey("EDSM"))
                         {
                             previousGameState = previousJournal.IntegrationData["EDSM"].CurrentGameState;
+
+                            context.WriteLine($"Found previous gamestate: {JsonSerializer.Serialize(previousGameState, new JsonSerializerOptions { WriteIndented = true })}");
                         }
                     }
                     string lastLine = string.Empty;
@@ -91,7 +96,7 @@ new SqlParameter("user_identifier", userIdentifier)
                     bool disableIntegration = false;
                     bool stopProcessingJournals = false;
 
-                    foreach (var journalItem in userJournals)
+                    foreach (var journalItem in userJournals.WithProgress(context))
                     {
                         IntegrationJournalData ijd;
                         if (journalItem.IntegrationData.ContainsKey("EDSM"))
@@ -136,7 +141,7 @@ new SqlParameter("user_identifier", userIdentifier)
 
                                 bool breakJournal = false;
 
-                                foreach (var row in restOfTheLines)
+                                foreach (var row in restOfTheLines.WithProgress(context, journalItem.JournalDate.ToString("yyyy-MM-dd")))
                                 {
                                     lastLine = row;
                                     try
