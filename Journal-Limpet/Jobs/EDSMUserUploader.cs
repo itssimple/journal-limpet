@@ -65,7 +65,7 @@ new SqlParameter("user_identifier", userIdentifier)
                     }
 
                     var userJournals = await db.ExecuteListAsync<UserJournal>(
-                        "SELECT * FROM user_journal WHERE user_identifier = @user_identifier AND last_processed_line_number > 0 AND ISNULL(JSON_VALUE(integration_data, '$.EDSM.fullySent'), 'false') = 'false' ORDER BY journal_date ASC",
+                        "SELECT * FROM user_journal WHERE user_identifier = @user_identifier AND ISNULL(JSON_VALUE(integration_data, '$.EDSM.lastSEntLineNumber'), '0') < last_processed_line_number AND ISNULL(JSON_VALUE(integration_data, '$.EDSM.fullySent'), 'false') = 'false' ORDER BY journal_date ASC",
                         new SqlParameter("user_identifier", userIdentifier)
                     );
 
@@ -77,7 +77,7 @@ new SqlParameter("user_identifier", userIdentifier)
                     if (firstAvailableGameState != null)
                     {
                         var previousJournal = await db.ExecuteSingleRowAsync<UserJournal>(
-                            "SELECT TOP 1 * FROM user_journal WHERE user_identifier = @user_identifier AND journal_id < @journal_id AND last_processed_line_number > 0",
+                            "SELECT TOP 1 * FROM user_journal WHERE user_identifier = @user_identifier AND journal_id < @journal_id AND last_processed_line_number > 0 AND integration_data IS NOT NULL",
                             new SqlParameter("user_identifier", userIdentifier),
                             new SqlParameter("journal_id", firstAvailableGameState.JournalId)
                         );
@@ -94,7 +94,6 @@ new SqlParameter("user_identifier", userIdentifier)
                     UserJournal lastJournal = null;
 
                     bool disableIntegration = false;
-                    bool stopProcessingJournals = false;
 
                     foreach (var journalItem in userJournals.WithProgress(context))
                     {
@@ -135,7 +134,7 @@ new SqlParameter("user_identifier", userIdentifier)
                                 var journalRows = journalContent.Trim().Split('\n', StringSplitOptions.RemoveEmptyEntries);
 
                                 int line_number = ijd.LastSentLineNumber;
-                                int delay_time = 50;
+                                int delay_time = 200;
 
                                 var restOfTheLines = journalRows.Skip(line_number).ToList();
 
@@ -207,25 +206,9 @@ new SqlParameter("user_identifier", userIdentifier)
                                                 // Exceptions and debug
                                                 case 500: // Exception: %%
                                                 case 501: // %%
+                                                case 502: // Broken gateway
                                                     breakJournal = true;
                                                     break;
-                                            }
-
-                                            if (res.executionTime.TotalMilliseconds > 500)
-                                            {
-                                                delay_time = 500;
-                                            }
-                                            else if (res.executionTime.TotalMilliseconds > 250)
-                                            {
-                                                delay_time = 250;
-                                            }
-                                            else if (res.executionTime.TotalMilliseconds > 100)
-                                            {
-                                                delay_time = 100;
-                                            }
-                                            else if (res.executionTime.TotalMilliseconds < 100)
-                                            {
-                                                delay_time = 50;
                                             }
                                         }
                                     }
@@ -476,11 +459,12 @@ new SqlParameter("user_identifier", userIdentifier)
                 });
 
             var status = await policy.ExecuteAsync(() => hc.PostAsync("https://www.edsm.net/api-journal-v1", formContent));
+            var postResponseBytes = await status.Content.ReadAsByteArrayAsync();
 
-            var postResponse = await status.Content.ReadAsStringAsync();
+            var postResponse = System.Text.Encoding.UTF8.GetString(postResponseBytes);
             if (!status.IsSuccessStatusCode)
             {
-                return (-1, postResponse, TimeSpan.FromSeconds(30));
+                return ((int)status.StatusCode, postResponse, TimeSpan.FromSeconds(30));
             }
 
             var resp = JsonSerializer.Deserialize<EDSMApiResponse>(postResponse);
