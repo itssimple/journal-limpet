@@ -6,7 +6,6 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <PublishReadyToRun>true</PublishReadyToRun>
     <Deterministic>false</Deterministic>
     <AssemblyVersion Condition="'$(PACKAGE_VERSION)' != ''">$(PACKAGE_VERSION)</AssemblyVersion>
     <Version Condition="'$(PACKAGE_VERSION)' != ''">$(PACKAGE_VERSION)</Version>
