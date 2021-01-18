@@ -18,7 +18,18 @@
         <h2>Integration settings</h2>
         <small class="form-text text-info">These settings will control all the available integrations that we have made for use with Journal Limpet!</small>
         <hr />
-        <h4>Elite Dangerous Star Map - Journal import</h4>
+        <h4>Elite: Dangerous Data Network (<a href="https://github.com/EDCD/EDDN/blob/master/README.md" target="_blank">EDDN</a>) - Journal import</h4>
+        <small class="form-text text-info">By having this integration enabled, you will send your journals to EDDN. If you are already using software that does this (<a href="https://github.com/EDCD/EDMarketConnector/wiki" target="_blank">EDMC</a> and others), it is safe to turn this off.</small>
+        <small class="form-text text-info">EDDN is one of the most used data sources for Elite: Dangerous third party applications</small>
+        <br />
+        <div class="form-group">
+            <label asp-for="EDDNEnabled">
+                <input type="checkbox" asp-for="EDDNEnabled" />
+                Enabled
+            </label>
+        </div>
+        <hr />
+        <h4>Elite Dangerous Star Map (<a href="https://www.edsm.net" target="_blank">EDSM</a>) - Journal import</h4>
         <small class="form-text text-info">Enabling this integration, will send your journals automatically to <a href="https://www.edsm.net/" target="_blank">Elite Dangerous Star Map (EDSM)</a>.</small>
         <small class="form-text text-info">You can find these details in the <a href="https://www.edsm.net/en/settings/api" target="_blank">API key-page on EDSM</a></small>
         <br />

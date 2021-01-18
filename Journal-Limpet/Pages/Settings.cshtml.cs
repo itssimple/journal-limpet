@@ -20,6 +20,9 @@ namespace Journal_Limpet.Pages
         [BindProperty]
         public EDSMIntegrationSettings EDSM { get; set; }
 
+        [BindProperty]
+        public bool EDDNEnabled { get; set; }
+
         public SettingsModel(MSSQLDB db)
         {
             _db = db;
@@ -29,6 +32,8 @@ namespace Journal_Limpet.Pages
         {
             var profile = await _db.ExecuteSingleRowAsync<Profile>("SELECT * FROM user_profile WHERE user_identifier = @user_identifier", new SqlParameter("user_identifier", User.Identity.Name));
             NotificationEmail = profile.NotificationEmail;
+
+            EDDNEnabled = profile.SendToEDDN;
 
             if (profile.IntegrationSettings.ContainsKey("EDSM"))
             {
@@ -47,10 +52,11 @@ namespace Journal_Limpet.Pages
             var integrationJson = JsonSerializer.Serialize(integrationSettings);
 
             await _db.ExecuteNonQueryAsync(
-                "UPDATE user_profile SET notification_email = @notification_email, integration_settings = @integration_settings WHERE user_identifier = @user_identifier",
+                "UPDATE user_profile SET notification_email = @notification_email, integration_settings = @integration_settings, send_to_eddn = @send_to_eddn WHERE user_identifier = @user_identifier",
                 new SqlParameter("user_identifier", User.Identity.Name),
                 new SqlParameter("notification_email", NotificationEmail),
-                new SqlParameter("integration_settings", integrationJson)
+                new SqlParameter("integration_settings", integrationJson),
+                new SqlParameter("send_to_eddn", EDDNEnabled)
             );
         }
     }

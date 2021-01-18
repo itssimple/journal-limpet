@@ -100,7 +100,7 @@ namespace Journal_Limpet
 
             services.AddHangfireServer(options =>
             {
-                options.WorkerCount = Environment.ProcessorCount * 5;
+                //options.WorkerCount = Environment.ProcessorCount * 5;
             });
 #endif
         }
