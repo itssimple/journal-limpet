@@ -229,7 +229,7 @@ new SqlParameter("customerId", profile.CustomerId))
             return LocalRedirect("~/Index");
         }
 
-        [Route("exceptions")]
+        [Route("exceptions/{path?}/{subPath?}")]
         public async Task Exceptions()
         {
             if (User.Identity.IsAuthenticated && User.Identity.Name.ToUpper() == "C5D73046-489B-4D54-8F46-EB8024D12D99")
