@@ -14,6 +14,7 @@ using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Configuration;
 using Minio;
 using Minio.Exceptions;
+using StackExchange.Exceptional;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -226,6 +227,15 @@ new SqlParameter("customerId", profile.CustomerId))
         {
             await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
             return LocalRedirect("~/Index");
+        }
+
+        [Route("exceptions")]
+        public async Task Exceptions()
+        {
+            if (User.Identity.IsAuthenticated && User.Identity.Name.ToUpper() == "C5D73046-489B-4D54-8F46-EB8024D12D99")
+            {
+                await ExceptionalMiddleware.HandleRequestAsync(HttpContext).ConfigureAwait(false);
+            }
         }
     }
 }
