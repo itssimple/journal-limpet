@@ -54,7 +54,7 @@ namespace Journal_Limpet.Pages
             await _db.ExecuteNonQueryAsync(
                 "UPDATE user_profile SET notification_email = @notification_email, integration_settings = @integration_settings, send_to_eddn = @send_to_eddn WHERE user_identifier = @user_identifier",
                 new SqlParameter("user_identifier", User.Identity.Name),
-                new SqlParameter("notification_email", NotificationEmail),
+                new SqlParameter("notification_email", NotificationEmail ?? string.Empty),
                 new SqlParameter("integration_settings", integrationJson),
                 new SqlParameter("send_to_eddn", EDDNEnabled)
             );
