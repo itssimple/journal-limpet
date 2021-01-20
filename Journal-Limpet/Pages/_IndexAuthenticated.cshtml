@@ -1,8 +1,12 @@
 ﻿@model IndexModel
 <h1 class="display-4">Welcome Commander!</h1>
 <p>You have @Model.LoggedInUserJournalCount.ToString("n0") journals stored with us!</p>
-<p>Your journals are automatically published to EDDN.</p>
-<p>Other than that, we don't have any apps we're connected to, but you can download your journals at least!</p>
+<p>
+    @foreach (var kvp in Model.IntegrationsEnabled)
+    {
+    <span>Your journals are @(kvp.Value ? "automatically sent to" : "not sent to") @kvp.Key.</span><br />
+    }
+</p>
 
 @if (Model.LoggedInUser.SkipDownload)
 {

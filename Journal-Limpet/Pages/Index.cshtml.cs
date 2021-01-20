@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Logging;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 
 namespace Journal_Limpet.Pages
@@ -19,6 +20,8 @@ namespace Journal_Limpet.Pages
         public long LoggedInUserJournalCount = 0;
         public long TotalUserJournalCount = 0;
         public long TotalUserJournalLines = 0;
+
+        public Dictionary<string, bool> IntegrationsEnabled = new Dictionary<string, bool>();
 
         public Profile LoggedInUser { get; set; }
 
@@ -44,6 +47,13 @@ namespace Journal_Limpet.Pages
                 );
 
                 LoggedInUser = await _db.ExecuteSingleRowAsync<Profile>("SELECT * FROM user_profile WHERE user_identifier = @user_identifier", new SqlParameter("user_identifier", User.Identity.Name));
+
+                IntegrationsEnabled.Add("EDDN", LoggedInUser.SendToEDDN);
+
+                foreach (var inte in LoggedInUser.IntegrationSettings)
+                {
+                    IntegrationsEnabled.Add(inte.Key, inte.Value.GetProperty("enabled").GetBoolean());
+                }
             }
         }
     }
