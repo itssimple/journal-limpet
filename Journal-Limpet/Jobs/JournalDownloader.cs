@@ -9,6 +9,7 @@ using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Minio;
+using Minio.Exceptions;
 using Polly;
 using System;
 using System.Collections.Generic;
@@ -316,7 +317,17 @@ namespace Journal_Limpet.Jobs
             {
                 using (var ms = new MemoryStream(journalBytes))
                 {
-                    await minioClient.PutObjectAsync("journal-limpet", fileName, ms, ms.Length, "application/gzip");
+                    var policy = Policy
+                    .Handle<ConnectionException>()
+                    .WaitAndRetryAsync(new[] {
+                        TimeSpan.FromSeconds(1),
+                        TimeSpan.FromSeconds(2),
+                        TimeSpan.FromSeconds(4),
+                        TimeSpan.FromSeconds(8),
+                        TimeSpan.FromSeconds(16),
+                    });
+
+                    await policy.ExecuteAsync(() => minioClient.PutObjectAsync("journal-limpet", fileName, ms, ms.Length, "application/gzip"));
                 }
 
                 await SSEActivitySender.SendUserActivityAsync(user.UserIdentifier,
