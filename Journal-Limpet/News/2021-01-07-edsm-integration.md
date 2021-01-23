@@ -5,4 +5,4 @@ category: general
 
 ## EDSM integration
 
-- Published EDSM integration, so you can get your journals pushed automatically to EDSM from Journal Limpet</li>
+- Published EDSM integration, so you can get your journals pushed automatically to EDSM from Journal Limpet
