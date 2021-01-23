@@ -1,24 +1,27 @@
-﻿@page "{year:length(4):int?}/{month:range(1,12)?}/{day:range(1,31)?}/{title?}"
+﻿@page "{title?}"
 @model Journal_Limpet.Pages.NewsModel
 @{
     ViewData["Title"] = "News";
 
     // Change this to work with files instead
     // Load news from /news-folder (markdown)
+
+    string ReplaceVariables(string feedItem)
+    {
+        return feedItem
+            .Replace("$rssUrl$", Url.ActionLink("NewsFeed", "Rss", null, HttpContext.Request.Scheme, HttpContext.Request.Host.ToString()));
+    }
 }
 <h1>News and changes in Journal Limpet</h1>
 <hr />
-<h2>2021-01-18</h2>
-<ul>
-    <li>Added setting to give the option to turn off EDDN sync</li>
-</ul>
-
-<h2>2021-01-08</h2>
-<ul>
-    <li>Added news page, that will contain (when I remember) news and updates</li>
-</ul>
-
-<h2>2021-01-07</h2>
-<ul>
-    <li>Published EDSM integration, so you can get your journals pushed automatically to EDSM from Journal Limpet</li>
-</ul>
+@foreach (var article in Model.Items)
+{
+    <h2>
+        <a href="@article.Link" class="text-white">@article.Title</a>
+        <br />
+        <small class="text-muted">@article.PubDate.DateTime.ToShortDateString()</small>
+    </h2>
+    @Html.Raw(ReplaceVariables(article.Description))
+    <hr />
+    <br />
+}

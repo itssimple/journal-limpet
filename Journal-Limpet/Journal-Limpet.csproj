@@ -12,9 +12,24 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <None Remove="News\2021-01-07-edsm-integration.md" />
+    <None Remove="News\2021-01-23-finally-some-good-news.md" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="News\2021-01-07-edsm-integration.md">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="News\2021-01-23-finally-some-good-news.md">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="Hangfire.AspNetCore" Version="1.7.18" />
     <PackageReference Include="Hangfire.Console" Version="1.4.2" />
     <PackageReference Include="Hangfire.SqlServer" Version="1.7.18" />
+    <PackageReference Include="Markdig" Version="0.23.0" />
     <PackageReference Include="Microsoft.AspNetCore.DataProtection.StackExchangeRedis" Version="3.1.10" />
     <PackageReference Include="Microsoft.VisualStudio.Web.CodeGeneration.Design" Version="3.1.4" />
     <PackageReference Include="Minio" Version="3.1.13" />
@@ -32,10 +47,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Journal-Limpet.Shared\Journal-Limpet.Shared.csproj" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Folder Include="Pages\News\" />
   </ItemGroup>
 
 </Project>
