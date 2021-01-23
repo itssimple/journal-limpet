@@ -77,7 +77,7 @@ new SqlParameter("user_identifier", userIdentifier)
                     if (firstAvailableGameState != null)
                     {
                         var previousJournal = await db.ExecuteSingleRowAsync<UserJournal>(
-                            "SELECT TOP 1 * FROM user_journal WHERE user_identifier = @user_identifier AND journal_id < @journal_id AND last_processed_line_number > 0 AND integration_data IS NOT NULL",
+                            "SELECT TOP 1 * FROM user_journal WHERE user_identifier = @user_identifier AND journal_id < @journal_id AND last_processed_line_number > 0 AND integration_data IS NOT NULL ORDER BY journal_date DESC",
                             new SqlParameter("user_identifier", userIdentifier),
                             new SqlParameter("journal_id", firstAvailableGameState.JournalId)
                         );
