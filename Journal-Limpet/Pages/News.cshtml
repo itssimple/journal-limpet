@@ -19,7 +19,7 @@
     <h2>
         <a href="@article.Link" class="text-white">@article.Title</a>
         <br />
-        <small class="text-muted">@article.PubDate.DateTime.ToShortDateString()</small>
+        <small class="text-muted">@article.PubDate.DateTime.ToString("yyyy-MM-dd") </small>
     </h2>
     @Html.Raw(ReplaceVariables(article.Description))
     <hr />
