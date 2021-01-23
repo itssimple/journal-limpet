@@ -12,15 +12,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <None Remove="News\2021-01-07-edsm-integration.md" />
-    <None Remove="News\2021-01-23-finally-some-good-news.md" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Content Include="News\2021-01-07-edsm-integration.md">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="News\2021-01-23-finally-some-good-news.md">
+    <Content Include="News\*.md">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
   </ItemGroup>
