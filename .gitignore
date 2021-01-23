@@ -12,6 +12,8 @@ Journal-Limpet.environment
 *.userosscache
 *.sln.docstates
 
+published-app/
+
 # User-specific files (MonoDevelop/Xamarin Studio)
 *.userprefs
 

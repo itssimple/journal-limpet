@@ -9,6 +9,9 @@
     <Deterministic>false</Deterministic>
     <AssemblyVersion Condition="'$(PACKAGE_VERSION)' != ''">$(PACKAGE_VERSION)</AssemblyVersion>
     <Version Condition="'$(PACKAGE_VERSION)' != ''">$(PACKAGE_VERSION)</Version>
+    <UserSecretsId>920ec5cf-e374-44a1-919c-d4fd0a8b8a94</UserSecretsId>
+    <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
+    <DockerComposeProjectPath>..\docker-compose.dcproj</DockerComposeProjectPath>
   </PropertyGroup>
 
   <ItemGroup>
@@ -23,6 +26,7 @@
     <PackageReference Include="Hangfire.SqlServer" Version="1.7.18" />
     <PackageReference Include="Markdig" Version="0.23.0" />
     <PackageReference Include="Microsoft.AspNetCore.DataProtection.StackExchangeRedis" Version="3.1.10" />
+    <PackageReference Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.10.9" />
     <PackageReference Include="Microsoft.VisualStudio.Web.CodeGeneration.Design" Version="3.1.4" />
     <PackageReference Include="Minio" Version="3.1.13" />
     <PackageReference Include="NewRelic.Agent.Api" Version="8.36.0" />
