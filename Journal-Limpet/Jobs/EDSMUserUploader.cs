@@ -428,12 +428,13 @@ new SqlParameter("user_identifier", userIdentifier)
         {
             var element = JsonDocument.Parse(journalRow).RootElement;
             if (!element.TryGetProperty("event", out JsonElement journalEvent)) return (303, string.Empty, TimeSpan.Zero);
-            if (System.Enum.TryParse(typeof(IgnoredEvents), journalEvent.GetString(), false, out _)) return (304, string.Empty, TimeSpan.Zero);
 
             Stopwatch sw = new Stopwatch();
             sw.Start();
 
             element = await SetGamestateProperties(element, gameState, edsmSettings.CommanderName);
+
+            if (System.Enum.TryParse(typeof(IgnoredEvents), journalEvent.GetString(), false, out _)) return (304, string.Empty, TimeSpan.Zero);
 
             if (!gameState.SendEvents)
                 return (104, string.Empty, TimeSpan.Zero);
