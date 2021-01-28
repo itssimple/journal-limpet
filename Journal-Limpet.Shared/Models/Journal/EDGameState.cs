@@ -22,5 +22,9 @@ namespace Journal_Limpet.Shared.Models.Journal
         public long? ShipId { get; set; }
         [JsonPropertyName("sendEvents")]
         public bool SendEvents { get; set; } = true;
+        [JsonPropertyName("bodyName")]
+        public string BodyName { get; set; }
+        [JsonPropertyName("bodyId")]
+        public long? BodyId { get; set; }
     }
 }
