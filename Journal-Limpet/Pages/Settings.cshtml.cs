@@ -17,8 +17,11 @@ namespace Journal_Limpet.Pages
 
         [BindProperty]
         public string NotificationEmail { get; set; }
+
         [BindProperty]
         public EDSMIntegrationSettings EDSM { get; set; }
+        [BindProperty]
+        public CanonnRDIntegrationSettings CanonnRD { get; set; }
 
         [BindProperty]
         public bool EDDNEnabled { get; set; }
@@ -40,6 +43,12 @@ namespace Journal_Limpet.Pages
                 var edsmSettings = profile.IntegrationSettings["EDSM"].GetTypedObject<EDSMIntegrationSettings>();
                 EDSM = edsmSettings;
             }
+
+            if (profile.IntegrationSettings.ContainsKey("Canonn R&D"))
+            {
+                var canonnRDSettings = profile.IntegrationSettings["Canonn R&D"].GetTypedObject<CanonnRDIntegrationSettings>();
+                CanonnRD = canonnRDSettings;
+            }
         }
 
         public async Task OnPostAsync()
@@ -48,6 +57,7 @@ namespace Journal_Limpet.Pages
 
             var integrationSettings = profile.IntegrationSettings;
             integrationSettings["EDSM"] = EDSM.AsJsonElement();
+            integrationSettings["Canonn R&D"] = CanonnRD.AsJsonElement();
 
             var integrationJson = JsonSerializer.Serialize(integrationSettings);
 

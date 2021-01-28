@@ -52,6 +52,11 @@ namespace Journal_Limpet.Pages
 
                 foreach (var inte in LoggedInUser.IntegrationSettings)
                 {
+                    if (inte.Key == "Cannon R&D" && !inte.Value.GetProperty("enabled").GetBoolean())
+                    {
+                        continue;
+                    }
+
                     IntegrationsEnabled.Add(inte.Key, inte.Value.GetProperty("enabled").GetBoolean());
                 }
             }
