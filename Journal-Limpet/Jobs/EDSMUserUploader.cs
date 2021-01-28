@@ -605,7 +605,7 @@ new SqlParameter("user_identifier", userIdentifier)
                 gameState.StationName = null;
             }
 
-            if (new[] { "Location", "FSDJump", "Docked" }.Contains(eventName))
+            if (new[] { "Location", "FSDJump", "Docked", "CarrierJump" }.Contains(eventName))
             {
                 // Docked don"t have coordinates, if system changed reset
                 if (elementAsDictionary["StarSystem"].GetString() != gameState.SystemName)
