@@ -6,9 +6,9 @@ namespace Journal_Limpet.Shared.Models.API.Profile
     {
         [JsonPropertyName("commander")]
         public EliteCommander Commander { get; set; }
-        [JsonPropertyName("lastSystem")]
-        public EliteLastSystem LastSystem { get; set; }
-        [JsonPropertyName("lastStarport")]
-        public EliteLastStarport LastStarport { get; set; }
+        /*[JsonPropertyName("lastSystem")]
+        public EliteLastSystem LastSystem { get; set; }*/
+        /*[JsonPropertyName("lastStarport")]
+        public EliteLastStarport LastStarport { get; set; }*/
     }
 }
