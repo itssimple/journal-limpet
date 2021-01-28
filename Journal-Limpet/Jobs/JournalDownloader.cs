@@ -3,6 +3,7 @@ using Hangfire.Console;
 using Hangfire.Server;
 using Journal_Limpet.Shared;
 using Journal_Limpet.Shared.Database;
+using Journal_Limpet.Shared.Models.API.Profile;
 using Journal_Limpet.Shared.Models.Journal;
 using Journal_Limpet.Shared.Models.User;
 using Microsoft.Data.SqlClient;
@@ -81,6 +82,8 @@ namespace Journal_Limpet.Jobs
                         return;
                     }
 
+                    var profileData = JsonSerializer.Deserialize<EliteProfile>(await profile.Content.ReadAsStringAsync());
+
                     DateTime journalDate = DateTime.Today.AddDays(-25);
 
                     await SSEActivitySender.SendUserActivityAsync(user.UserIdentifier,
@@ -135,6 +138,20 @@ namespace Journal_Limpet.Jobs
                         {
                             if (!RedisJobLock.IsLocked($"EDSMUserUploader.UploadAsync.{user.UserIdentifier}"))
                                 BackgroundJob.Enqueue(() => EDSMUserUploader.UploadAsync(user.UserIdentifier, null));
+                        }
+                    }
+
+                    if (user.IntegrationSettings.ContainsKey("Canonn R&D") && user.IntegrationSettings["Canonn R&D"].GetTypedObject<EDSMIntegrationSettings>().Enabled)
+                    {
+                        var userJournals = await db.ExecuteScalarAsync<int>(
+                            "SELECT COUNT(journal_id) FROM user_journal WHERE user_identifier = @user_identifier AND last_processed_line_number > 0 AND ISNULL(JSON_VALUE(integration_data, '$.\"Canonn R\\u0026D\".fullySent'), 'false') = 'false'",
+                            new SqlParameter("user_identifier", userIdentifier)
+                        );
+
+                        if (userJournals > 0)
+                        {
+                            if (!RedisJobLock.IsLocked($"CanonnRDUserUploader.UploadAsync.{user.UserIdentifier}"))
+                                BackgroundJob.Enqueue(() => CanonnRDUserUploader.UploadAsync(user.UserIdentifier, profileData.Commander.Name, null));
                         }
                     }
 
