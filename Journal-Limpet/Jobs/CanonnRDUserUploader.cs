@@ -62,11 +62,11 @@ new SqlParameter("user_identifier", userIdentifier)
                     }
 
                     var userJournals = await db.ExecuteListAsync<UserJournal>(
-                        "SELECT * FROM user_journal WHERE user_identifier = @user_identifier AND ISNULL(JSON_VALUE(integration_data, '$.\"Canonn R\\u0026D\".lastSEntLineNumber'), '0') < last_processed_line_number AND ISNULL(JSON_VALUE(integration_data, '$.\"Canonn R\\u0026D\".fullySent'), 'false') = 'false' ORDER BY journal_date ASC",
+                        "SELECT * FROM user_journal WHERE user_identifier = @user_identifier AND ISNULL(JSON_VALUE(integration_data, '$.\"Canonn R\\u0026D\".lastSentLineNumber'), '0') < last_processed_line_number AND ISNULL(JSON_VALUE(integration_data, '$.\"Canonn R\\u0026D\".fullySent'), 'false') = 'false' ORDER BY journal_date ASC",
                         new SqlParameter("user_identifier", userIdentifier)
                     );
 
-                    context.WriteLine($"Found {userJournals.Count} to send to EDSM!");
+                    context.WriteLine($"Found {userJournals.Count} journals to send to Canonn R&D!");
 
                     EDGameState previousGameState = null;
 
