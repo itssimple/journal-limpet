@@ -19,4 +19,9 @@ namespace Journal_Limpet.Shared.Models.User
         [JsonPropertyName("cmdrName")]
         public string CommanderName { get; set; }
     }
+
+    public class CanonnRDIntegrationSettings : BaseIntegrationSettings
+    {
+
+    }
 }
