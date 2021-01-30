@@ -569,7 +569,7 @@ new SqlParameter("user_identifier", userIdentifier)
 
             gameState.Timestamp = timestamp;
 
-            if (eventName == "LoadGame")
+            /*if (eventName == "LoadGame")
             {
                 gameState.SystemAddress = null;
                 gameState.SystemName = null;
@@ -577,7 +577,7 @@ new SqlParameter("user_identifier", userIdentifier)
                 gameState.MarketId = null;
                 gameState.StationName = null;
                 gameState.ShipId = null;
-            }
+            }*/
 
             if (eventName == "SetUserShipName")
             {
