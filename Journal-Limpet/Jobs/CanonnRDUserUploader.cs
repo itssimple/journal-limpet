@@ -177,6 +177,8 @@ new SqlParameter("user_identifier", userIdentifier)
                                                 // We're sending too many requests at once, let's break out of the loop and wait until next batch
                                                 case 429:
                                                     breakJournal = true;
+                                                    context.WriteLine("We're sending stuff too quickly, breaking out of the loop");
+                                                    context.WriteLine(res.resultContent);
                                                     await Task.Delay(30000);
                                                     break;
 
@@ -186,6 +188,8 @@ new SqlParameter("user_identifier", userIdentifier)
                                                 case 502: // Broken gateway
                                                 case 503:
                                                     breakJournal = true;
+                                                    context.WriteLine("We got an error from the service, breaking off!");
+                                                    context.WriteLine(res.resultContent);
                                                     break;
                                             }
                                         }
@@ -223,6 +227,7 @@ new SqlParameter("user_identifier", userIdentifier)
 
                                 if (breakJournal)
                                 {
+                                    context.WriteLine("We're breaking off here until next batch, we got told to do that.");
                                     break;
                                 }
 
