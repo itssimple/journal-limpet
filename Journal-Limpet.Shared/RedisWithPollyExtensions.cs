@@ -38,5 +38,21 @@ namespace Journal_Limpet.Shared
                 return false;
             }
         }
+
+        public static async Task<RedisValue> StringGetAsyncWithRetriesSaveIfMissing(this IDatabase _rdb, RedisKey key, int retries = 10, Func<Task<string>> ifMissing = null)
+        {
+            var redisValue = await StringGetAsyncWithRetries(_rdb, key, retries);
+            if (redisValue.IsNull && ifMissing != null)
+            {
+                var newValue = await ifMissing();
+                if (!string.IsNullOrWhiteSpace(newValue))
+                {
+                    await StringSetAsyncWithRetries(_rdb, key, newValue, TimeSpan.FromHours(24), CommandFlags.FireAndForget);
+                    return newValue;
+                }
+            }
+
+            return redisValue;
+        }
     }
 }

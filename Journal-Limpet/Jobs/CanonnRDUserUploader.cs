@@ -18,6 +18,7 @@ using System.Linq;
 using System.Net.Http;
 using System.Text;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 
 namespace Journal_Limpet.Jobs
@@ -92,6 +93,10 @@ new SqlParameter("user_identifier", userIdentifier)
 
                     bool disableIntegration = false;
 
+                    var _rdb = SharedSettings.RedisClient.GetDatabase(3);
+                    var validCanonnEvents = await _rdb.StringGetAsyncWithRetriesSaveIfMissing("canonn:allowedEvents", 10, GetValidCanonnEvents);
+                    var canonnEvents = JsonSerializer.Deserialize<List<CanonnEvent>>(validCanonnEvents).Select(e => e.Definition.Event).ToList();
+
                     foreach (var journalItem in userJournals.WithProgress(context))
                     {
                         IntegrationJournalData ijd;
@@ -144,7 +149,7 @@ new SqlParameter("user_identifier", userIdentifier)
                                     {
                                         if (!string.IsNullOrWhiteSpace(row))
                                         {
-                                            var res = await UploadJournalItemToCanonnRD(hc, row, userIdentifier, cmdrName, ijd.CurrentGameState, configuration);
+                                            var res = await UploadJournalItemToCanonnRD(hc, row, userIdentifier, cmdrName, ijd.CurrentGameState, configuration, canonnEvents);
 
                                             switch (res.errorCode)
                                             {
@@ -269,7 +274,7 @@ new SqlParameter("user_identifier", userIdentifier)
             CodexEntry
         }
 
-        public static async Task<(int errorCode, string resultContent, TimeSpan executionTime)> UploadJournalItemToCanonnRD(HttpClient hc, string journalRow, Guid userIdentifier, string cmdrName, EDGameState gameState, IConfiguration configuration)
+        public static async Task<(int errorCode, string resultContent, TimeSpan executionTime)> UploadJournalItemToCanonnRD(HttpClient hc, string journalRow, Guid userIdentifier, string cmdrName, EDGameState gameState, IConfiguration configuration, List<string> validCanonnEvents)
         {
             var element = JsonDocument.Parse(journalRow).RootElement;
             if (!element.TryGetProperty("event", out JsonElement journalEvent)) return (303, string.Empty, TimeSpan.Zero);
@@ -279,10 +284,10 @@ new SqlParameter("user_identifier", userIdentifier)
 
             var newGameState = await SetGamestateProperties(element, gameState, cmdrName);
 
-            if (!System.Enum.TryParse(typeof(CanonnRDEvents), journalEvent.GetString(), false, out _)) return (304, string.Empty, TimeSpan.Zero);
+            if (!validCanonnEvents.Contains(journalEvent.GetString())) return (304, string.Empty, TimeSpan.Zero);
 
             if (!gameState.SendEvents)
-                return (104, string.Empty, TimeSpan.Zero);
+                return (200, string.Empty, TimeSpan.Zero);
 
             var eddnItem = new Dictionary<string, object>()
             {
@@ -317,6 +322,28 @@ new SqlParameter("user_identifier", userIdentifier)
             sw.Stop();
 
             return (200, postResponse, sw.Elapsed);
+        }
+
+        private async static Task<string> GetValidCanonnEvents()
+        {
+            using (var hc = new HttpClient())
+            {
+                return await hc.GetStringAsync("https://us-central1-canonn-api-236217.cloudfunctions.net/postEventWhitelist");
+            }
+        }
+
+        public class CanonnEvent
+        {
+            [JsonPropertyName("description")]
+            public string Description { get; set; }
+            [JsonPropertyName("definition")]
+            public CanonnEventDefinition Definition { get; set; }
+        }
+
+        public class CanonnEventDefinition
+        {
+            [JsonPropertyName("event")]
+            public string Event { get; set; }
         }
 
         public enum RequiredPropertiesForCache
