@@ -403,7 +403,11 @@ new SqlParameter("user_identifier", userIdentifier)
 
             gameState.Timestamp = timestamp;
 
-            if (eventName == "LoadGame")
+            // We'll disable this reset for now, since commanders do re-log at times
+            // And for some reason, Location wasn't written to the journals,
+            // maybe it only appears if you actually restart the entire game?
+
+            /*if (eventName == "LoadGame")
             {
                 gameState.SystemAddress = null;
                 gameState.SystemName = null;
@@ -413,7 +417,7 @@ new SqlParameter("user_identifier", userIdentifier)
                 gameState.ShipId = null;
                 gameState.BodyId = null;
                 gameState.BodyName = null;
-            }
+            }*/
 
             if (eventName == "SetUserShipName")
             {
