@@ -2,6 +2,7 @@
 using Hangfire.Server;
 using Journal_Limpet.Shared;
 using Journal_Limpet.Shared.Database;
+using Journal_Limpet.Shared.Models;
 using Journal_Limpet.Shared.Models.Journal;
 using Journal_Limpet.Shared.Models.User;
 using Microsoft.Data.SqlClient;
@@ -95,7 +96,7 @@ new SqlParameter("user_identifier", userIdentifier)
 
                     var _rdb = SharedSettings.RedisClient.GetDatabase(3);
                     var validCanonnEvents = await _rdb.StringGetAsyncWithRetriesSaveIfMissing("canonn:allowedEvents", 10, GetValidCanonnEvents);
-                    var canonnEvents = JsonSerializer.Deserialize<List<CanonnEvent>>(validCanonnEvents).Select(e => e.Definition.Event).ToList();
+                    var canonnEvents = JsonSerializer.Deserialize<List<CanonnEvent>>(validCanonnEvents).Select(e => e.Definition).ToList();
 
                     foreach (var journalItem in userJournals.WithProgress(context))
                     {
@@ -286,7 +287,7 @@ new SqlParameter("user_identifier", userIdentifier)
             CodexEntry
         }
 
-        public static async Task<(int errorCode, string resultContent, TimeSpan executionTime)> UploadJournalItemToCanonnRD(HttpClient hc, string journalRow, Guid userIdentifier, string cmdrName, EDGameState gameState, IConfiguration configuration, List<string> validCanonnEvents)
+        public static async Task<(int errorCode, string resultContent, TimeSpan executionTime)> UploadJournalItemToCanonnRD(HttpClient hc, string journalRow, Guid userIdentifier, string cmdrName, EDGameState gameState, IConfiguration configuration, List<CanonnEventDefinition> validCanonnEvents)
         {
             var element = JsonDocument.Parse(journalRow).RootElement;
             if (!element.TryGetProperty("event", out JsonElement journalEvent)) return (303, string.Empty, TimeSpan.Zero);
@@ -296,10 +297,25 @@ new SqlParameter("user_identifier", userIdentifier)
 
             var newGameState = await SetGamestateProperties(element, gameState, cmdrName);
 
-            if (!validCanonnEvents.Contains(journalEvent.GetString())) return (304, string.Empty, TimeSpan.Zero);
+            var matchingValidEvent = validCanonnEvents.FirstOrDefault(e => e.Event == journalEvent.GetString());
+
+            if (matchingValidEvent == null) return (304, string.Empty, TimeSpan.Zero);
+
+            var fieldsToMatch = matchingValidEvent.ExtensionData;
+            if (fieldsToMatch.Count > 0)
+            {
+                var elementAsDictionary = JsonSerializer.Deserialize<Dictionary<string, object>>(element.GetRawText());
+
+                if (!fieldsToMatch.All(k => elementAsDictionary.ContainsKey(k.Key) && elementAsDictionary[k.Key].ToString() == k.Value.ToString()))
+                {
+                    return (200, string.Empty, TimeSpan.Zero);
+                }
+            }
 
             if (!gameState.SendEvents)
+            {
                 return (200, string.Empty, TimeSpan.Zero);
+            }
 
             var eddnItem = new Dictionary<string, object>()
             {
@@ -352,7 +368,7 @@ new SqlParameter("user_identifier", userIdentifier)
             public CanonnEventDefinition Definition { get; set; }
         }
 
-        public class CanonnEventDefinition
+        public class CanonnEventDefinition : EliteBaseJsonObject
         {
             [JsonPropertyName("event")]
             public string Event { get; set; }
