@@ -570,7 +570,7 @@ new SqlParameter("user_identifier", userIdentifier)
                 bodyName = gameState.BodyName,
                 bodyId = gameState.BodyId,
                 clientVersion = "Journal Limpet: " + SharedSettings.VersionNumber,
-                isBeta = true
+                isBeta = false
             };
 
             var transientState = JsonDocument.Parse(JsonSerializer.Serialize(addItems)).RootElement;
