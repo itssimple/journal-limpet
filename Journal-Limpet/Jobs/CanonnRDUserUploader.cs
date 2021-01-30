@@ -98,6 +98,8 @@ new SqlParameter("user_identifier", userIdentifier)
                     var validCanonnEvents = await _rdb.StringGetAsyncWithRetriesSaveIfMissing("canonn:allowedEvents", 10, GetValidCanonnEvents);
                     var canonnEvents = JsonSerializer.Deserialize<List<CanonnEvent>>(validCanonnEvents).Select(e => e.Definition).ToList();
 
+                    context.WriteLine("Valid Canonn eventss: " + validCanonnEvents);
+
                     foreach (var journalItem in userJournals.WithProgress(context))
                     {
                         IntegrationJournalData ijd;
@@ -301,7 +303,7 @@ new SqlParameter("user_identifier", userIdentifier)
 
             if (matchingValidEvent == null) return (304, string.Empty, TimeSpan.Zero);
 
-            var fieldsToMatch = matchingValidEvent.ExtensionData;
+            var fieldsToMatch = matchingValidEvent?.ExtensionData ?? new Dictionary<string, object>();
             if (fieldsToMatch.Count > 0)
             {
                 var elementAsDictionary = JsonSerializer.Deserialize<Dictionary<string, object>>(element.GetRawText());
