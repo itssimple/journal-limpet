@@ -174,10 +174,17 @@ new SqlParameter("user_identifier", userIdentifier)
                                                 case 200:
                                                     break;
 
+                                                // We're sending too many requests at once, let's break out of the loop and wait until next batch
+                                                case 429:
+                                                    breakJournal = true;
+                                                    await Task.Delay(30000);
+                                                    break;
+
                                                 // Exceptions and debug
                                                 case 500: // Exception: %%
                                                 case 501: // %%
                                                 case 502: // Broken gateway
+                                                case 503:
                                                     breakJournal = true;
                                                     break;
                                             }
