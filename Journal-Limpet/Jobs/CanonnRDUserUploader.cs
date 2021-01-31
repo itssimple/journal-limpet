@@ -376,15 +376,6 @@ new SqlParameter("user_identifier", userIdentifier)
             public string Event { get; set; }
         }
 
-        public enum RequiredPropertiesForCache
-        {
-            StarSystem,
-            StarPos,
-            SystemAddress,
-            timestamp,
-            @event
-        }
-
         public static async Task<JsonElement> SetGamestateProperties(JsonElement element, EDGameState gameState, string commander)
         {
             var _rdb = SharedSettings.RedisClient.GetDatabase(1);

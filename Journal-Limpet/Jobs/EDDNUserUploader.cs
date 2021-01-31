@@ -2,6 +2,7 @@
 using Hangfire.Server;
 using Journal_Limpet.Shared;
 using Journal_Limpet.Shared.Database;
+using Journal_Limpet.Shared.Models;
 using Journal_Limpet.Shared.Models.Journal;
 using Journal_Limpet.Shared.Models.User;
 using Microsoft.Data.SqlClient;
@@ -192,15 +193,6 @@ namespace Journal_Limpet.Jobs
             SquadronFaction
         }
 
-        public enum RequiredProperties
-        {
-            StarSystem,
-            StarPos,
-            SystemAddress,
-            timestamp,
-            @event
-        }
-
         internal static async Task<TimeSpan> UploadJournalItemToEDDN(HttpClient hc, string journalRow, Guid userIdentifier)
         {
             var element = JsonDocument.Parse(journalRow).RootElement;
@@ -256,7 +248,7 @@ namespace Journal_Limpet.Jobs
         internal static bool HasMissingProperties(JsonElement element)
         {
             var elementAsDictionary = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(element.GetRawText());
-            var requiredProperties = elementAsDictionary.Keys.Where(k => System.Enum.TryParse(typeof(RequiredProperties), k, false, out _));
+            var requiredProperties = elementAsDictionary.Keys.Where(k => System.Enum.TryParse(typeof(RequiredPropertiesForCache), k, false, out _));
             return requiredProperties.Count() < 5;
         }
 
@@ -266,9 +258,9 @@ namespace Journal_Limpet.Jobs
 
             var elementAsDictionary = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(element.GetRawText());
 
-            var reqProps = typeof(RequiredProperties).GetEnumNames();
+            var reqProps = typeof(RequiredPropertiesForCache).GetEnumNames();
 
-            var requiredProperties = elementAsDictionary.Keys.Where(k => System.Enum.TryParse(typeof(RequiredProperties), k, false, out _));
+            var requiredProperties = elementAsDictionary.Keys.Where(k => System.Enum.TryParse(typeof(RequiredPropertiesForCache), k, false, out _));
 
             var missingProps = reqProps.Except(requiredProperties);
 
