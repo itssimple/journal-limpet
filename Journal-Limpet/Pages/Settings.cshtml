@@ -2,8 +2,6 @@
 @model Journal_Limpet.Pages.SettingsModel
 @{
     ViewData["Title"] = "User settings";
-
-    var showCanonnRDConnection = Request.Query.ContainsKey("show-me-canonn");
 }
 
 <h1>User settings</h1>
@@ -49,19 +47,16 @@
                 Enabled
             </label>
         </div>
-        @if(showCanonnRDConnection)
-        {
-            <hr />
-            <h4>Canonn R&amp;D - Journal import</h4>
-            <small class="form-text text-info">If you enable this integration, we will send your journals to Canonn R&amp;D.</small>
-            <br />
-            <div class="form-group">
-                <label asp-for="CanonnRD.Enabled">
-                    <input type="checkbox" asp-for="CanonnRD.Enabled" />
-                    Enabled
-                </label>
-            </div>
-        }
+        <hr />
+        <h4>Canonn R&amp;D - Journal import</h4>
+        <small class="form-text text-info">If you enable this integration, we will send your journals to Canonn R&amp;D, more specifically the <code>SAASignalsFound</code>, <code>CodexEntry</code> and some <code>Docked</code>-events</small>
+        <br />
+        <div class="form-group">
+            <label asp-for="CanonnRD.Enabled">
+                <input type="checkbox" asp-for="CanonnRD.Enabled" />
+                Enabled
+            </label>
+        </div>
     </fieldset>
     <hr />
     <input type="submit" value="Save changes" class="btn btn-secondary" />
