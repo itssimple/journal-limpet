@@ -126,7 +126,7 @@ new SqlParameter("customerId", profile.CustomerId))
                 if (matchingUser != null)
                 {
                     // Update user with new token info
-                    await _db.ExecuteNonQueryAsync("UPDATE user_profile SET user_settings = @settings, last_notification_mail = NULL WHERE user_identifier = @userIdentifier",
+                    await _db.ExecuteNonQueryAsync("UPDATE user_profile SET user_settings = @settings, last_notification_mail = NULL, skip_download = 0 WHERE user_identifier = @userIdentifier",
                         new SqlParameter("settings", JsonSerializer.Serialize(settings)),
                         new SqlParameter("userIdentifier", matchingUser.UserIdentifier)
                     );
