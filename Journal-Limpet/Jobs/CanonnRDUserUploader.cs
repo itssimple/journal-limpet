@@ -332,6 +332,8 @@ new SqlParameter("user_identifier", userIdentifier)
                 { "cmdrName", cmdrName }
             };
 
+            await SSEActivitySender.SendUserLogDataAsync(userIdentifier, eddnItem);
+
             var json = JsonSerializer.Serialize(eddnItem, new JsonSerializerOptions() { WriteIndented = true });
 
             var policy = Policy

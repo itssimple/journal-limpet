@@ -32,6 +32,29 @@ namespace Journal_Limpet
             };
 
             await GetRedisRetryPolicy().ExecuteAsync(() => SharedSettings.RedisPubsubSubscriber.PublishAsync($"user-activity-{userIdentifier}", JsonSerializer.Serialize(msg), CommandFlags.FireAndForget));
+            await SendUserLogDataAsync(userIdentifier, msg);
+        }
+
+        public static async Task SendLogDataAsync(object data)
+        {
+            var msg = new
+            {
+                timestamp = DateTimeOffset.UtcNow,
+                data = data
+            };
+
+            await GetRedisRetryPolicy().ExecuteAsync(() => SharedSettings.RedisPubsubSubscriber.PublishAsync("log", JsonSerializer.Serialize(msg), CommandFlags.FireAndForget));
+        }
+
+        public static async Task SendUserLogDataAsync(Guid userIdentifier, object data)
+        {
+            var msg = new
+            {
+                timestamp = DateTimeOffset.UtcNow,
+                data = data
+            };
+
+            await GetRedisRetryPolicy().ExecuteAsync(() => SharedSettings.RedisPubsubSubscriber.PublishAsync($"userlog-{userIdentifier}", JsonSerializer.Serialize(msg), CommandFlags.FireAndForget));
         }
 
         public static async Task SendStatsActivityAsync(MSSQLDB _db)

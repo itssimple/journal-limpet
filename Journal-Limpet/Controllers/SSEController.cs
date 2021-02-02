@@ -65,5 +65,41 @@ namespace Journal_Limpet.Controllers
                 await response.Body.FlushAsync();
             }
         }
+
+        [HttpGet("liveuserlog")]
+        public async Task SSELiveUserLog(CancellationToken token)
+        {
+            NewRelic.Api.Agent.NewRelic.IgnoreTransaction();
+
+            var response = Response;
+
+            response.Headers.Add("Content-Type", "text/event-stream");
+            response.Headers.Add("X-Accel-Buffering", "no");
+            response.Headers.Add("Cache-Control", "no-cache");
+
+            await response.WriteAsync("data: Connected to Log SSE endpoint\r\r");
+            await response.Body.FlushAsync();
+
+            if (User.Identity.IsAuthenticated)
+            {
+                await response.WriteAsync("event: userlog\r");
+                await response.WriteAsync($"data: {{ \"message\": \"Loaded userlog\" }}\r\r");
+                await response.Body.FlushAsync();
+
+                await _pubsub.SubscribeAsync($"userlog-{User.Identity.Name}", (channel, data) =>
+                {
+                    response.WriteAsync("event: userlog\r");
+                    response.WriteAsync($"data: {data}\r\r");
+                    response.Body.Flush();
+                });
+            }
+
+            while (!token.IsCancellationRequested)
+            {
+                await Task.Delay(10000);
+                await response.WriteAsync(": PING\r\r");
+                await response.Body.FlushAsync();
+            }
+        }
     }
 }

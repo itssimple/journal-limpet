@@ -72,3 +72,20 @@ body {
         color: #fff;
         text-shadow: unset;
     }
+
+.terminal-window {
+    background-color: #212529;
+    padding: 10px;
+    max-height: 55vh;
+    min-height: 55vh;
+    overflow: hidden;
+}
+
+.terminal-line {
+    animation: terminal-entry 0.5s;
+}
+
+@keyframes terminal-entry {
+    0% { opacity: 0; background-color: #456e89; }
+    100% { opacity: 1; }
+}

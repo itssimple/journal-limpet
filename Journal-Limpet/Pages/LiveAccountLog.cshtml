@@ -1,0 +1,13 @@
+﻿@page
+@model Journal_Limpet.Pages.LiveAccountLogModel
+@{
+    ViewData["title"] = "Live user log";
+}
+
+<div class="jumbotron">
+    <h2>Live account log</h2>
+    <hr />
+    <pre class="terminal-window"><code class="log-window text-white"></code></pre>
+</div>
+
+<script src="~/js/live-account-log.js" asp-append-version="true"></script>
