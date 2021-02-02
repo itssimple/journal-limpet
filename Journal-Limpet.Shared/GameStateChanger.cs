@@ -55,6 +55,8 @@ namespace Journal_Limpet.Shared
             {
                 gameState.MarketId = null;
                 gameState.StationName = null;
+                gameState.BodyId = null;
+                gameState.BodyName = null;
             }
 
             if (eventName == "ApproachBody")
@@ -71,7 +73,7 @@ namespace Journal_Limpet.Shared
                 gameState.BodyName = null;
             }
 
-            if (eventName == "SuperCruiseEntry")
+            if (eventName == "SupercruiseEntry")
             {
                 gameState.SystemName = elementAsDictionary["StarSystem"].GetString();
 
@@ -79,7 +81,7 @@ namespace Journal_Limpet.Shared
                 gameState.BodyId = null;
             }
 
-            if (eventName == "SuperCruiseExit")
+            if (eventName == "SupercruiseExit")
             {
                 gameState.SystemName = elementAsDictionary["StarSystem"].GetString();
 
