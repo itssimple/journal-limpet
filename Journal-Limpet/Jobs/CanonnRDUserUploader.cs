@@ -97,10 +97,13 @@ new SqlParameter("user_identifier", userIdentifier)
                     var validCanonnEvents = await _rdb.StringGetAsyncWithRetriesSaveIfMissing("canonn:allowedEvents", 10, GetValidCanonnEvents);
                     var canonnEvents = JsonSerializer.Deserialize<List<CanonnEvent>>(validCanonnEvents).Select(e => e.Definition).ToList();
 
-                    context.WriteLine("Valid Canonn eventss: " + validCanonnEvents);
+                    context.WriteLine("Valid Canonn events: " + validCanonnEvents);
 
                     foreach (var journalItem in userJournals.WithProgress(context))
                     {
+                        var loggingEnabledRedis = await _rdb.StringGetAsyncWithRetries("logging:canonn:enabled");
+                        bool.TryParse(loggingEnabledRedis, out bool loggingEnabled);
+
                         IntegrationJournalData ijd;
                         if (journalItem.IntegrationData.ContainsKey("Canonn R&D"))
                         {
@@ -151,7 +154,7 @@ new SqlParameter("user_identifier", userIdentifier)
                                     {
                                         if (!string.IsNullOrWhiteSpace(row))
                                         {
-                                            var res = await UploadJournalItemToCanonnRD(hc, row, userIdentifier, cmdrName, ijd.CurrentGameState, configuration, canonnEvents);
+                                            var res = await UploadJournalItemToCanonnRD(hc, row, userIdentifier, cmdrName, ijd.CurrentGameState, configuration, canonnEvents, context, loggingEnabled);
 
                                             switch (res.errorCode)
                                             {
@@ -210,6 +213,7 @@ new SqlParameter("user_identifier", userIdentifier)
 
                                     if (breakJournal)
                                     {
+                                        context.WriteLine("Jumping out from the journal");
                                         break;
                                     }
 
@@ -288,7 +292,9 @@ new SqlParameter("user_identifier", userIdentifier)
             CodexEntry
         }
 
-        public static async Task<(int errorCode, string resultContent, TimeSpan executionTime)> UploadJournalItemToCanonnRD(HttpClient hc, string journalRow, Guid userIdentifier, string cmdrName, EDGameState gameState, IConfiguration configuration, List<CanonnEventDefinition> validCanonnEvents)
+        public static async Task<(int errorCode, string resultContent, TimeSpan executionTime)>
+            UploadJournalItemToCanonnRD(HttpClient hc, string journalRow, Guid userIdentifier, string cmdrName, EDGameState gameState,
+            IConfiguration configuration, List<CanonnEventDefinition> validCanonnEvents, PerformContext context, bool loggingEnabled)
         {
             var element = JsonDocument.Parse(journalRow).RootElement;
             if (!element.TryGetProperty("event", out JsonElement journalEvent)) return (303, string.Empty, TimeSpan.Zero);
@@ -346,6 +352,11 @@ new SqlParameter("user_identifier", userIdentifier)
             if (!status.IsSuccessStatusCode)
             {
                 return ((int)status.StatusCode, postResponse, TimeSpan.FromSeconds(30));
+            }
+
+            if (loggingEnabled)
+            {
+                context.WriteLine($"Sent event:\n{json}");
             }
 
             sw.Stop();
