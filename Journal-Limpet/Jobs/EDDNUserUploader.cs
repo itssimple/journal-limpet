@@ -217,6 +217,8 @@ namespace Journal_Limpet.Jobs
         { "message", element }
     };
 
+            await SSEActivitySender.SendUserLogDataAsync(userIdentifier, new { fromIntegration = "EDDN", data = eddnItem });
+
             var json = JsonSerializer.Serialize(eddnItem, new JsonSerializerOptions() { WriteIndented = true });
 
             Stopwatch sw = new Stopwatch();

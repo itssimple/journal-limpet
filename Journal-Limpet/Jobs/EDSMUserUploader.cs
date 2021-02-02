@@ -448,6 +448,8 @@ new SqlParameter("user_identifier", userIdentifier)
             formContent.Add(new StringContent(SharedSettings.VersionNumber), "fromSoftwareVersion");
             formContent.Add(new StringContent(json), "message");
 
+            await SSEActivitySender.SendUserLogDataAsync(userIdentifier, new { fromIntegration = "EDSM", data = formContent });
+
             var policy = Policy
                 .Handle<HttpRequestException>()
                 .WaitAndRetryAsync(new[] {

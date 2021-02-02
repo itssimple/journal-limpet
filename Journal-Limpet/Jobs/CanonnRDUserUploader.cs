@@ -332,7 +332,7 @@ new SqlParameter("user_identifier", userIdentifier)
                 { "cmdrName", cmdrName }
             };
 
-            await SSEActivitySender.SendUserLogDataAsync(userIdentifier, eddnItem);
+            await SSEActivitySender.SendUserLogDataAsync(userIdentifier, new { fromIntegration = "Canonn R&D", data = eddnItem });
 
             var json = JsonSerializer.Serialize(eddnItem, new JsonSerializerOptions() { WriteIndented = true });
 
