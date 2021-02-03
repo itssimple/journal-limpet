@@ -182,6 +182,7 @@ new SqlParameter("user_identifier", userIdentifier)
                                                 case 429:
                                                     breakJournal = true;
                                                     context.WriteLine("We're sending stuff too quickly, breaking out of the loop");
+                                                    context.WriteLine(lastLine);
                                                     context.WriteLine(res.resultContent);
                                                     await Task.Delay(30000);
                                                     break;
@@ -193,7 +194,21 @@ new SqlParameter("user_identifier", userIdentifier)
                                                 case 503:
                                                     breakJournal = true;
                                                     context.WriteLine("We got an error from the service, breaking off!");
+                                                    context.WriteLine(lastLine);
                                                     context.WriteLine(res.resultContent);
+
+                                                    await discordClient.SendMessageAsync("**[Canonn R&D Upload]** Error from the API", new List<DiscordWebhookEmbed>
+                                                    {
+                                                        new DiscordWebhookEmbed
+                                                        {
+                                                            Description = res.resultContent,
+                                                            Fields = new Dictionary<string, string>() {
+                                                                { "User identifier", userIdentifier.ToString() },
+                                                                { "Last line", lastLine },
+                                                                { "Journal", journalItem.S3Path },
+                                                            }.Select(k => new DiscordWebhookEmbedField { Name = k.Key, Value = k.Value }).ToList()
+                                                        }
+                                                    });
                                                     break;
                                             }
                                         }
@@ -202,10 +217,27 @@ new SqlParameter("user_identifier", userIdentifier)
                                     {
                                         if (ex.ToString().Contains("JsonReaderException"))
                                         {
+                                            context.WriteLine(lastLine);
                                             // Ignore rows we cannot parse
                                         }
                                         else
                                         {
+                                            context.WriteLine("Unhandled exception");
+                                            context.WriteLine(lastLine);
+
+                                            await discordClient.SendMessageAsync("**[Canonn R&D Upload]** Unhandled exception", new List<DiscordWebhookEmbed>
+                                                    {
+                                                        new DiscordWebhookEmbed
+                                                        {
+                                                            Description = "Unhandled exception",
+                                                            Fields = new Dictionary<string, string>() {
+                                                                { "User identifier", userIdentifier.ToString() },
+                                                                { "Last line", lastLine },
+                                                                { "Journal", journalItem.S3Path },
+                                                                { "Exception", ex.ToString() }
+                                                            }.Select(k => new DiscordWebhookEmbedField { Name = k.Key, Value = k.Value }).ToList()
+                                                        }
+                                                    });
                                             throw;
                                         }
                                     }
@@ -213,6 +245,7 @@ new SqlParameter("user_identifier", userIdentifier)
                                     if (breakJournal)
                                     {
                                         context.WriteLine("Jumping out from the journal");
+                                        context.WriteLine(lastLine);
                                         break;
                                     }
 
@@ -232,6 +265,7 @@ new SqlParameter("user_identifier", userIdentifier)
                                 if (breakJournal)
                                 {
                                     context.WriteLine("We're breaking off here until next batch, we got told to do that.");
+                                    context.WriteLine(lastLine);
                                     break;
                                 }
 
@@ -290,12 +324,12 @@ new SqlParameter("user_identifier", userIdentifier)
             CodexEntry
         }
 
-        public static async Task<(int errorCode, string resultContent, TimeSpan executionTime)>
+        public static async Task<(int errorCode, string resultContent, TimeSpan executionTime, bool sentData)>
             UploadJournalItemToCanonnRD(HttpClient hc, string journalRow, Guid userIdentifier, string cmdrName, EDGameState gameState,
             IConfiguration configuration, List<CanonnEventDefinition> validCanonnEvents, PerformContext context, bool loggingEnabled)
         {
             var element = JsonDocument.Parse(journalRow).RootElement;
-            if (!element.TryGetProperty("event", out JsonElement journalEvent)) return (303, string.Empty, TimeSpan.Zero);
+            if (!element.TryGetProperty("event", out JsonElement journalEvent)) return (200, string.Empty, TimeSpan.Zero, false);
 
             Stopwatch sw = new Stopwatch();
             sw.Start();
@@ -304,7 +338,7 @@ new SqlParameter("user_identifier", userIdentifier)
 
             var matchingValidEvent = validCanonnEvents.FirstOrDefault(e => e.Event == journalEvent.GetString());
 
-            if (matchingValidEvent == null) return (304, string.Empty, TimeSpan.Zero);
+            if (matchingValidEvent == null) return (200, string.Empty, TimeSpan.Zero, false);
 
             var fieldsToMatch = matchingValidEvent?.ExtensionData ?? new Dictionary<string, object>();
             if (fieldsToMatch.Count > 0)
@@ -313,13 +347,13 @@ new SqlParameter("user_identifier", userIdentifier)
 
                 if (!fieldsToMatch.All(k => elementAsDictionary.ContainsKey(k.Key) && elementAsDictionary[k.Key].ToString() == k.Value.ToString()))
                 {
-                    return (200, string.Empty, TimeSpan.Zero);
+                    return (200, string.Empty, TimeSpan.Zero, false);
                 }
             }
 
             if (!gameState.SendEvents)
             {
-                return (200, string.Empty, TimeSpan.Zero);
+                return (200, string.Empty, TimeSpan.Zero, false);
             }
 
             var eddnItem = new Dictionary<string, object>()
@@ -351,7 +385,7 @@ new SqlParameter("user_identifier", userIdentifier)
 
             if (!status.IsSuccessStatusCode)
             {
-                return ((int)status.StatusCode, postResponse, TimeSpan.FromSeconds(30));
+                return ((int)status.StatusCode, postResponse, TimeSpan.FromSeconds(30), true);
             }
 
             if (loggingEnabled)
@@ -363,7 +397,7 @@ new SqlParameter("user_identifier", userIdentifier)
 
             await Task.Delay(200);
 
-            return (200, postResponse, sw.Elapsed);
+            return (200, postResponse, sw.Elapsed, true);
         }
 
         private async static Task<string> GetValidCanonnEvents()
