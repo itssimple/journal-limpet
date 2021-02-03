@@ -141,7 +141,6 @@ new SqlParameter("user_identifier", userIdentifier)
                                 var journalRows = journalContent.Trim().Split('\n', StringSplitOptions.RemoveEmptyEntries);
 
                                 int line_number = ijd.LastSentLineNumber;
-                                int delay_time = 200;
 
                                 var restOfTheLines = journalRows.Skip(line_number).ToList();
 
@@ -228,7 +227,6 @@ new SqlParameter("user_identifier", userIdentifier)
                                         new SqlParameter("journal_id", journalItem.JournalId),
                                         new SqlParameter("integration_data", integration_json)
                                     );
-                                    await Task.Delay(delay_time);
                                 }
 
                                 if (breakJournal)
@@ -362,6 +360,8 @@ new SqlParameter("user_identifier", userIdentifier)
             }
 
             sw.Stop();
+
+            await Task.Delay(200);
 
             return (200, postResponse, sw.Elapsed);
         }
