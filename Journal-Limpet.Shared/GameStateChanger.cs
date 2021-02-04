@@ -165,7 +165,10 @@ namespace Journal_Limpet.Shared
                     gameState.SystemAddress = elementAsDictionary["SystemAddress"].GetInt64();
                 }
 
-                gameState.SystemName = elementAsDictionary["StarSystem"].GetString();
+                if (elementAsDictionary.ContainsKey("StarSystem"))
+                {
+                    gameState.SystemName = elementAsDictionary["StarSystem"].GetString();
+                }
 
                 if (elementAsDictionary.ContainsKey("StarPos"))
                 {
