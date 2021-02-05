@@ -161,6 +161,8 @@ new SqlParameter("user_identifier", userIdentifier)
                                     }
                                     catch (Exception ex)
                                     {
+                                        await SendEventBatch(userIdentifier, context, configuration, discordClient, hc, lastLine, journalItem, loggingEnabled, ijd, journalEvents);
+
                                         if (ex.ToString().Contains("JsonReaderException"))
                                         {
                                             context.WriteLine(lastLine);
@@ -210,6 +212,12 @@ new SqlParameter("user_identifier", userIdentifier)
                                             new SqlParameter("integration_data", integration_json)
                                         );
                                     }
+
+                                    if (journalEvents.Count == 25)
+                                    {
+                                        breakJournal = await SendEventBatch(userIdentifier, context, configuration, discordClient, hc, lastLine, journalItem, loggingEnabled, ijd, journalEvents);
+                                        journalEvents = new List<Dictionary<string, object>>();
+                                    }
                                 }
 
                                 if (breakJournal)
@@ -221,77 +229,7 @@ new SqlParameter("user_identifier", userIdentifier)
 
                                 if (journalEvents.Any())
                                 {
-                                    await SSEActivitySender.SendUserLogDataAsync(userIdentifier, new { fromIntegration = "Canonn R&D", data = journalEvents });
-
-                                    var json = JsonSerializer.Serialize(journalEvents, new JsonSerializerOptions() { WriteIndented = true });
-
-                                    if (loggingEnabled)
-                                    {
-                                        context.WriteLine($"Sent event:\n{json}");
-                                    }
-
-                                    var res = await SendEventsToCanonn(hc, configuration, json);
-
-                                    switch (res.errorCode)
-                                    {
-                                        // These codes are OK
-                                        case 200:
-                                            break;
-
-                                        // We're sending too many requests at once, let's break out of the loop and wait until next batch
-                                        case 429:
-                                            breakJournal = true;
-                                            context.WriteLine("We're sending stuff too quickly, breaking out of the loop");
-                                            context.WriteLine(lastLine);
-                                            context.WriteLine(res.resultContent);
-                                            await Task.Delay(30000);
-                                            break;
-
-                                        // Exceptions and debug
-                                        case 500: // Exception: %%
-                                        case 501: // %%
-                                        case 502: // Broken gateway
-                                        case 503:
-                                            breakJournal = true;
-                                            context.WriteLine("We got an error from the service, breaking off!");
-                                            context.WriteLine(lastLine);
-                                            context.WriteLine(res.resultContent);
-
-                                            await discordClient.SendMessageAsync("**[Canonn R&D Upload]** Error from the API", new List<DiscordWebhookEmbed>
-                                                    {
-                                                        new DiscordWebhookEmbed
-                                                        {
-                                                            Description = res.resultContent,
-                                                            Fields = new Dictionary<string, string>() {
-                                                                { "User identifier", userIdentifier.ToString() },
-                                                                { "Last line", lastLine },
-                                                                { "Journal", journalItem.S3Path },
-                                                                { "Current GameState", JsonSerializer.Serialize(ijd.CurrentGameState, new JsonSerializerOptions { WriteIndented = true })}
-                                                            }.Select(k => new DiscordWebhookEmbedField { Name = k.Key, Value = k.Value }).ToList()
-                                                        }
-                                                    });
-                                            break;
-                                        default:
-                                            breakJournal = true;
-                                            context.WriteLine("We got an error from the service, breaking off!");
-                                            context.WriteLine(lastLine);
-                                            context.WriteLine(res.resultContent);
-
-                                            await discordClient.SendMessageAsync("**[Canonn R&D Upload]** Unhandled response code", new List<DiscordWebhookEmbed>
-                                                    {
-                                                        new DiscordWebhookEmbed
-                                                        {
-                                                            Description = res.resultContent,
-                                                            Fields = new Dictionary<string, string>() {
-                                                                { "User identifier", userIdentifier.ToString() },
-                                                                { "Last line", lastLine },
-                                                                { "Journal", journalItem.S3Path },
-                                                                { "Current GameState", JsonSerializer.Serialize(ijd.CurrentGameState, new JsonSerializerOptions { WriteIndented = true })}
-                                                            }.Select(k => new DiscordWebhookEmbedField { Name = k.Key, Value = k.Value }).ToList()
-                                                        }
-                                                    });
-                                            break;
-                                    }
+                                    breakJournal = await SendEventBatch(userIdentifier, context, configuration, discordClient, hc, lastLine, journalItem, loggingEnabled, ijd, journalEvents);
                                 }
 
                                 if (journalItem.CompleteEntry)
@@ -336,6 +274,84 @@ new SqlParameter("user_identifier", userIdentifier)
                     }
                 }
             }
+        }
+
+        private static async Task<bool> SendEventBatch(Guid userIdentifier, PerformContext context, IConfiguration configuration, DiscordWebhook discordClient, HttpClient hc, string lastLine, UserJournal journalItem, bool loggingEnabled, IntegrationJournalData ijd, List<Dictionary<string, object>> journalEvents)
+        {
+            var breakJournal = false;
+            await SSEActivitySender.SendUserLogDataAsync(userIdentifier, new { fromIntegration = "Canonn R&D", data = journalEvents });
+
+            var json = JsonSerializer.Serialize(journalEvents, new JsonSerializerOptions() { WriteIndented = true });
+
+            if (loggingEnabled)
+            {
+                context.WriteLine($"Sent event:\n{json}");
+            }
+
+            var res = await SendEventsToCanonn(hc, configuration, json);
+
+            switch (res.errorCode)
+            {
+                // These codes are OK
+                case 200:
+                    break;
+
+                // We're sending too many requests at once, let's break out of the loop and wait until next batch
+                case 429:
+                    breakJournal = true;
+                    context.WriteLine("We're sending stuff too quickly, breaking out of the loop");
+                    context.WriteLine(lastLine);
+                    context.WriteLine(res.resultContent);
+                    await Task.Delay(30000);
+                    break;
+
+                // Exceptions and debug
+                case 500: // Exception: %%
+                case 501: // %%
+                case 502: // Broken gateway
+                case 503:
+                    breakJournal = true;
+                    context.WriteLine("We got an error from the service, breaking off!");
+                    context.WriteLine(lastLine);
+                    context.WriteLine(res.resultContent);
+
+                    await discordClient.SendMessageAsync("**[Canonn R&D Upload]** Error from the API", new List<DiscordWebhookEmbed>
+                                                    {
+                                                        new DiscordWebhookEmbed
+                                                        {
+                                                            Description = res.resultContent,
+                                                            Fields = new Dictionary<string, string>() {
+                                                                { "User identifier", userIdentifier.ToString() },
+                                                                { "Last line", lastLine },
+                                                                { "Journal", journalItem.S3Path },
+                                                                { "Current GameState", JsonSerializer.Serialize(ijd.CurrentGameState, new JsonSerializerOptions { WriteIndented = true })}
+                                                            }.Select(k => new DiscordWebhookEmbedField { Name = k.Key, Value = k.Value }).ToList()
+                                                        }
+                                                    });
+                    break;
+                default:
+                    breakJournal = true;
+                    context.WriteLine("We got an error from the service, breaking off!");
+                    context.WriteLine(lastLine);
+                    context.WriteLine(res.resultContent);
+
+                    await discordClient.SendMessageAsync("**[Canonn R&D Upload]** Unhandled response code", new List<DiscordWebhookEmbed>
+                                                    {
+                                                        new DiscordWebhookEmbed
+                                                        {
+                                                            Description = res.resultContent,
+                                                            Fields = new Dictionary<string, string>() {
+                                                                { "User identifier", userIdentifier.ToString() },
+                                                                { "Last line", lastLine },
+                                                                { "Journal", journalItem.S3Path },
+                                                                { "Current GameState", JsonSerializer.Serialize(ijd.CurrentGameState, new JsonSerializerOptions { WriteIndented = true })}
+                                                            }.Select(k => new DiscordWebhookEmbedField { Name = k.Key, Value = k.Value }).ToList()
+                                                        }
+                                                    });
+                    break;
+            }
+
+            return breakJournal;
         }
 
         public static async Task<Dictionary<string, object>> UploadJournalItemToCanonnRD(string journalRow, Guid userIdentifier, string cmdrName, EDGameState gameState, List<CanonnEventDefinition> validCanonnEvents)
