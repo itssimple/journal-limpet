@@ -188,7 +188,7 @@ namespace Journal_Limpet.Shared
 
             if (new[] { "JoinACrew", "QuitACrew" }.Contains(eventName))
             {
-                if (eventName == "JoinACrew" && elementAsDictionary["Captain"].GetString() != commander)
+                if (eventName == "JoinACrew" && elementAsDictionary.ContainsKey("Captain") && elementAsDictionary["Captain"].GetString() != commander)
                 {
                     gameState.SendEvents = false;
                 }
