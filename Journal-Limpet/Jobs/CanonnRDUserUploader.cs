@@ -364,19 +364,30 @@ new SqlParameter("user_identifier", userIdentifier)
 
             var newGameState = await SetGamestateProperties(element, gameState, cmdrName);
 
-            var matchingValidEvent = validCanonnEvents.FirstOrDefault(e => e.Event == journalEvent.GetString());
+            var matchingValidEvents = validCanonnEvents.Where(e => e.Event == journalEvent.GetString());
 
-            if (matchingValidEvent == null) return null;
+            if (!matchingValidEvents.Any()) return null;
 
-            var fieldsToMatch = matchingValidEvent?.ExtensionData ?? new Dictionary<string, object>();
-            if (fieldsToMatch.Count > 0)
+            bool foundMatchingEvent = false;
+
+            foreach (var matchingValidEvent in matchingValidEvents)
             {
-                var elementAsDictionary = JsonSerializer.Deserialize<Dictionary<string, object>>(element.GetRawText());
-
-                if (!fieldsToMatch.All(k => elementAsDictionary.ContainsKey(k.Key) && elementAsDictionary[k.Key].ToString() == k.Value.ToString()))
+                var fieldsToMatch = matchingValidEvent.ExtensionData ?? new Dictionary<string, object>();
+                if (fieldsToMatch.Count > 0)
                 {
-                    return null;
+                    var elementAsDictionary = JsonSerializer.Deserialize<Dictionary<string, object>>(element.GetRawText());
+
+                    if (fieldsToMatch.All(k => elementAsDictionary.ContainsKey(k.Key) && elementAsDictionary[k.Key].ToString() == k.Value.ToString()))
+                    {
+                        foundMatchingEvent = true;
+                        break;
+                    }
                 }
+            }
+
+            if (!foundMatchingEvent)
+            {
+                return null;
             }
 
             if (!gameState.SendEvents)
