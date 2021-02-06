@@ -148,6 +148,16 @@ new SqlParameter("user_identifier", userIdentifier)
                                         {
                                             var res = await UploadJournalItemToEDSM(hc, row, userIdentifier, edsmSettings, ijd.CurrentGameState);
 
+
+                                            if (res.sentData)
+                                            {
+                                                delay_time = 200;
+                                            }
+                                            else
+                                            {
+                                                delay_time = 1;
+                                            }
+
                                             switch (res.errorCode)
                                             {
                                                 // This is an error from the server, stop working on journals now
@@ -259,6 +269,7 @@ new SqlParameter("user_identifier", userIdentifier)
                                         new SqlParameter("journal_id", journalItem.JournalId),
                                         new SqlParameter("integration_data", integration_json)
                                     );
+
                                     await Task.Delay(delay_time);
                                 }
 
@@ -445,20 +456,20 @@ new SqlParameter("user_identifier", userIdentifier)
             WingLeave
         }
 
-        public static async Task<(int errorCode, string resultContent, TimeSpan executionTime)> UploadJournalItemToEDSM(HttpClient hc, string journalRow, Guid userIdentifier, EDSMIntegrationSettings edsmSettings, EDGameState gameState)
+        public static async Task<(int errorCode, string resultContent, TimeSpan executionTime, bool sentData)> UploadJournalItemToEDSM(HttpClient hc, string journalRow, Guid userIdentifier, EDSMIntegrationSettings edsmSettings, EDGameState gameState)
         {
             var element = JsonDocument.Parse(journalRow).RootElement;
-            if (!element.TryGetProperty("event", out JsonElement journalEvent)) return (303, string.Empty, TimeSpan.Zero);
+            if (!element.TryGetProperty("event", out JsonElement journalEvent)) return (303, string.Empty, TimeSpan.Zero, false);
 
             Stopwatch sw = new Stopwatch();
             sw.Start();
 
             element = await SetGamestateProperties(element, gameState, edsmSettings.CommanderName);
 
-            if (System.Enum.TryParse(typeof(IgnoredEvents), journalEvent.GetString(), false, out _)) return (304, string.Empty, TimeSpan.Zero);
+            if (System.Enum.TryParse(typeof(IgnoredEvents), journalEvent.GetString(), false, out _)) return (304, string.Empty, TimeSpan.Zero, false);
 
             if (!gameState.SendEvents)
-                return (104, string.Empty, TimeSpan.Zero);
+                return (104, string.Empty, TimeSpan.Zero, false);
 
             var formContent = new MultipartFormDataContent();
 
@@ -488,14 +499,14 @@ new SqlParameter("user_identifier", userIdentifier)
             var postResponse = System.Text.Encoding.UTF8.GetString(postResponseBytes);
             if (!status.IsSuccessStatusCode)
             {
-                return ((int)status.StatusCode, postResponse, TimeSpan.FromSeconds(30));
+                return ((int)status.StatusCode, postResponse, TimeSpan.FromSeconds(30), true);
             }
 
             var resp = JsonSerializer.Deserialize<EDSMApiResponse>(postResponse);
 
             sw.Stop();
 
-            return (resp.ResultCode, postResponse, sw.Elapsed);
+            return (resp.ResultCode, postResponse, sw.Elapsed, true);
         }
 
         public class EDSMApiResponse : EliteBaseJsonObject
