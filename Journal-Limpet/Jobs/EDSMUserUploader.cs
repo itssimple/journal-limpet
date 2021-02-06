@@ -216,15 +216,35 @@ new SqlParameter("user_identifier", userIdentifier)
                                         if (ex.ToString().Contains("JsonReaderException"))
                                         {
                                             // Ignore rows we cannot parse
+                                            context.WriteLine(lastLine);
                                         }
                                         else
                                         {
+                                            context.WriteLine("Unhandled exception");
+                                            context.WriteLine(lastLine);
+
+                                            await discordClient.SendMessageAsync("**[EDSM Upload]** Unhandled exception", new List<DiscordWebhookEmbed>
+                                            {
+                                                new DiscordWebhookEmbed
+                                                {
+                                                    Description = "Unhandled exception",
+                                                    Fields = new Dictionary<string, string>() {
+                                                        { "User identifier", userIdentifier.ToString() },
+                                                        { "Last line", lastLine },
+                                                        { "Journal", journalItem.S3Path },
+                                                        { "Exception", ex.ToString() },
+                                                        { "Current GameState", JsonSerializer.Serialize(ijd.CurrentGameState, new JsonSerializerOptions { WriteIndented = true })}
+                                                    }.Select(k => new DiscordWebhookEmbedField { Name = k.Key, Value = k.Value }).ToList()
+                                                }
+                                            });
                                             throw;
                                         }
                                     }
 
                                     if (breakJournal)
                                     {
+                                        context.WriteLine("Jumping out from the journal");
+                                        context.WriteLine(lastLine);
                                         break;
                                     }
 
@@ -244,6 +264,8 @@ new SqlParameter("user_identifier", userIdentifier)
 
                                 if (breakJournal)
                                 {
+                                    context.WriteLine("We're breaking off here until next batch, we got told to do that.");
+                                    context.WriteLine(lastLine);
                                     break;
                                 }
 
