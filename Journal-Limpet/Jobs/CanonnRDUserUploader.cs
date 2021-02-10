@@ -421,6 +421,11 @@ new SqlParameter("user_identifier", userIdentifier)
                     TimeSpan.FromSeconds(30),
                     TimeSpan.FromSeconds(30),
                     TimeSpan.FromSeconds(30),
+                    TimeSpan.FromSeconds(30),
+                    TimeSpan.FromSeconds(30),
+                    TimeSpan.FromSeconds(30),
+                    TimeSpan.FromSeconds(30),
+                    TimeSpan.FromSeconds(30),
                             }, (ex, ts) =>
                             {
                                 context.WriteLine("Caught an exception while sending data, trying again");
