@@ -222,7 +222,10 @@ new SqlParameter("user_identifier", userIdentifier)
 
                                 if (journalEvents.Any())
                                 {
-                                    breakJournal = await SendEventBatch(userIdentifier, context, configuration, discordClient, hc, lastLine, journalItem, loggingEnabled, ijd, journalEvents);
+                                    if (!await SendEventBatch(userIdentifier, context, configuration, discordClient, hc, lastLine, journalItem, loggingEnabled, ijd, journalEvents))
+                                    {
+                                        breakJournal = true;
+                                    }
                                 }
 
                                 if (breakJournal)
