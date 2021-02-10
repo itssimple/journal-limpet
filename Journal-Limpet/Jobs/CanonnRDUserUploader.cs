@@ -417,8 +417,9 @@ new SqlParameter("user_identifier", userIdentifier)
         private static async Task<(int errorCode, string resultContent, bool sentData)> SendEventsToCanonn(HttpClient hc, IConfiguration configuration, string json, PerformContext context)
         {
             var policy = Policy
-                            .Handle<HttpRequestException>()
-                            .WaitAndRetryAsync(new[] {
+                .HandleResult<HttpResponseMessage>(res => !res.IsSuccessStatusCode)
+                .Or<HttpRequestException>()
+                    .WaitAndRetryAsync(new[] {
                     TimeSpan.FromSeconds(30),
                     TimeSpan.FromSeconds(30),
                     TimeSpan.FromSeconds(30),
