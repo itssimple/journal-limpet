@@ -288,7 +288,7 @@ new SqlParameter("user_identifier", userIdentifier)
                 context.WriteLine($"Sent event:\n{json}");
             }
 
-            var res = await SendEventsToCanonn(hc, configuration, json);
+            var res = await SendEventsToCanonn(hc, configuration, json, context);
 
             switch (res.errorCode)
             {
