@@ -220,16 +220,16 @@ new SqlParameter("user_identifier", userIdentifier)
                                     }
                                 }
 
+                                if (journalEvents.Any())
+                                {
+                                    breakJournal = await SendEventBatch(userIdentifier, context, configuration, discordClient, hc, lastLine, journalItem, loggingEnabled, ijd, journalEvents);
+                                }
+
                                 if (breakJournal)
                                 {
                                     context.WriteLine("We're breaking off here until next batch, we got told to do that.");
                                     context.WriteLine(lastLine);
                                     break;
-                                }
-
-                                if (journalEvents.Any())
-                                {
-                                    breakJournal = await SendEventBatch(userIdentifier, context, configuration, discordClient, hc, lastLine, journalItem, loggingEnabled, ijd, journalEvents);
                                 }
 
                                 if (journalItem.CompleteEntry)
