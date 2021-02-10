@@ -152,7 +152,7 @@ new SqlParameter("user_identifier", userIdentifier)
                                     {
                                         if (!string.IsNullOrWhiteSpace(row))
                                         {
-                                            var canonnEvent = await UploadJournalItemToCanonnRD(row, userIdentifier, cmdrName, ijd.CurrentGameState, canonnEvents);
+                                            var canonnEvent = await UploadJournalItemToCanonnRD(row, cmdrName, ijd.CurrentGameState, canonnEvents);
                                             if (canonnEvent != null)
                                             {
                                                 journalEvents.Add(canonnEvent);
@@ -354,7 +354,7 @@ new SqlParameter("user_identifier", userIdentifier)
             return breakJournal;
         }
 
-        public static async Task<Dictionary<string, object>> UploadJournalItemToCanonnRD(string journalRow, Guid userIdentifier, string cmdrName, EDGameState gameState, List<CanonnEventDefinition> validCanonnEvents)
+        public static async Task<Dictionary<string, object>> UploadJournalItemToCanonnRD(string journalRow, string cmdrName, EDGameState gameState, List<CanonnEventDefinition> validCanonnEvents)
         {
             var element = JsonDocument.Parse(journalRow).RootElement;
             if (!element.TryGetProperty("event", out JsonElement journalEvent)) return null;
@@ -411,7 +411,7 @@ new SqlParameter("user_identifier", userIdentifier)
             return eddnItem;
         }
 
-        private static async Task<(int errorCode, string resultContent, bool sentData)> SendEventsToCanonn(HttpClient hc, IConfiguration configuration, string json)
+        private static async Task<(int errorCode, string resultContent, bool sentData)> SendEventsToCanonn(HttpClient hc, IConfiguration configuration, string json, PerformContext context)
         {
             var policy = Policy
                             .Handle<HttpRequestException>()
@@ -421,6 +421,13 @@ new SqlParameter("user_identifier", userIdentifier)
                     TimeSpan.FromSeconds(30),
                     TimeSpan.FromSeconds(30),
                     TimeSpan.FromSeconds(30),
+                            }, (ex, ts) =>
+                            {
+                                context.WriteLine("Caught an exception while sending data, trying again");
+                                context.WriteLine(ex.ToString());
+                                context.WriteLine("Sleeping for " + ts);
+                                context.WriteLine("Data we tried to send was");
+                                context.WriteLine(json);
                             });
 
             HttpResponseMessage status = await policy.ExecuteAsync(() => hc.PostAsync(configuration["CanonnRD:JournalEndpoint"], new StringContent(json, Encoding.UTF8, "application/json")));
