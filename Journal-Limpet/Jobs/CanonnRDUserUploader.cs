@@ -383,6 +383,11 @@ new SqlParameter("user_identifier", userIdentifier)
                         break;
                     }
                 }
+                else
+                {
+                    foundMatchingEvent = true;
+                    break;
+                }
             }
 
             if (!foundMatchingEvent)
