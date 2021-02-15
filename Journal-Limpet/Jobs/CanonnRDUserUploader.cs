@@ -215,6 +215,7 @@ new SqlParameter("user_identifier", userIdentifier)
 
                                     if (journalEvents.Count == 25)
                                     {
+                                        context.WriteLine($"Got {journalEvents.Count} events to send to Canonn");
                                         breakJournal = await SendEventBatch(userIdentifier, context, configuration, discordClient, hc, lastLine, journalItem, loggingEnabled, ijd, journalEvents);
                                         journalEvents = new List<Dictionary<string, object>>();
                                     }
@@ -222,6 +223,7 @@ new SqlParameter("user_identifier", userIdentifier)
 
                                 if (journalEvents.Any())
                                 {
+                                    context.WriteLine($"Got {journalEvents.Count} events to send to Canonn");
                                     await SendEventBatch(userIdentifier, context, configuration, discordClient, hc, lastLine, journalItem, loggingEnabled, ijd, journalEvents);
                                 }
 
