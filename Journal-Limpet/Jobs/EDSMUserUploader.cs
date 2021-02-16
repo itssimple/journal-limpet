@@ -151,7 +151,7 @@ new SqlParameter("user_identifier", userIdentifier)
 
                                             if (res.sentData)
                                             {
-                                                delay_time = 5000;
+                                                delay_time = 1000;
                                             }
                                             else
                                             {
