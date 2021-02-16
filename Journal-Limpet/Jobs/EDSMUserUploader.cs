@@ -262,16 +262,14 @@ new SqlParameter("user_identifier", userIdentifier)
                                     ijd.LastSentLineNumber = line_number;
                                     journalItem.IntegrationData["EDSM"] = ijd;
 
-                                    var integration_json = JsonSerializer.Serialize(journalItem.IntegrationData);
-
-                                    await db.ExecuteNonQueryAsync(
-                                        "UPDATE user_journal SET integration_data = @integration_data WHERE journal_id = @journal_id",
-                                        new SqlParameter("journal_id", journalItem.JournalId),
-                                        new SqlParameter("integration_data", integration_json)
-                                    );
-
                                     await Task.Delay(delay_time);
                                 }
+
+                                await db.ExecuteNonQueryAsync(
+                                    "UPDATE user_journal SET integration_data = @integration_data WHERE journal_id = @journal_id",
+                                    new SqlParameter("journal_id", journalItem.JournalId),
+                                    new SqlParameter("integration_data", JsonSerializer.Serialize(journalItem.IntegrationData))
+                                );
 
                                 if (breakJournal)
                                 {
@@ -286,12 +284,10 @@ new SqlParameter("user_identifier", userIdentifier)
                                     ijd.FullySent = true;
                                     journalItem.IntegrationData["EDSM"] = ijd;
 
-                                    var integration_json_done = JsonSerializer.Serialize(journalItem.IntegrationData);
-
                                     await db.ExecuteNonQueryAsync(
                                         "UPDATE user_journal SET integration_data = @integration_data WHERE journal_id = @journal_id",
                                         new SqlParameter("journal_id", journalItem.JournalId),
-                                        new SqlParameter("integration_data", integration_json_done)
+                                        new SqlParameter("integration_data", JsonSerializer.Serialize(journalItem.IntegrationData))
                                     );
                                 }
                             }
@@ -299,6 +295,12 @@ new SqlParameter("user_identifier", userIdentifier)
                         }
                         catch (Exception ex)
                         {
+                            await db.ExecuteNonQueryAsync(
+                                "UPDATE user_journal SET integration_data = @integration_data WHERE journal_id = @journal_id",
+                                new SqlParameter("journal_id", journalItem.JournalId),
+                                new SqlParameter("integration_data", JsonSerializer.Serialize(journalItem.IntegrationData))
+                            );
+
                             await discordClient.SendMessageAsync("**[EDSM Upload]** Problem with upload to EDSM", new List<DiscordWebhookEmbed>
                                 {
                                     new DiscordWebhookEmbed
@@ -318,12 +320,11 @@ new SqlParameter("user_identifier", userIdentifier)
                     {
                         edsmSettings.Enabled = false;
                         user.IntegrationSettings["EDSM"] = edsmSettings.AsJsonElement();
-                        var integrationJson = JsonSerializer.Serialize(user.IntegrationSettings);
 
                         await db.ExecuteNonQueryAsync(
                             "UPDATE user_profile SET integration_settings = @integration_settings WHERE user_identifier = @user_identifier",
                             new SqlParameter("user_identifier", userIdentifier),
-                            new SqlParameter("integration_settings", integrationJson)
+                            new SqlParameter("integration_settings", JsonSerializer.Serialize(user.IntegrationSettings))
                         );
                     }
                 }
