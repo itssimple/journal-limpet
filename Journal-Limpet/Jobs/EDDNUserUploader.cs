@@ -128,13 +128,15 @@ namespace Journal_Limpet.Jobs
                                     }
 
                                     line_number++;
-                                    await db.ExecuteNonQueryAsync(
-                                        "UPDATE user_journal SET sent_to_eddn_line = @line_number WHERE journal_id = @journal_id",
-                                        new SqlParameter("journal_id", journalItem.JournalId),
-                                        new SqlParameter("line_number", line_number)
-                                    );
+
                                     await Task.Delay(delay_time);
                                 }
+
+                                await db.ExecuteNonQueryAsync(
+                                    "UPDATE user_journal SET sent_to_eddn_line = @line_number WHERE journal_id = @journal_id",
+                                    new SqlParameter("journal_id", journalItem.JournalId),
+                                    new SqlParameter("line_number", line_number)
+                                );
 
                                 if (journalItem.CompleteEntry)
                                 {
