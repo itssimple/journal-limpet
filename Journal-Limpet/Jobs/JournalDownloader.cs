@@ -285,6 +285,7 @@ namespace Journal_Limpet.Jobs
 
             var pollicy = Policy<HttpResponseMessage>
                 .Handle<HttpRequestException>()
+                .OrResult(r => !r.IsSuccessStatusCode)
                 .OrResult(r => r.StatusCode == HttpStatusCode.PartialContent)
                 .WaitAndRetryAsync(100, attempt => TimeSpan.FromSeconds(5));
 
