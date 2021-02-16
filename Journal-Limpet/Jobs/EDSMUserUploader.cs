@@ -151,7 +151,7 @@ new SqlParameter("user_identifier", userIdentifier)
 
                                             if (res.sentData)
                                             {
-                                                delay_time = 200;
+                                                delay_time = 5000;
                                             }
                                             else
                                             {
@@ -464,7 +464,7 @@ new SqlParameter("user_identifier", userIdentifier)
             Stopwatch sw = new Stopwatch();
             sw.Start();
 
-            element = await SetGamestateProperties(element, gameState, edsmSettings.CommanderName);
+            element = await SetGamestateProperties(element, gameState, edsmSettings.CommanderName.Trim());
 
             if (System.Enum.TryParse(typeof(IgnoredEvents), journalEvent.GetString(), false, out _)) return (304, string.Empty, TimeSpan.Zero, false);
 
@@ -475,7 +475,7 @@ new SqlParameter("user_identifier", userIdentifier)
 
             var json = JsonSerializer.Serialize(element, new JsonSerializerOptions() { WriteIndented = true });
 
-            formContent.Add(new StringContent(edsmSettings.CommanderName), "commanderName");
+            formContent.Add(new StringContent(edsmSettings.CommanderName.Trim()), "commanderName");
             formContent.Add(new StringContent(edsmSettings.ApiKey), "apiKey");
             formContent.Add(new StringContent("Journal Limpet"), "fromSoftware");
             formContent.Add(new StringContent(SharedSettings.VersionNumber), "fromSoftwareVersion");
@@ -484,14 +484,9 @@ new SqlParameter("user_identifier", userIdentifier)
             await SSEActivitySender.SendUserLogDataAsync(userIdentifier, new { fromIntegration = "EDSM", data = formContent });
 
             var policy = Policy
-                .Handle<HttpRequestException>()
-                .WaitAndRetryAsync(new[] {
-                    TimeSpan.FromSeconds(1),
-                    TimeSpan.FromSeconds(2),
-                    TimeSpan.FromSeconds(4),
-                    TimeSpan.FromSeconds(8),
-                    TimeSpan.FromSeconds(16),
-                });
+                .HandleResult<HttpResponseMessage>(res => !res.IsSuccessStatusCode)
+                .Or<HttpRequestException>()
+                .WaitAndRetryAsync(30, retryCount => TimeSpan.FromSeconds(retryCount * 5));
 
             var status = await policy.ExecuteAsync(() => hc.PostAsync("https://www.edsm.net/api-journal-v1", formContent));
             var postResponseBytes = await status.Content.ReadAsByteArrayAsync();
