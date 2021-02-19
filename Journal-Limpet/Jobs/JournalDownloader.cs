@@ -300,9 +300,9 @@ namespace Journal_Limpet.Jobs
 
             var journalRows = journalContent.Trim().Split('\n', StringSplitOptions.RemoveEmptyEntries);
 
-            bool updateFileOnS3 = (previousRow?.LastProcessedLineNumber ?? 0) != journalRows.Length && (previousRow?.LastProcessedLine != (journalRows.LastOrDefault() ?? string.Empty));
+            bool updateFileOnS3 = (previousRow?.LastProcessedLineNumber ?? 0) != journalRows.Length && (previousRow?.LastProcessedLine != (journalRows.LastOrDefault() ?? string.Empty)) && journalContent.Trim() != "{}";
 
-            if (!string.IsNullOrWhiteSpace(journalContent))
+            if (!string.IsNullOrWhiteSpace(journalContent) && journalContent.Trim() != "{}")
             {
                 var firstRow = journalRows.FirstOrDefault();
                 if (!string.IsNullOrWhiteSpace(firstRow))
