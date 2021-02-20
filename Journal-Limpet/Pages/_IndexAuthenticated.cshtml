@@ -1,5 +1,5 @@
 ﻿@model IndexModel
-<h1 class="display-4">Welcome Commander!</h1>
+<h1 class="display-4">Welcome CMDR @Model.CommanderName!</h1>
 <p>You have @Model.LoggedInUserJournalCount.ToString("n0") journals stored with us!</p>
 <p>
     @foreach (var kvp in Model.IntegrationsEnabled)
