@@ -77,6 +77,7 @@ namespace Journal_Limpet.Shared.Database
         private SqlCommand GetCommandWithParams(string sql, SqlParameter[] parameters)
         {
             var command = _connection.CreateCommand();
+            command.CommandTimeout = 300;
             command.CommandText = sql;
             command.Parameters.AddRange(parameters);
 
