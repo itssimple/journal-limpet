@@ -1,6 +1,7 @@
 ﻿using Hangfire;
 using Hangfire.Console;
 using Hangfire.Server;
+using Journal_Limpet.Jobs.SharedCode;
 using Journal_Limpet.Shared;
 using Journal_Limpet.Shared.Database;
 using Journal_Limpet.Shared.Models.API.Profile;
@@ -79,6 +80,13 @@ namespace Journal_Limpet.Jobs
                         );
 
                         context.WriteLine("Bailing out early, user doesn't own Elite or has issues with cAPI auth");
+
+                        if (!string.IsNullOrWhiteSpace(user.NotificationEmail))
+                        {
+                            context.WriteLine("User cannot be fetched, asking them to reauthenticate");
+                            await SendLoginNotificationMethod.SendLoginNotification(db, configuration, user);
+                        }
+
                         return;
                     }
 
@@ -86,6 +94,16 @@ namespace Journal_Limpet.Jobs
                     var profileData = JsonSerializer.Deserialize<EliteProfile>(profileJson);
 
                     context.WriteLine(profileJson);
+
+                    if (profileJson == "{}")
+                    {
+                        if (!string.IsNullOrWhiteSpace(user.NotificationEmail))
+                        {
+                            context.WriteLine("User cannot be fetched, asking them to reauthenticate");
+                            await SendLoginNotificationMethod.SendLoginNotification(db, configuration, user);
+                        }
+                        return;
+                    }
 
                     context.WriteLine($"Downloading journals for {profileData.Commander.Name}");
 
