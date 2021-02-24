@@ -82,7 +82,12 @@ namespace Journal_Limpet.Jobs
                         return;
                     }
 
-                    var profileData = JsonSerializer.Deserialize<EliteProfile>(await profile.Content.ReadAsStringAsync());
+                    var profileJson = await profile.Content.ReadAsStringAsync();
+                    var profileData = JsonSerializer.Deserialize<EliteProfile>(profileJson);
+
+                    context.WriteLine(profileJson);
+
+                    context.WriteLine($"Downloading journals for {profileData.Commander.Name}");
 
                     DateTime journalDate = DateTime.Today.AddDays(-25);
 
