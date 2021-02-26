@@ -53,14 +53,15 @@ namespace Journal_Limpet.Pages
                 hc.BaseAddress = new Uri("https://companion.orerve.net");
 
                 var cmdrProfile = await GetProfileAsync(hc);
+                var cmdrJson = await cmdrProfile.Content.ReadAsStringAsync();
 
-                if (!cmdrProfile.IsSuccessStatusCode)
+                if (!cmdrProfile.IsSuccessStatusCode || cmdrJson.Trim() == "{}")
                 {
                     Redirect("~/api/journal/logout");
                     return;
                 }
 
-                var cmdrInfo = JsonSerializer.Deserialize<EliteProfile>(await cmdrProfile.Content.ReadAsStringAsync());
+                var cmdrInfo = JsonSerializer.Deserialize<EliteProfile>(cmdrJson);
 
                 CommanderName = cmdrInfo.Commander.Name;
 
