@@ -65,6 +65,12 @@ namespace Journal_Limpet.Pages
 
                 CommanderName = cmdrInfo.Commander.Name;
 
+                if (string.IsNullOrWhiteSpace(CommanderName))
+                {
+                    Redirect("~/api/journal/logout");
+                    return;
+                }
+
                 LoggedInUserJournalCount = await _db.ExecuteScalarAsync<int>(
                   "SELECT COUNT(journal_id) FROM user_journal WHERE user_identifier = @user_identifier AND last_processed_line_number > 0",
                   new SqlParameter("user_identifier", User.Identity.Name)
