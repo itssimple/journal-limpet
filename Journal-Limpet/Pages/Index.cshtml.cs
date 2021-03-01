@@ -2,6 +2,7 @@
 using Journal_Limpet.Shared.Models.API.Profile;
 using Journal_Limpet.Shared.Models.User;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Logging;
@@ -36,7 +37,7 @@ namespace Journal_Limpet.Pages
             _httpClientFactory = httpClientFactory;
         }
 
-        public async Task OnGet()
+        public async Task<IActionResult> OnGet()
         {
             var mod = await SharedSettings.GetIndexStatsAsync(_db);
 
@@ -57,8 +58,7 @@ namespace Journal_Limpet.Pages
 
                 if (!cmdrProfile.IsSuccessStatusCode || cmdrJson.Trim() == "{}")
                 {
-                    Redirect("~/api/journal/logout");
-                    return;
+                    return Redirect("~/api/journal/logout");
                 }
 
                 var cmdrInfo = JsonSerializer.Deserialize<EliteProfile>(cmdrJson);
@@ -67,8 +67,7 @@ namespace Journal_Limpet.Pages
 
                 if (string.IsNullOrWhiteSpace(CommanderName))
                 {
-                    Redirect("~/api/journal/logout");
-                    return;
+                    return Redirect("~/api/journal/logout"); ;
                 }
 
                 LoggedInUserJournalCount = await _db.ExecuteScalarAsync<int>(
@@ -83,6 +82,8 @@ namespace Journal_Limpet.Pages
                     IntegrationsEnabled.Add(inte.Key, inte.Value.GetProperty("enabled").GetBoolean());
                 }
             }
+
+            return Page();
         }
 
         private async Task<HttpResponseMessage> GetProfileAsync(HttpClient hc)
