@@ -87,20 +87,16 @@ namespace Journal_Limpet
                 configuration
                     .UseSimpleAssemblyNameTypeSerializer()
                     .UseRecommendedSerializerSettings()
-                    .UseSqlServerStorage(Configuration["Database:HangfireConnection"], new Hangfire.SqlServer.SqlServerStorageOptions
+                    .UseRedisStorage(SharedSettings.RedisClient, new Hangfire.Redis.RedisStorageOptions
                     {
-                        CommandBatchMaxTimeout = TimeSpan.FromMinutes(5),
-                        SlidingInvisibilityTimeout = TimeSpan.FromMinutes(5),
-                        QueuePollInterval = TimeSpan.Zero,
-                        UseRecommendedIsolationLevel = true,
-                        DisableGlobalLocks = true
+                        Db = 4
                     })
                     .UseConsole();
             });
 
             services.AddHangfireServer(options =>
             {
-                //options.WorkerCount = Environment.ProcessorCount * 10;
+                options.WorkerCount = Environment.ProcessorCount * 10;
             });
 #endif
         }
