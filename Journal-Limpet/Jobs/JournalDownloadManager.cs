@@ -23,7 +23,8 @@ namespace Journal_Limpet.Jobs
                 var usersToDownloadJournalsFor = await db.ExecuteListAsync<Shared.Models.User.Profile>(
     @"SELECT *
 FROM user_profile
-WHERE last_notification_mail IS NULL
+WHERE DATEDIFF(MINUTE, GETUTCDATE(), CAST(JSON_VALUE(user_settings, '$.TokenExpiration') as DATETIMEOFFSET)) > 60
+AND last_notification_mail IS NULL
 AND skip_download = 0
 AND deleted = 0"
                 );
