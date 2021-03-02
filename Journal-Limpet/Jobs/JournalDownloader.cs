@@ -64,27 +64,33 @@ namespace Journal_Limpet.Jobs
 
                     if (!profile.IsSuccessStatusCode)
                     {
+                        bool resetAuth = false;
                         switch (profile.StatusCode)
                         {
                             case HttpStatusCode.BadRequest:
                                 // User does not potentially own the game
+                                resetAuth = true;
                                 break;
                             case HttpStatusCode.Unauthorized:
                                 // Invalid token (or Epic games)
+                                resetAuth = true;
                                 break;
                         }
 
-                        await SSEActivitySender.SendUserActivityAsync(user.UserIdentifier,
-                            "Could not authorize you",
-                            "Sorry, but there seems to be something wrong with your account. Please contact us so we can try and figure out what's wrong!"
-                        );
-
-                        context.WriteLine("Bailing out early, user doesn't own Elite or has issues with cAPI auth");
-
-                        if (!string.IsNullOrWhiteSpace(user.NotificationEmail))
+                        if (resetAuth)
                         {
-                            context.WriteLine("User cannot be fetched, asking them to reauthenticate");
-                            await SendLoginNotificationMethod.SendLoginNotification(db, configuration, user);
+                            await SSEActivitySender.SendUserActivityAsync(user.UserIdentifier,
+                                "Could not authorize you",
+                                "Sorry, but there seems to be something wrong with your account. Please contact us so we can try and figure out what's wrong!"
+                            );
+
+                            context.WriteLine("Bailing out early, user doesn't own Elite or has issues with cAPI auth");
+
+                            if (!string.IsNullOrWhiteSpace(user.NotificationEmail))
+                            {
+                                context.WriteLine("User cannot be fetched, asking them to reauthenticate");
+                                await SendLoginNotificationMethod.SendLoginNotification(db, configuration, user);
+                            }
                         }
 
                         return;
