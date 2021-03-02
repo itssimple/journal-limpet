@@ -27,6 +27,7 @@ namespace Journal_Limpet.Jobs
 {
     public class JournalDownloader
     {
+        [JobDisplayName("Journal downloader for {0}")]
         public static async Task DownloadJournalAsync(Guid userIdentifier, PerformContext context)
         {
             using (var rlock = new RedisJobLock($"JournalDownloader.DownloadJournal.{userIdentifier}"))

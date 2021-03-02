@@ -1,4 +1,5 @@
-﻿using Hangfire.Console;
+﻿using Hangfire;
+using Hangfire.Console;
 using Hangfire.Server;
 using Journal_Limpet.Shared;
 using Journal_Limpet.Shared.Database;
@@ -24,6 +25,7 @@ namespace Journal_Limpet.Jobs
 {
     public static class EDSMUserUploader
     {
+        [JobDisplayName("EDSM uploader for {0}")]
         public static async Task UploadAsync(Guid userIdentifier, PerformContext context)
         {
             using (var rlock = new RedisJobLock($"EDSMUserUploader.UploadAsync.{userIdentifier}"))
