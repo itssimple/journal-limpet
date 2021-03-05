@@ -35,14 +35,14 @@ namespace Journal_Limpet.Controllers
             {
                 response.WriteAsync("event: globalactivity\r");
                 response.WriteAsync($"data: {data}\r\r");
-                response.Body.Flush();
+                response.Body.FlushAsync();
             });
 
             await _pubsub.SubscribeAsync("stats-activity", (channel, data) =>
             {
                 response.WriteAsync("event: statsactivity\r");
                 response.WriteAsync($"data: {data}\r\r");
-                response.Body.Flush();
+                response.Body.FlushAsync();
             });
 
             if (User.Identity.IsAuthenticated)
@@ -54,7 +54,7 @@ namespace Journal_Limpet.Controllers
                 {
                     response.WriteAsync("event: useractivity\r");
                     response.WriteAsync($"data: {data}\r\r");
-                    response.Body.Flush();
+                    response.Body.FlushAsync();
                 });
             }
 

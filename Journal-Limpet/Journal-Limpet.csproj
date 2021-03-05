@@ -21,6 +21,7 @@
 
   <ItemGroup>
     <None Remove="News\2021-02-01-canonn-integration-released.md" />
+    <None Remove="News\2021-03-05-added-faq-page.md" />
   </ItemGroup>
 
   <ItemGroup>
