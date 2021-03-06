@@ -39,7 +39,7 @@ AND deleted = 0"
 
                 var hc = _hcf.CreateClient();
 
-                foreach (var user in soonExpiringUsers)
+                foreach (var user in soonExpiringUsers.WithProgress(context))
                 {
                     var res = await hc.PostAsync("https://auth.frontierstore.net/token",
                         new FormUrlEncodedContent(new Dictionary<string, string>
