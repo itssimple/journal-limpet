@@ -35,15 +35,14 @@ namespace Journal_Limpet.Jobs
 
                 using (var scope = Startup.ServiceProvider.CreateScope())
                 {
-                    MSSQLDB db = scope.ServiceProvider.GetRequiredService<MSSQLDB>();
-                    IConfiguration configuration = scope.ServiceProvider.GetRequiredService<IConfiguration>();
+                    var db = scope.ServiceProvider.GetRequiredService<MSSQLDB>();
+                    var configuration = scope.ServiceProvider.GetRequiredService<IConfiguration>();
 
-                    MinioClient _minioClient = scope.ServiceProvider.GetRequiredService<MinioClient>();
+                    var _minioClient = scope.ServiceProvider.GetRequiredService<MinioClient>();
                     var discordClient = scope.ServiceProvider.GetRequiredService<DiscordWebhook>();
+                    var starSystemChecker = scope.ServiceProvider.GetRequiredService<StarSystemChecker>();
 
-                    IHttpClientFactory _hcf = scope.ServiceProvider.GetRequiredService<IHttpClientFactory>();
-
-                    var hc = _hcf.CreateClient();
+                    var hc = SharedSettings.GetHttpClient(scope);
 
                     var user = await db.ExecuteSingleRowAsync<Profile>(
 @"SELECT *
@@ -154,7 +153,7 @@ new SqlParameter("user_identifier", userIdentifier)
                                     {
                                         if (!string.IsNullOrWhiteSpace(row))
                                         {
-                                            var canonnEvent = await UploadJournalItemToCanonnRD(row, cmdrName, ijd.CurrentGameState, canonnEvents);
+                                            var canonnEvent = await UploadJournalItemToCanonnRD(row, cmdrName, ijd.CurrentGameState, canonnEvents, starSystemChecker);
                                             if (canonnEvent != null)
                                             {
                                                 journalEvents.Add(canonnEvent);
@@ -368,7 +367,7 @@ new SqlParameter("user_identifier", userIdentifier)
             return breakJournal;
         }
 
-        public static async Task<Dictionary<string, object>> UploadJournalItemToCanonnRD(string journalRow, string cmdrName, EDGameState gameState, List<CanonnEventDefinition> validCanonnEvents)
+        public static async Task<Dictionary<string, object>> UploadJournalItemToCanonnRD(string journalRow, string cmdrName, EDGameState gameState, List<CanonnEventDefinition> validCanonnEvents, StarSystemChecker starSystemChecker)
         {
             var element = JsonDocument.Parse(journalRow).RootElement;
             if (!element.TryGetProperty("event", out JsonElement journalEvent)) return null;
@@ -376,7 +375,7 @@ new SqlParameter("user_identifier", userIdentifier)
             Stopwatch sw = new Stopwatch();
             sw.Start();
 
-            var newGameState = await SetGamestateProperties(element, gameState, cmdrName);
+            var newGameState = await SetGamestateProperties(element, gameState, cmdrName, starSystemChecker);
 
             var matchingValidEvents = validCanonnEvents.Where(e => e.Event == journalEvent.GetString());
 
@@ -484,12 +483,12 @@ new SqlParameter("user_identifier", userIdentifier)
             public string Event { get; set; }
         }
 
-        public static async Task<JsonElement> SetGamestateProperties(JsonElement element, EDGameState gameState, string commander)
+        public static async Task<JsonElement> SetGamestateProperties(JsonElement element, EDGameState gameState, string commander, StarSystemChecker starSystemChecker)
         {
             var _rdb = SharedSettings.RedisClient.GetDatabase(1);
             var elementAsDictionary = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(element.GetRawText());
 
-            bool setCache = await EDSystemCache.GetSystemCache(elementAsDictionary, _rdb);
+            bool setCache = await EDSystemCache.GetSystemCache(elementAsDictionary, _rdb, starSystemChecker);
 
             GameStateChanger.GameStateFixer(gameState, commander, elementAsDictionary);
 

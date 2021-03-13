@@ -35,15 +35,15 @@ namespace Journal_Limpet.Jobs
 
                 using (var scope = Startup.ServiceProvider.CreateScope())
                 {
-                    MSSQLDB db = scope.ServiceProvider.GetRequiredService<MSSQLDB>();
-                    IConfiguration configuration = scope.ServiceProvider.GetRequiredService<IConfiguration>();
+                    var db = scope.ServiceProvider.GetRequiredService<MSSQLDB>();
+                    var configuration = scope.ServiceProvider.GetRequiredService<IConfiguration>();
 
-                    MinioClient _minioClient = scope.ServiceProvider.GetRequiredService<MinioClient>();
+                    var _minioClient = scope.ServiceProvider.GetRequiredService<MinioClient>();
                     var discordClient = scope.ServiceProvider.GetRequiredService<DiscordWebhook>();
 
-                    IHttpClientFactory _hcf = scope.ServiceProvider.GetRequiredService<IHttpClientFactory>();
+                    var starSystemChecker = scope.ServiceProvider.GetRequiredService<StarSystemChecker>();
 
-                    var hc = _hcf.CreateClient();
+                    var hc = SharedSettings.GetHttpClient(scope);
 
                     var user = await db.ExecuteSingleRowAsync<Profile>(
                         "SELECT * FROM user_profile WHERE user_identifier = @user_identifier AND deleted = 0 AND send_to_eddn = 1",
@@ -94,7 +94,7 @@ namespace Journal_Limpet.Jobs
                                     {
                                         if (!string.IsNullOrWhiteSpace(row))
                                         {
-                                            var time = await UploadJournalItemToEDDN(hc, row, userIdentifier);
+                                            var time = await UploadJournalItemToEDDN(hc, row, userIdentifier, starSystemChecker);
 
                                             if (time.TotalMilliseconds > 500)
                                             {
@@ -197,7 +197,7 @@ namespace Journal_Limpet.Jobs
             SquadronFaction
         }
 
-        internal static async Task<TimeSpan> UploadJournalItemToEDDN(HttpClient hc, string journalRow, Guid userIdentifier)
+        internal static async Task<TimeSpan> UploadJournalItemToEDDN(HttpClient hc, string journalRow, Guid userIdentifier, StarSystemChecker starSystemChecker)
         {
             var element = JsonDocument.Parse(journalRow).RootElement;
             if (element.ValueKind != JsonValueKind.Object) return TimeSpan.Zero;
@@ -206,7 +206,7 @@ namespace Journal_Limpet.Jobs
             if (!System.Enum.TryParse(typeof(AllowedEvents), journalEvent.GetString(), false, out _)) return TimeSpan.Zero;
 
             element = FixEDDNJson(element);
-            element = await AddMissingProperties(element);
+            element = await AddMissingProperties(element, starSystemChecker);
 
             if (HasMissingProperties(element)) return TimeSpan.Zero;
 
@@ -258,7 +258,7 @@ namespace Journal_Limpet.Jobs
             return requiredProperties.Count() < 5;
         }
 
-        internal async static Task<JsonElement> AddMissingProperties(JsonElement element)
+        internal async static Task<JsonElement> AddMissingProperties(JsonElement element, StarSystemChecker starSystemChecker)
         {
             var _rdb = SharedSettings.RedisClient.GetDatabase(1);
 
@@ -284,17 +284,22 @@ namespace Journal_Limpet.Jobs
                     flags: CommandFlags.FireAndForget
                 );
 
-                await _rdb.StringSetAsyncWithRetries(
-                    $"StarSystem:{elementAsDictionary["StarSystem"].GetString()}",
-                    JsonSerializer.Serialize(new
+                var arrayEnum = elementAsDictionary["StarPos"].EnumerateArray().ToArray();
+
+                var edSysData = new EDSystemData
+                {
+                    Id64 = elementAsDictionary["SystemAddress"].GetInt64(),
+                    Name = elementAsDictionary["StarSystem"].GetString(),
+                    Coordinates = new EDSystemCoordinates
                     {
-                        SystemAddress = elementAsDictionary["SystemAddress"].GetInt64(),
-                        StarSystem = elementAsDictionary["StarSystem"].GetString(),
-                        StarPos = elementAsDictionary["StarPos"]
-                    }),
-                    TimeSpan.FromHours(10),
-                    flags: CommandFlags.FireAndForget
-                );
+                        X = arrayEnum[0].GetDouble(),
+                        Y = arrayEnum[1].GetDouble(),
+                        Z = arrayEnum[2].GetDouble()
+                    }
+                };
+
+                await starSystemChecker.InsertOrUpdateSystemAsync(edSysData);
+
                 return element;
             }
 
@@ -316,16 +321,22 @@ namespace Journal_Limpet.Jobs
                     elementAsDictionary["StarSystem"] = jel.GetProperty("StarSystem");
                     elementAsDictionary["StarPos"] = jel.GetProperty("StarPos");
                 }
-            }
-            else if (!missingProps.Contains("StarSystem"))
-            {
-                var cachedSystem = await _rdb.StringGetAsyncWithRetries($"StarSystem:{elementAsDictionary["StarSystem"].GetString()}");
-                if (cachedSystem != RedisValue.Null)
+                else
                 {
-                    var jel = JsonDocument.Parse(cachedSystem.ToString()).RootElement;
-                    elementAsDictionary["SystemAddress"] = jel.GetProperty("SystemAddress");
-                    elementAsDictionary["StarSystem"] = jel.GetProperty("StarSystem");
-                    elementAsDictionary["StarPos"] = jel.GetProperty("StarPos");
+                    var systemData = await starSystemChecker.GetSystemDataAsync(elementAsDictionary["SystemAddress"].GetInt64());
+                    if (systemData != null)
+                    {
+                        var jel = JsonDocument.Parse(JsonSerializer.Serialize(new
+                        {
+                            SystemAddress = systemData.Id64,
+                            StarSystem = systemData.Name,
+                            StarPos = new[] { systemData.Coordinates.X, systemData.Coordinates.Y, systemData.Coordinates.Z }
+                        })).RootElement;
+
+                        elementAsDictionary["SystemAddress"] = jel.GetProperty("SystemAddress");
+                        elementAsDictionary["StarSystem"] = jel.GetProperty("StarSystem");
+                        elementAsDictionary["StarPos"] = jel.GetProperty("StarPos");
+                    }
                 }
             }
 

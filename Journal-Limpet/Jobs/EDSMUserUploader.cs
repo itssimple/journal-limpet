@@ -34,15 +34,15 @@ namespace Journal_Limpet.Jobs
 
                 using (var scope = Startup.ServiceProvider.CreateScope())
                 {
-                    MSSQLDB db = scope.ServiceProvider.GetRequiredService<MSSQLDB>();
-                    IConfiguration configuration = scope.ServiceProvider.GetRequiredService<IConfiguration>();
+                    var db = scope.ServiceProvider.GetRequiredService<MSSQLDB>();
+                    var configuration = scope.ServiceProvider.GetRequiredService<IConfiguration>();
 
-                    MinioClient _minioClient = scope.ServiceProvider.GetRequiredService<MinioClient>();
+                    var _minioClient = scope.ServiceProvider.GetRequiredService<MinioClient>();
                     var discordClient = scope.ServiceProvider.GetRequiredService<DiscordWebhook>();
 
-                    IHttpClientFactory _hcf = scope.ServiceProvider.GetRequiredService<IHttpClientFactory>();
+                    var starSystemChecker = scope.ServiceProvider.GetRequiredService<StarSystemChecker>();
 
-                    var hc = _hcf.CreateClient();
+                    var hc = SharedSettings.GetHttpClient(scope);
 
                     var user = await db.ExecuteSingleRowAsync<Profile>(
 @"SELECT *
@@ -148,7 +148,7 @@ new SqlParameter("user_identifier", userIdentifier)
                                     {
                                         if (!string.IsNullOrWhiteSpace(row))
                                         {
-                                            var res = await UploadJournalItemToEDSM(hc, row, userIdentifier, edsmSettings, ijd.CurrentGameState);
+                                            var res = await UploadJournalItemToEDSM(hc, row, userIdentifier, edsmSettings, ijd.CurrentGameState, starSystemChecker);
 
 
                                             if (res.sentData)
@@ -459,7 +459,7 @@ new SqlParameter("user_identifier", userIdentifier)
             WingLeave
         }
 
-        public static async Task<(int errorCode, string resultContent, TimeSpan executionTime, bool sentData)> UploadJournalItemToEDSM(HttpClient hc, string journalRow, Guid userIdentifier, EDSMIntegrationSettings edsmSettings, EDGameState gameState)
+        public static async Task<(int errorCode, string resultContent, TimeSpan executionTime, bool sentData)> UploadJournalItemToEDSM(HttpClient hc, string journalRow, Guid userIdentifier, EDSMIntegrationSettings edsmSettings, EDGameState gameState, StarSystemChecker starSystemChecker)
         {
             var element = JsonDocument.Parse(journalRow).RootElement;
             if (!element.TryGetProperty("event", out JsonElement journalEvent)) return (303, string.Empty, TimeSpan.Zero, false);
@@ -467,7 +467,7 @@ new SqlParameter("user_identifier", userIdentifier)
             Stopwatch sw = new Stopwatch();
             sw.Start();
 
-            element = await SetGamestateProperties(element, gameState, edsmSettings.CommanderName.Trim());
+            element = await SetGamestateProperties(element, gameState, edsmSettings.CommanderName.Trim(), starSystemChecker);
 
             if (System.Enum.TryParse(typeof(IgnoredEvents), journalEvent.GetString(), false, out _)) return (304, string.Empty, TimeSpan.Zero, false);
 
@@ -517,12 +517,12 @@ new SqlParameter("user_identifier", userIdentifier)
             public List<EDSMApiResponse> Events { get; set; }
         }
 
-        public static async Task<JsonElement> SetGamestateProperties(JsonElement element, EDGameState gameState, string commander)
+        public static async Task<JsonElement> SetGamestateProperties(JsonElement element, EDGameState gameState, string commander, StarSystemChecker starSystemChecker)
         {
             var elementAsDictionary = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(element.GetRawText());
 
             var _rdb = SharedSettings.RedisClient.GetDatabase(1);
-            bool setCache = await EDSystemCache.GetSystemCache(elementAsDictionary, _rdb);
+            bool setCache = await EDSystemCache.GetSystemCache(elementAsDictionary, _rdb, starSystemChecker);
 
             GameStateChanger.GameStateFixer(gameState, commander, elementAsDictionary);
 
