@@ -19,7 +19,7 @@ namespace Journal_Limpet.Shared.Models
 
     public static class EDSystemCache
     {
-        public static async Task<bool> GetSystemCache(Dictionary<string, JsonElement> elementAsDictionary, IDatabase _rdb)
+        public static async Task<bool> GetSystemCache(Dictionary<string, JsonElement> elementAsDictionary, IDatabase _rdb, StarSystemChecker starSystemChecker)
         {
             var reqProps = typeof(RequiredPropertiesForCache).GetEnumNames();
 
@@ -42,17 +42,21 @@ namespace Journal_Limpet.Shared.Models
                     flags: CommandFlags.FireAndForget
                 );
 
-                await _rdb.StringSetAsyncWithRetries(
-                    $"StarSystem:{elementAsDictionary["StarSystem"].GetString()}",
-                    JsonSerializer.Serialize(new
+                var arrayEnum = elementAsDictionary["StarPos"].EnumerateArray().ToArray();
+
+                var edSysData = new EDSystemData
+                {
+                    Id64 = elementAsDictionary["SystemAddress"].GetInt64(),
+                    Name = elementAsDictionary["StarSystem"].GetString(),
+                    Coordinates = new EDSystemCoordinates
                     {
-                        SystemAddress = elementAsDictionary["SystemAddress"].GetInt64(),
-                        StarSystem = elementAsDictionary["StarSystem"].GetString(),
-                        StarPos = elementAsDictionary["StarPos"]
-                    }),
-                    TimeSpan.FromHours(10),
-                    flags: CommandFlags.FireAndForget
-                );
+                        X = arrayEnum[0].GetDouble(),
+                        Y = arrayEnum[1].GetDouble(),
+                        Z = arrayEnum[2].GetDouble()
+                    }
+                };
+
+                await starSystemChecker.InsertOrUpdateSystemAsync(edSysData);
 
                 setCache = true;
             }
@@ -71,18 +75,22 @@ namespace Journal_Limpet.Shared.Models
 
                     setCache = true;
                 }
-            }
-            else if (!missingProps.Contains("StarSystem"))
-            {
-                var cachedSystem = await _rdb.StringGetAsyncWithRetries($"StarSystem:{elementAsDictionary["StarSystem"].GetString()}");
-                if (cachedSystem != RedisValue.Null)
+                else
                 {
-                    var jel = JsonDocument.Parse(cachedSystem.ToString()).RootElement;
-                    elementAsDictionary["SystemAddress"] = jel.GetProperty("SystemAddress");
-                    elementAsDictionary["StarSystem"] = jel.GetProperty("StarSystem");
-                    elementAsDictionary["StarPos"] = jel.GetProperty("StarPos");
+                    var systemData = await starSystemChecker.GetSystemDataAsync(elementAsDictionary["SystemAddress"].GetInt64());
+                    if (systemData != null)
+                    {
+                        var jel = JsonDocument.Parse(JsonSerializer.Serialize(new
+                        {
+                            SystemAddress = systemData.Id64,
+                            StarSystem = systemData.Name,
+                            StarPos = new[] { systemData.Coordinates.X, systemData.Coordinates.Y, systemData.Coordinates.Z }
+                        })).RootElement;
 
-                    setCache = true;
+                        elementAsDictionary["SystemAddress"] = jel.GetProperty("SystemAddress");
+                        elementAsDictionary["StarSystem"] = jel.GetProperty("StarSystem");
+                        elementAsDictionary["StarPos"] = jel.GetProperty("StarPos");
+                    }
                 }
             }
 
@@ -95,18 +103,6 @@ namespace Journal_Limpet.Shared.Models
             {
                 await _rdb.StringSetAsyncWithRetries(
                     $"SystemAddress:{gameState.SystemAddress}",
-                    JsonSerializer.Serialize(new
-                    {
-                        SystemAddress = gameState.SystemAddress,
-                        StarSystem = gameState.SystemName,
-                        StarPos = gameState.SystemCoordinates
-                    }),
-                    TimeSpan.FromHours(10),
-                    flags: CommandFlags.FireAndForget
-                );
-
-                await _rdb.StringSetAsyncWithRetries(
-                    $"StarSystem:{gameState.SystemName}",
                     JsonSerializer.Serialize(new
                     {
                         SystemAddress = gameState.SystemAddress,
