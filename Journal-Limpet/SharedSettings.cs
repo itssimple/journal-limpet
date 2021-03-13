@@ -1,6 +1,8 @@
 ﻿using Journal_Limpet.Shared.Database;
 using Journal_Limpet.Shared.Models;
+using Microsoft.Extensions.DependencyInjection;
 using StackExchange.Redis;
+using System.Net.Http;
 using System.Threading.Tasks;
 
 namespace Journal_Limpet
@@ -24,6 +26,14 @@ CAST(SUM(last_processed_line_number) AS bigint) total_number_of_lines
 FROM user_profile up
 LEFT JOIN user_journal uj ON up.user_identifier = uj.user_identifier AND uj.last_processed_line_number > 0
 WHERE up.deleted = 0");
+        }
+
+        public static HttpClient GetHttpClient(IServiceScope scope)
+        {
+            var _hcf = scope.ServiceProvider.GetRequiredService<IHttpClientFactory>();
+            var hc = _hcf.CreateClient();
+            hc.DefaultRequestHeaders.UserAgent.Add(new System.Net.Http.Headers.ProductInfoHeaderValue("Journal-Limpet", SharedSettings.VersionNumber));
+            return hc;
         }
     }
 }
