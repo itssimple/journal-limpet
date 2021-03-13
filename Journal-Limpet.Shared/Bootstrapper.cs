@@ -11,7 +11,10 @@ namespace Journal_Limpet.Shared
         public static void AddJournalLimpetDependencies(this IServiceCollection sc, IConfiguration configuration)
         {
             sc.AddScoped(x => new SqlConnection(configuration["Database:ConnectionString"]));
-            sc.AddScoped(x => new MSSQLDB(x.GetRequiredService<SqlConnection>()));
+
+            sc.AddScoped<MSSQLDB>();
+            sc.AddScoped<StarSystemChecker>();
+
             sc.AddSingleton(x => new MinioClient(configuration["Minio:ConnectionString"], configuration["Minio:AccessKey"], configuration["Minio:SecretKey"]));
 
             sc.AddScoped(x => new TwitterSender(configuration["Twitter:ConsumerKey"], configuration["Twitter:ConsumerSecret"], configuration["Twitter:AccessToken"], configuration["Twitter:AccessSecret"]));
