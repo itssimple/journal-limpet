@@ -54,9 +54,7 @@ namespace Journal_Limpet.Jobs
 
                     var authToken = user.UserSettings.AuthToken;
 
-                    IHttpClientFactory _hcf = scope.ServiceProvider.GetRequiredService<IHttpClientFactory>();
-
-                    var hc = _hcf.CreateClient();
+                    var hc = SharedSettings.GetHttpClient(scope);
 
                     hc.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", authToken);
                     hc.BaseAddress = new Uri("https://companion.orerve.net");
