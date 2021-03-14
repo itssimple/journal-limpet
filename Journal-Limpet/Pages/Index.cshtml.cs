@@ -72,7 +72,7 @@ namespace Journal_Limpet.Pages
                     return Redirect("~/api/journal/logout"); ;
                 }
 
-                LoggedInUserJournalCount = await _db.ExecuteScalarAsync<int>(
+                LoggedInUserJournalCount = await _db.ExecuteScalarAsync<long>(
                   "SELECT COUNT_BIG(journal_id) FROM user_journal WHERE user_identifier = @user_identifier AND last_processed_line_number > 0",
                   new SqlParameter("user_identifier", User.Identity.Name)
                 );
