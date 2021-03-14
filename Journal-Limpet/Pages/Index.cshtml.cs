@@ -25,7 +25,6 @@ namespace Journal_Limpet.Pages
         public long LoggedInUserJournalCount = 0;
         public long TotalUserJournalCount = 0;
         public long TotalUserJournalLines = 0;
-        public long TotalStarSystemCount = 0;
 
         public Dictionary<string, bool> IntegrationsEnabled = new Dictionary<string, bool>();
 
@@ -45,7 +44,6 @@ namespace Journal_Limpet.Pages
             TotalUserJournalCount = mod.TotalUserJournalCount;
             TotalUserJournalLines = mod.TotalUserJournalLines;
             UserCount = mod.TotalUserCount;
-            TotalStarSystemCount = mod.TotalStarSystemCount;
 
             if (User.Identity.IsAuthenticated)
             {

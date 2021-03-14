@@ -23,8 +23,7 @@ namespace Journal_Limpet
         {
             return await _db.ExecuteSingleRowAsync<IndexStatsModel>(@"SELECT COUNT_BIG(DISTINCT up.user_identifier) user_count,
 COUNT_BIG(journal_id) journal_count,
-SUM(last_processed_line_number) total_number_of_lines,
-(SELECT COUNT_BIG(SystemAddress) FROM EliteSystem) total_star_systems
+SUM(last_processed_line_number) total_number_of_lines
 FROM user_profile up
 LEFT JOIN user_journal uj ON up.user_identifier = uj.user_identifier AND uj.last_processed_line_number > 0
 WHERE up.deleted = 0");

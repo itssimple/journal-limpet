@@ -28,7 +28,6 @@ $@"Nightly stats #EliteDangerous
 {SharedSettings.NumberFixer(mod.TotalUserCount)} users registered
 {SharedSettings.NumberFixer(mod.TotalUserJournalCount)} journals saved
 {SharedSettings.NumberFixer(mod.TotalUserJournalLines)} lines of journal
-{SharedSettings.NumberFixer(mod.TotalStarSystemCount)} star systems
 https://journal-limpet.com");
 
                 if (!res.status)
