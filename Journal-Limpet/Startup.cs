@@ -172,6 +172,13 @@ namespace Journal_Limpet
                 TimeZoneInfo.Utc
             );
 
+            RecurringJob.AddOrUpdate(
+                "journal-limpet:starsystem-updater",
+                () => EliteSystemsUpdater.UpdateEliteSystemsAsync(null),
+                "30 3 * * *",
+                TimeZoneInfo.Utc
+            );
+
             //RecurringJob.AddOrUpdate(
             //    "journal-limpet:upload-to-eddn",
             //    () => EDDNUploader.UploadAsync(null),
