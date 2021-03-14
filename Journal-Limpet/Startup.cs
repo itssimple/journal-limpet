@@ -161,7 +161,7 @@ namespace Journal_Limpet
             RecurringJob.AddOrUpdate(
                 "journal-limpet:download-journals",
                 () => JournalDownloadManager.InitializeJournalDownloadersAsync(null),
-                "*/10 * * * *",
+                "*/60 * * * *",
                 TimeZoneInfo.Utc
             );
 
