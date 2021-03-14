@@ -25,9 +25,10 @@ namespace Journal_Limpet.Jobs
                 var res = await tweetSender.SendAsync(
 $@"Nightly stats #EliteDangerous
 
-{mod.TotalUserCount.ToString("n0")} users registered
-{mod.TotalUserJournalCount.ToString("n0")} journals saved
-{mod.TotalUserJournalLines.ToString("n0")} lines of journal
+{SharedSettings.NumberFixer(mod.TotalUserCount)} users registered
+{SharedSettings.NumberFixer(mod.TotalUserJournalCount)} journals saved
+{SharedSettings.NumberFixer(mod.TotalUserJournalLines)} lines of journal
+{SharedSettings.NumberFixer(mod.TotalStarSystemCount)} star systems
 https://journal-limpet.com");
 
                 if (!res.status)

@@ -63,6 +63,7 @@ namespace Journal_Limpet.Jobs
 
                     if (!profile.IsSuccessStatusCode)
                     {
+                        context.WriteLine($"Invalid statuscode: {profile.StatusCode} {profile.ReasonPhrase}");
                         bool resetAuth = false;
                         switch (profile.StatusCode)
                         {

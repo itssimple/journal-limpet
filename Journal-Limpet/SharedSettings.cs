@@ -2,6 +2,7 @@
 using Journal_Limpet.Shared.Models;
 using Microsoft.Extensions.DependencyInjection;
 using StackExchange.Redis;
+using System.Globalization;
 using System.Net.Http;
 using System.Threading.Tasks;
 
@@ -35,6 +36,37 @@ WHERE up.deleted = 0");
             var hc = _hcf.CreateClient();
             hc.DefaultRequestHeaders.UserAgent.Add(new System.Net.Http.Headers.ProductInfoHeaderValue("Journal-Limpet", SharedSettings.VersionNumber));
             return hc;
+        }
+
+        public static string NumberFixer(long number)
+        {
+            if (number == 0)
+            {
+                return "Zero";
+            }
+            else if (number < 499)
+            {
+                return number.ToString("n0");
+            }
+            else if (number < 4_999)
+            {
+                return $"{EmptyDecimalRemover(number.ToString("n1"))}";
+            }
+            else if (number < 499_999)
+            {
+                return $"{EmptyDecimalRemover((number / (double)1000).ToString("n1"))} thousand";
+            }
+            else if (number < 499_999_999)
+            {
+                return $"{EmptyDecimalRemover((number / (double)1000 / 1000).ToString("n1"))} million";
+            }
+
+            return $"{EmptyDecimalRemover((number / (double)1000 / 1000 / 1000).ToString("n1"))} billion";
+        }
+
+        private static string EmptyDecimalRemover(string formattedNumber)
+        {
+            return formattedNumber.Replace($"{CultureInfo.CurrentCulture.NumberFormat.CurrencyDecimalSeparator[0]}0", "");
         }
     }
 }
