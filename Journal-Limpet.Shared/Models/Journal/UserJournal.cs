@@ -17,7 +17,7 @@ namespace Journal_Limpet.Shared.Models.Journal
         public bool CompleteEntry { get; }
         public DateTimeOffset? LastUpdate { get; }
         public bool SentToEDDN { get; }
-        public long SentToEDDNLine { get; }
+        public int SentToEDDNLine { get; }
         public Dictionary<string, IntegrationJournalData> IntegrationData { get; }
 
         public UserJournal(DataRow row)
