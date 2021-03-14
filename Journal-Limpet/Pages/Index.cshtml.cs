@@ -1,4 +1,5 @@
-﻿using Journal_Limpet.Shared.Database;
+﻿using Journal_Limpet.Shared;
+using Journal_Limpet.Shared.Database;
 using Journal_Limpet.Shared.Models.API.Profile;
 using Journal_Limpet.Shared.Models.User;
 using Microsoft.AspNetCore.Authorization;
@@ -49,25 +50,39 @@ namespace Journal_Limpet.Pages
             {
                 LoggedInUser = await _db.ExecuteSingleRowAsync<Profile>("SELECT * FROM user_profile WHERE user_identifier = @user_identifier", new SqlParameter("user_identifier", User.Identity.Name));
 
-                var hc = _httpClientFactory.CreateClient();
-                hc.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", LoggedInUser.UserSettings.AuthToken);
-                hc.BaseAddress = new Uri("https://companion.orerve.net");
 
-                var cmdrProfile = await GetProfileAsync(hc);
-                var cmdrJson = await cmdrProfile.Content.ReadAsStringAsync();
+                var rdb = SharedSettings.RedisClient.GetDatabase(0);
 
-                if (!cmdrProfile.IsSuccessStatusCode || cmdrJson.Trim() == "{}")
+                var cmdrNameCache = await rdb.StringGetAsync($"commanderName:{User.Identity.Name}");
+
+                if (cmdrNameCache.IsNull)
                 {
-                    return Redirect("~/api/journal/logout");
+                    var hc = _httpClientFactory.CreateClient();
+                    hc.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", LoggedInUser.UserSettings.AuthToken);
+                    hc.BaseAddress = new Uri("https://companion.orerve.net");
+
+                    var cmdrProfile = await GetProfileAsync(hc);
+                    var cmdrJson = await cmdrProfile.Content.ReadAsStringAsync();
+
+                    if (!cmdrProfile.IsSuccessStatusCode || cmdrJson.Trim() == "{}")
+                    {
+                        return Redirect("~/api/journal/logout");
+                    }
+
+                    var cmdrInfo = JsonSerializer.Deserialize<EliteProfile>(cmdrJson);
+
+                    CommanderName = cmdrInfo.Commander.Name;
+
+                    if (string.IsNullOrWhiteSpace(CommanderName))
+                    {
+                        return Redirect("~/api/journal/logout"); ;
+                    }
+
+                    await rdb.StringSetAsyncWithRetries($"commanderName:{User.Identity.Name}", CommanderName, TimeSpan.FromMinutes(30));
                 }
-
-                var cmdrInfo = JsonSerializer.Deserialize<EliteProfile>(cmdrJson);
-
-                CommanderName = cmdrInfo.Commander.Name;
-
-                if (string.IsNullOrWhiteSpace(CommanderName))
+                else
                 {
-                    return Redirect("~/api/journal/logout"); ;
+                    CommanderName = cmdrNameCache;
                 }
 
                 LoggedInUserJournalCount = await _db.ExecuteScalarAsync<long>(
