@@ -20,9 +20,10 @@ namespace Journal_Limpet
 
         public static async Task<IndexStatsModel> GetIndexStatsAsync(MSSQLDB _db)
         {
-            return await _db.ExecuteSingleRowAsync<IndexStatsModel>(@"SELECT CAST(COUNT(DISTINCT up.user_identifier) AS bigint) user_count,
-CAST(COUNT(journal_id) AS bigint) journal_count,
-CAST(SUM(last_processed_line_number) AS bigint) total_number_of_lines
+            return await _db.ExecuteSingleRowAsync<IndexStatsModel>(@"SELECT COUNT_BIG(DISTINCT up.user_identifier) user_count,
+COUNT_BIG(journal_id) journal_count,
+SUM(last_processed_line_number) total_number_of_lines,
+(SELECT COUNT_BIG(SystemAddress) FROM EliteSystem) total_star_systems
 FROM user_profile up
 LEFT JOIN user_journal uj ON up.user_identifier = uj.user_identifier AND uj.last_processed_line_number > 0
 WHERE up.deleted = 0");

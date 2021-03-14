@@ -146,7 +146,7 @@ namespace Journal_Limpet.Jobs
                     if (user.SendToEDDN && !RedisJobLock.IsLocked($"EDDNUserUploader.UploadAsync.{user.UserIdentifier}"))
                     {
                         var userJournals = await db.ExecuteScalarAsync<int>(
-                        "SELECT COUNT(journal_id) FROM user_journal WHERE user_identifier = @user_identifier AND sent_to_eddn = 0 AND last_processed_line_number >= sent_to_eddn_line",
+                        "SELECT COUNT_BIG(journal_id) FROM user_journal WHERE user_identifier = @user_identifier AND sent_to_eddn = 0 AND last_processed_line_number >= sent_to_eddn_line",
                             new SqlParameter("user_identifier", userIdentifier)
                         );
                         if (userJournals > 0)
@@ -158,7 +158,7 @@ namespace Journal_Limpet.Jobs
                     if (user.IntegrationSettings.ContainsKey("EDSM") && user.IntegrationSettings["EDSM"].GetTypedObject<EDSMIntegrationSettings>().Enabled)
                     {
                         var userJournals = await db.ExecuteScalarAsync<int>(
-                            "SELECT COUNT(journal_id) FROM user_journal WHERE user_identifier = @user_identifier AND ISNULL(JSON_VALUE(integration_data, '$.EDSM.lastSentLineNumber'), '0') < last_processed_line_number AND last_processed_line_number > 0 AND ISNULL(JSON_VALUE(integration_data, '$.EDSM.fullySent'), 'false') = 'false'",
+                            "SELECT COUNT_BIG(journal_id) FROM user_journal WHERE user_identifier = @user_identifier AND ISNULL(JSON_VALUE(integration_data, '$.EDSM.lastSentLineNumber'), '0') < last_processed_line_number AND last_processed_line_number > 0 AND ISNULL(JSON_VALUE(integration_data, '$.EDSM.fullySent'), 'false') = 'false'",
                             new SqlParameter("user_identifier", userIdentifier)
                         );
 
@@ -172,7 +172,7 @@ namespace Journal_Limpet.Jobs
                     if (user.IntegrationSettings.ContainsKey("Canonn R&D") && user.IntegrationSettings["Canonn R&D"].GetTypedObject<EDSMIntegrationSettings>().Enabled)
                     {
                         var userJournals = await db.ExecuteScalarAsync<int>(
-                            "SELECT COUNT(journal_id) FROM user_journal WHERE user_identifier = @user_identifier AND ISNULL(JSON_VALUE(integration_data, '$.\"Canonn R\\u0026D\".lastSentLineNumber'), '0') <= last_processed_line_number AND last_processed_line_number > 0 AND ISNULL(JSON_VALUE(integration_data, '$.\"Canonn R\\u0026D\".fullySent'), 'false') = 'false'",
+                            "SELECT COUNT_BIG(journal_id) FROM user_journal WHERE user_identifier = @user_identifier AND ISNULL(JSON_VALUE(integration_data, '$.\"Canonn R\\u0026D\".lastSentLineNumber'), '0') <= last_processed_line_number AND last_processed_line_number > 0 AND ISNULL(JSON_VALUE(integration_data, '$.\"Canonn R\\u0026D\".fullySent'), 'false') = 'false'",
                             new SqlParameter("user_identifier", userIdentifier)
                         );
 

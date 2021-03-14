@@ -23,7 +23,7 @@ namespace Journal_Limpet.Jobs
 
                     var userToUploadToEDDN = await db.ExecuteListAsync<UnsentJournalInfo>(
         @"WITH UnsentJournals AS (
-	SELECT uj.user_identifier, COUNT(uj.journal_id) journal_count
+	SELECT uj.user_identifier, COUNT_BIG(uj.journal_id) journal_count
 	FROM user_journal uj
 	WHERE uj.last_processed_line_number > uj.sent_to_eddn_line AND uj.sent_to_eddn = 0
 	GROUP BY uj.user_identifier

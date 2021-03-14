@@ -7,17 +7,17 @@ namespace Journal_Limpet.Shared.Models.Journal
 {
     public class UserJournal
     {
-        public int JournalId { get; }
+        public long JournalId { get; }
         public Guid UserIdentifier { get; }
         public DateTimeOffset Created { get; }
         public DateTimeOffset JournalDate { get; }
         public string S3Path { get; }
         public string LastProcessedLine { get; }
-        public int? LastProcessedLineNumber { get; }
+        public long? LastProcessedLineNumber { get; }
         public bool CompleteEntry { get; }
         public DateTimeOffset? LastUpdate { get; }
         public bool SentToEDDN { get; }
-        public int SentToEDDNLine { get; }
+        public long SentToEDDNLine { get; }
         public Dictionary<string, IntegrationJournalData> IntegrationData { get; }
 
         public UserJournal(DataRow row)

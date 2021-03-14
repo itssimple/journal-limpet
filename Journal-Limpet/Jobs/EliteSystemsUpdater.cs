@@ -37,7 +37,8 @@ namespace Journal_Limpet.Jobs
                     url = "https://downloads.spansh.co.uk/galaxy_7days.json.gz";
                 }
 
-                List<string> batchInserts = new List<string>();
+                var batchOfBatches = new List<List<string>>();
+                var batchInserts = new List<string>();
 
                 using (var scope = Startup.ServiceProvider.CreateScope())
                 {
@@ -47,8 +48,11 @@ namespace Journal_Limpet.Jobs
 
                     var lastUpdateCheck = await hc.GetAsync(url, HttpCompletionOption.ResponseHeadersRead);
 
+                    context.WriteLine($"Spansh dump was updated: {lastUpdateCheck.Content.Headers.LastModified}");
+
                     if (lastCachedUpdate.IsNull || lastCachedUpdate != lastUpdateCheck.Content.Headers.LastModified.ToString())
                     {
+                        context.WriteLine($"Downloading new system dump from {url}");
                         using (var beep = await hc.GetStreamAsync(url))
                         using (var fileStream = new BufferedStream(beep))
                         using (var gzipStream = new GZipStream(fileStream, CompressionMode.Decompress))
@@ -71,7 +75,8 @@ namespace Journal_Limpet.Jobs
 
                                         if (batchInserts.Count == 1000)
                                         {
-                                            await ExecuteBatchInsert(batchInserts, db);
+                                            batchOfBatches.Add(batchInserts);
+                                            batchInserts.Clear();
                                         }
                                     }
                                 }
@@ -80,7 +85,15 @@ namespace Journal_Limpet.Jobs
 
                         if (batchInserts.Count > 0)
                         {
-                            await ExecuteBatchInsert(batchInserts, db);
+                            batchOfBatches.Add(batchInserts);
+                            batchInserts.Clear();
+                        }
+
+                        context.WriteLine($"Fetched {systems} from {url}, generated {batchOfBatches.Count} batches of inserts. Running them now.");
+
+                        foreach (var batch in batchOfBatches.WithProgress(context))
+                        {
+                            await ExecuteBatchInsert(batch, db);
                         }
                     }
 

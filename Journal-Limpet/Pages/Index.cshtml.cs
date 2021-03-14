@@ -25,6 +25,7 @@ namespace Journal_Limpet.Pages
         public long LoggedInUserJournalCount = 0;
         public long TotalUserJournalCount = 0;
         public long TotalUserJournalLines = 0;
+        public long TotalStarSystemCount = 0;
 
         public Dictionary<string, bool> IntegrationsEnabled = new Dictionary<string, bool>();
 
@@ -44,6 +45,7 @@ namespace Journal_Limpet.Pages
             TotalUserJournalCount = mod.TotalUserJournalCount;
             TotalUserJournalLines = mod.TotalUserJournalLines;
             UserCount = mod.TotalUserCount;
+            TotalStarSystemCount = mod.TotalStarSystemCount;
 
             if (User.Identity.IsAuthenticated)
             {
@@ -71,7 +73,7 @@ namespace Journal_Limpet.Pages
                 }
 
                 LoggedInUserJournalCount = await _db.ExecuteScalarAsync<int>(
-                  "SELECT COUNT(journal_id) FROM user_journal WHERE user_identifier = @user_identifier AND last_processed_line_number > 0",
+                  "SELECT COUNT_BIG(journal_id) FROM user_journal WHERE user_identifier = @user_identifier AND last_processed_line_number > 0",
                   new SqlParameter("user_identifier", User.Identity.Name)
                 );
 

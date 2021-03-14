@@ -48,6 +48,12 @@
             if (_data.TotalUserJournalLines) {
                 journalLines.innerHTML = `${_data.TotalUserJournalLines.toLocaleString()} lines of journal`;
             }
+
+            let starSystems = document.querySelector('#stat-starsystems');
+
+            if (_data.TotalStarSystemCount) {
+                starSystems.innerHTML = `${_data.TotalStarSystemCount.toLocaleString()} star systems`;
+            }
         }
     }
 

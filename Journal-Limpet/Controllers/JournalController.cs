@@ -140,7 +140,7 @@ new SqlParameter("customerId", profile.CustomerId))
                         new SqlParameter("settings", JsonSerializer.Serialize(settings))
                     );
 
-                    var userCount = await _db.ExecuteScalarAsync<int>("SELECT COUNT(user_identifier) FROM user_profile WHERE deleted = 0");
+                    var userCount = await _db.ExecuteScalarAsync<int>("SELECT COUNT_BIG(user_identifier) FROM user_profile WHERE deleted = 0");
 
                     await SSEActivitySender.SendGlobalActivityAsync("A new user has registered!", $"We now have {userCount:N0} users registered!");
                     await SSEActivitySender.SendStatsActivityAsync(_db);
