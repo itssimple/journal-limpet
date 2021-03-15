@@ -146,19 +146,21 @@ namespace Journal_Limpet.Jobs
 
                     if (user.SendToEDDN && !RedisJobLock.IsLocked($"EDDNUserUploader.UploadAsync.{user.UserIdentifier}"))
                     {
-                        var userJournals = await db.ExecuteScalarAsync<int>(
+                        var userJournals = await db.ExecuteScalarAsync<long>(
                         "SELECT COUNT_BIG(journal_id) FROM user_journal WHERE user_identifier = @user_identifier AND sent_to_eddn = 0 AND last_processed_line_number >= sent_to_eddn_line",
                             new SqlParameter("user_identifier", userIdentifier)
                         );
+
                         if (userJournals > 0)
                         {
+                            context.WriteLine($"Sending {userJournals} journals to EDDN");
                             BackgroundJob.Enqueue(() => EDDNUserUploader.UploadAsync(user.UserIdentifier, null));
                         }
                     }
 
                     if (user.IntegrationSettings.ContainsKey("EDSM") && user.IntegrationSettings["EDSM"].GetTypedObject<EDSMIntegrationSettings>().Enabled)
                     {
-                        var userJournals = await db.ExecuteScalarAsync<int>(
+                        var userJournals = await db.ExecuteScalarAsync<long>(
                             "SELECT COUNT_BIG(journal_id) FROM user_journal WHERE user_identifier = @user_identifier AND ISNULL(JSON_VALUE(integration_data, '$.EDSM.lastSentLineNumber'), '0') < last_processed_line_number AND last_processed_line_number > 0 AND ISNULL(JSON_VALUE(integration_data, '$.EDSM.fullySent'), 'false') = 'false'",
                             new SqlParameter("user_identifier", userIdentifier)
                         );
@@ -166,13 +168,16 @@ namespace Journal_Limpet.Jobs
                         if (userJournals > 0)
                         {
                             if (!RedisJobLock.IsLocked($"EDSMUserUploader.UploadAsync.{user.UserIdentifier}"))
+                            {
+                                context.WriteLine($"Sending {userJournals} journals to EDSM");
                                 BackgroundJob.Enqueue(() => EDSMUserUploader.UploadAsync(user.UserIdentifier, null));
+                            }
                         }
                     }
 
                     if (user.IntegrationSettings.ContainsKey("Canonn R&D") && user.IntegrationSettings["Canonn R&D"].GetTypedObject<EDSMIntegrationSettings>().Enabled)
                     {
-                        var userJournals = await db.ExecuteScalarAsync<int>(
+                        var userJournals = await db.ExecuteScalarAsync<long>(
                             "SELECT COUNT_BIG(journal_id) FROM user_journal WHERE user_identifier = @user_identifier AND ISNULL(JSON_VALUE(integration_data, '$.\"Canonn R\\u0026D\".lastSentLineNumber'), '0') <= last_processed_line_number AND last_processed_line_number > 0 AND ISNULL(JSON_VALUE(integration_data, '$.\"Canonn R\\u0026D\".fullySent'), 'false') = 'false'",
                             new SqlParameter("user_identifier", userIdentifier)
                         );
@@ -180,7 +185,10 @@ namespace Journal_Limpet.Jobs
                         if (userJournals > 0)
                         {
                             if (!RedisJobLock.IsLocked($"CanonnRDUserUploader.UploadAsync.{user.UserIdentifier}"))
+                            {
+                                context.WriteLine($"Sending {userJournals} journals to Canonn");
                                 BackgroundJob.Enqueue(() => CanonnRDUserUploader.UploadAsync(user.UserIdentifier, profileData.Commander.Name, null));
+                            }
                         }
                     }
 
