@@ -9,6 +9,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.IO.Compression;
+using System.Linq;
 using System.Net.Http;
 using System.Text.Json;
 using System.Threading.Tasks;
@@ -76,7 +77,8 @@ namespace Journal_Limpet.Jobs
                                         if (batchInserts.Count == 1000)
                                         {
                                             batchOfBatches.Add(batchInserts);
-                                            batchInserts.Clear();
+                                            batchInserts = new List<string>();
+                                            context.WriteLine($"Systems in queue to be inserted: {batchOfBatches.Sum(b => b.Count):n0}");
                                         }
                                     }
                                 }
@@ -86,8 +88,9 @@ namespace Journal_Limpet.Jobs
                         if (batchInserts.Count > 0)
                         {
                             batchOfBatches.Add(batchInserts);
-                            batchInserts.Clear();
                         }
+
+                        context.WriteLine($"Systems in queue to be inserted: {batchOfBatches.Sum(b => b.Count):n0}");
 
                         context.WriteLine($"Fetched {systems} from {url}, generated {batchOfBatches.Count} batches of inserts. Running them now.");
 
