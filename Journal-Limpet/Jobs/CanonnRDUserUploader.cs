@@ -63,6 +63,8 @@ new SqlParameter("user_identifier", userIdentifier)
                         return;
                     }
 
+                    var userPlatform = user.UserSettings.FrontierProfile.Platform;
+
                     var userJournals = await db.ExecuteListAsync<UserJournal>(
                         "SELECT * FROM user_journal WHERE user_identifier = @user_identifier AND ISNULL(JSON_VALUE(integration_data, '$.\"Canonn R\\u0026D\".lastSentLineNumber'), '0') <= last_processed_line_number AND last_processed_line_number > 0 AND ISNULL(JSON_VALUE(integration_data, '$.\"Canonn R\\u0026D\".fullySent'), 'false') = 'false' ORDER BY journal_date ASC",
                         new SqlParameter("user_identifier", userIdentifier)
@@ -156,6 +158,7 @@ new SqlParameter("user_identifier", userIdentifier)
                                             var canonnEvent = await UploadJournalItemToCanonnRD(row, cmdrName, ijd.CurrentGameState, canonnEvents, starSystemChecker);
                                             if (canonnEvent != null)
                                             {
+                                                canonnEvent["platform"] = userPlatform;
                                                 journalEvents.Add(canonnEvent);
                                             }
                                         }
