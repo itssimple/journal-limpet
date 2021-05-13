@@ -1,6 +1,7 @@
 ﻿using Hangfire;
 using Hangfire.Console;
 using Hangfire.Server;
+using Journal_Limpet.Jobs.SharedCode;
 using Journal_Limpet.Shared;
 using Journal_Limpet.Shared.Database;
 using Journal_Limpet.Shared.Models;
@@ -11,7 +12,6 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Minio;
 using Polly;
-using StackExchange.Redis;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -26,8 +26,8 @@ namespace Journal_Limpet.Jobs
 {
     public class EDDNUserUploader
     {
-        [JobDisplayName("EDDN uploader for {0}")]
-        public static async Task UploadAsync(Guid userIdentifier, PerformContext context)
+        [JobDisplayName("EDDN uploader for {1} ({0}")]
+        public static async Task UploadAsync(Guid userIdentifier, string cmdrName, PerformContext context)
         {
             using (var rlock = new RedisJobLock($"EDDNUserUploader.UploadAsync.{userIdentifier}"))
             {
@@ -58,30 +58,20 @@ namespace Journal_Limpet.Jobs
                             new SqlParameter("user_identifier", userIdentifier)
                         );
 
+                    (EDGameState previousGameState, UserJournal lastJournal) = await GameStateHandler.LoadGameState(db, userIdentifier, userJournals, "EDDN", context);
+
                     context.WriteLine($"Uploading journals for user {userIdentifier}");
                     string lastLine = string.Empty;
 
                     foreach (var journalItem in userJournals.WithProgress(context))
                     {
+                        IntegrationJournalData ijd = GameStateHandler.GetIntegrationJournalData(journalItem, lastJournal, "EDDN");
+
                         try
                         {
                             using (MemoryStream outFile = new MemoryStream())
                             {
-                                var stats = await _minioClient.StatObjectAsync("journal-limpet", journalItem.S3Path);
-
-                                await _minioClient.GetObjectAsync("journal-limpet", journalItem.S3Path,
-                                    0, stats.Size,
-                                    cb =>
-                                    {
-                                        cb.CopyTo(outFile);
-                                    }
-                                );
-
-                                outFile.Seek(0, SeekOrigin.Begin);
-
-                                var journalContent = ZipManager.Unzip(outFile.ToArray());
-
-                                var journalRows = journalContent.Trim().Split('\n', StringSplitOptions.RemoveEmptyEntries);
+                                var journalRows = await JournalLoader.LoadJournal(_minioClient, journalItem, outFile);
 
                                 int line_number = journalItem.SentToEDDNLine;
                                 int delay_time = 50;
@@ -94,7 +84,7 @@ namespace Journal_Limpet.Jobs
                                     {
                                         if (!string.IsNullOrWhiteSpace(row))
                                         {
-                                            var time = await UploadJournalItemToEDDN(hc, row, userIdentifier, starSystemChecker);
+                                            var time = await UploadJournalItemToEDDN(hc, row, cmdrName, ijd.CurrentGameState, userIdentifier, starSystemChecker);
 
                                             if (time.TotalMilliseconds > 500)
                                             {
@@ -125,33 +115,66 @@ namespace Journal_Limpet.Jobs
                                         }
                                         else
                                         {
+                                            await discordClient.SendMessageAsync("**[EDDN Upload]** Unhandled exception", new List<DiscordWebhookEmbed>
+                                            {
+                                                new DiscordWebhookEmbed
+                                                {
+                                                    Description = "Unhandled exception",
+                                                    Fields = new Dictionary<string, string>() {
+                                                        { "User identifier", userIdentifier.ToString() },
+                                                        { "Last line", lastLine },
+                                                        { "Journal", journalItem.S3Path },
+                                                        { "Exception", ex.ToString() },
+                                                        { "Current GameState", JsonSerializer.Serialize(ijd.CurrentGameState, new JsonSerializerOptions { WriteIndented = true })}
+                                                    }.Select(k => new DiscordWebhookEmbedField { Name = k.Key, Value = k.Value }).ToList()
+                                                }
+                                            });
                                             throw;
                                         }
                                     }
 
                                     line_number++;
+                                    if (line_number <= journalItem.LastProcessedLineNumber)
+                                    {
+                                        ijd.LastSentLineNumber = line_number;
+                                        journalItem.IntegrationData["EDDN"] = ijd;
+                                    }
 
                                     await Task.Delay(delay_time);
                                 }
 
+                                var integration_json = JsonSerializer.Serialize(journalItem.IntegrationData);
+
                                 await db.ExecuteNonQueryAsync(
-                                    "UPDATE user_journal SET sent_to_eddn_line = @line_number WHERE journal_id = @journal_id",
+                                    "UPDATE user_journal SET sent_to_eddn_line = @line_number, integration_data = @integration_data WHERE journal_id = @journal_id",
                                     new SqlParameter("journal_id", journalItem.JournalId),
-                                    new SqlParameter("line_number", line_number)
+                                    new SqlParameter("line_number", line_number),
+                                    new SqlParameter("integration_data", integration_json)
                                 );
 
                                 if (journalItem.CompleteEntry)
                                 {
+                                    ijd.LastSentLineNumber = line_number;
+                                    ijd.FullySent = true;
+                                    journalItem.IntegrationData["EDDN"] = ijd;
+
                                     await db.ExecuteNonQueryAsync(
-                                        "UPDATE user_journal SET sent_to_eddn = 1, sent_to_eddn_line = @line_number WHERE journal_id = @journal_id",
+                                        "UPDATE user_journal SET sent_to_eddn = 1, sent_to_eddn_line = @line_number, integration_data = @integration_data WHERE journal_id = @journal_id",
                                         new SqlParameter("journal_id", journalItem.JournalId),
-                                        new SqlParameter("line_number", line_number)
+                                        new SqlParameter("line_number", line_number),
+                                        new SqlParameter("integration_data", integration_json)
                                     );
                                 }
                             }
                         }
                         catch (Exception ex)
                         {
+                            await db.ExecuteNonQueryAsync(
+                                "UPDATE user_journal SET integration_data = @integration_data WHERE journal_id = @journal_id",
+                                new SqlParameter("journal_id", journalItem.JournalId),
+                                new SqlParameter("integration_data", JsonSerializer.Serialize(journalItem.IntegrationData))
+                            );
+
                             await discordClient.SendMessageAsync("**[EDDN Upload]** Problem with upload to EDDN", new List<DiscordWebhookEmbed>
                             {
                                 new DiscordWebhookEmbed
@@ -197,16 +220,18 @@ namespace Journal_Limpet.Jobs
             SquadronFaction
         }
 
-        internal static async Task<TimeSpan> UploadJournalItemToEDDN(HttpClient hc, string journalRow, Guid userIdentifier, StarSystemChecker starSystemChecker)
+        internal static async Task<TimeSpan> UploadJournalItemToEDDN(HttpClient hc, string journalRow, string commander, EDGameState gameState, Guid userIdentifier, StarSystemChecker starSystemChecker)
         {
             var element = JsonDocument.Parse(journalRow).RootElement;
             if (element.ValueKind != JsonValueKind.Object) return TimeSpan.Zero;
 
             if (!element.TryGetProperty("event", out JsonElement journalEvent)) return TimeSpan.Zero;
+
+            element = await SetGamestateProperties(element, gameState, commander, starSystemChecker);
+
             if (!System.Enum.TryParse(typeof(AllowedEvents), journalEvent.GetString(), false, out _)) return TimeSpan.Zero;
 
             element = FixEDDNJson(element);
-            element = await AddMissingProperties(element, starSystemChecker);
 
             if (HasMissingProperties(element)) return TimeSpan.Zero;
 
@@ -258,91 +283,29 @@ namespace Journal_Limpet.Jobs
             return requiredProperties.Count() < 5;
         }
 
-        internal async static Task<JsonElement> AddMissingProperties(JsonElement element, StarSystemChecker starSystemChecker)
+        public static async Task<JsonElement> SetGamestateProperties(JsonElement element, EDGameState gameState, string commander, StarSystemChecker starSystemChecker)
         {
-            var _rdb = SharedSettings.RedisClient.GetDatabase(1);
-
-            var elementAsDictionary = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(element.GetRawText());
-
-            var reqProps = typeof(RequiredPropertiesForCache).GetEnumNames();
-
-            var requiredProperties = elementAsDictionary.Keys.Where(k => System.Enum.TryParse(typeof(RequiredPropertiesForCache), k, false, out _));
-
-            var missingProps = reqProps.Except(requiredProperties);
-
-            if (!missingProps.Any())
+            return await GameStateHandler.SetGamestateProperties(element, gameState, commander, starSystemChecker, (newState) =>
             {
-                await _rdb.StringSetAsyncWithRetries(
-                    $"SystemAddress:{elementAsDictionary["SystemAddress"].GetInt64()}",
-                    JsonSerializer.Serialize(new
-                    {
-                        SystemAddress = elementAsDictionary["SystemAddress"].GetInt64(),
-                        StarSystem = elementAsDictionary["StarSystem"].GetString(),
-                        StarPos = elementAsDictionary["StarPos"]
-                    }),
-                    TimeSpan.FromHours(10),
-                    flags: CommandFlags.FireAndForget
-                );
-
-                var arrayEnum = elementAsDictionary["StarPos"].EnumerateArray().ToArray();
-
-                var edSysData = new EDSystemData
+                return new
                 {
-                    Id64 = elementAsDictionary["SystemAddress"].GetInt64(),
-                    Name = elementAsDictionary["StarSystem"].GetString(),
-                    Coordinates = new EDSystemCoordinates
-                    {
-                        X = arrayEnum[0].GetDouble(),
-                        Y = arrayEnum[1].GetDouble(),
-                        Z = arrayEnum[2].GetDouble()
-                    }
+                    systemName = gameState.SystemName,
+                    systemAddress = gameState.SystemAddress,
+                    systemCoordinates = gameState.SystemCoordinates,
+                    bodyName = gameState.BodyName,
+                    bodyId = gameState.BodyId,
+                    clientVersion = "Journal Limpet: " + SharedSettings.VersionNumber,
+                    odyssey = gameState.Odyssey,
+                    isBeta = false
                 };
-
-                await starSystemChecker.InsertOrUpdateSystemAsync(edSysData);
-
-                return element;
-            }
-
-            var importantProps = new[] { "StarPos", "StarSystem", "SystemAddress" };
-
-            // We're missing all important props, just let it go and ignore the event
-            if (importantProps.All(i => missingProps.Contains(i)))
+            },
+            (transientState, elementAsDictionary) =>
             {
-                return element;
-            }
-
-            if (!missingProps.Contains("SystemAddress"))
-            {
-                var cachedSystem = await _rdb.StringGetAsyncWithRetries($"SystemAddress:{elementAsDictionary["SystemAddress"].GetInt64()}");
-                if (cachedSystem != RedisValue.Null)
-                {
-                    var jel = JsonDocument.Parse(cachedSystem.ToString()).RootElement;
-                    elementAsDictionary["SystemAddress"] = jel.GetProperty("SystemAddress");
-                    elementAsDictionary["StarSystem"] = jel.GetProperty("StarSystem");
-                    elementAsDictionary["StarPos"] = jel.GetProperty("StarPos");
-                }
-                else
-                {
-                    var systemData = await starSystemChecker.GetSystemDataAsync(elementAsDictionary["SystemAddress"].GetInt64());
-                    if (systemData != null)
-                    {
-                        var jel = JsonDocument.Parse(JsonSerializer.Serialize(new
-                        {
-                            SystemAddress = systemData.Id64,
-                            StarSystem = systemData.Name,
-                            StarPos = new[] { systemData.Coordinates.X, systemData.Coordinates.Y, systemData.Coordinates.Z }
-                        })).RootElement;
-
-                        elementAsDictionary["SystemAddress"] = jel.GetProperty("SystemAddress");
-                        elementAsDictionary["StarSystem"] = jel.GetProperty("StarSystem");
-                        elementAsDictionary["StarPos"] = jel.GetProperty("StarPos");
-                    }
-                }
-            }
-
-            var json = JsonSerializer.Serialize(elementAsDictionary);
-
-            return JsonDocument.Parse(json).RootElement;
+                elementAsDictionary["SystemAddress"] = transientState.GetProperty("_systemAddress");
+                elementAsDictionary["StarSystem"] = transientState.GetProperty("_systemName");
+                elementAsDictionary["StarPos"] = transientState.GetProperty("_systemCoordinates");
+                elementAsDictionary["odyssey"] = transientState.GetProperty("odyssey");
+            });
         }
 
         internal static JsonElement FixEDDNJson(JsonElement element)
