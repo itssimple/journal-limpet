@@ -49,7 +49,6 @@ namespace Journal_Limpet.Jobs.SharedCode
             }
             else
             {
-
                 EDGameState oldState = null;
 
                 if (lastJournal != null && lastJournal.IntegrationData != null && lastJournal.IntegrationData.ContainsKey(integrationKey) && lastJournal.IntegrationData[integrationKey].CurrentGameState != null)
@@ -63,6 +62,8 @@ namespace Journal_Limpet.Jobs.SharedCode
                     LastSentLineNumber = 0,
                     CurrentGameState = oldState ?? new EDGameState()
                 };
+
+                journalItem.IntegrationData.TryAdd(integrationKey, ijd);
             }
 
             ijd.CurrentGameState.SendEvents = true;

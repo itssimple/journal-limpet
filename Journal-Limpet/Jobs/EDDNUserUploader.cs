@@ -301,9 +301,9 @@ namespace Journal_Limpet.Jobs
             },
             (transientState, elementAsDictionary) =>
             {
-                elementAsDictionary["SystemAddress"] = transientState.GetProperty("_systemAddress");
-                elementAsDictionary["StarSystem"] = transientState.GetProperty("_systemName");
-                elementAsDictionary["StarPos"] = transientState.GetProperty("_systemCoordinates");
+                elementAsDictionary["SystemAddress"] = transientState.GetProperty("systemAddress");
+                elementAsDictionary["StarSystem"] = transientState.GetProperty("systemName");
+                elementAsDictionary["StarPos"] = transientState.GetProperty("systemCoordinates");
                 elementAsDictionary["odyssey"] = transientState.GetProperty("odyssey");
             });
         }
