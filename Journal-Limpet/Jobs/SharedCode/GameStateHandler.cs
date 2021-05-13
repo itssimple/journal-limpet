@@ -53,7 +53,7 @@ namespace Journal_Limpet.Jobs.SharedCode
                 {
                     FullySent = false,
                     LastSentLineNumber = 0,
-                    CurrentGameState = lastJournal?.IntegrationData[integrationKey].CurrentGameState ?? new EDGameState()
+                    CurrentGameState = lastJournal?.IntegrationData[integrationKey]?.CurrentGameState ?? new EDGameState()
                 };
             }
 
