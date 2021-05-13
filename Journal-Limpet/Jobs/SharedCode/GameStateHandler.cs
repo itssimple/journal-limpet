@@ -13,28 +13,50 @@ namespace Journal_Limpet.Jobs.SharedCode
 {
     public static class GameStateHandler
     {
-        public static async Task<EDGameState> LoadGameState(MSSQLDB db, Guid userIdentifier, List<UserJournal> userJournals, string integrationKey, PerformContext context)
+        public static async Task<(EDGameState gameState, UserJournal lastJournal)> LoadGameState(MSSQLDB db, Guid userIdentifier, List<UserJournal> userJournals, string integrationKey, PerformContext context)
         {
             EDGameState previousGameState = null;
+            UserJournal lastJournal = null;
 
             var firstAvailableGameState = userJournals.FirstOrDefault();
             if (firstAvailableGameState != null)
             {
-                var previousJournal = await db.ExecuteSingleRowAsync<UserJournal>(
+                lastJournal = await db.ExecuteSingleRowAsync<UserJournal>(
                     "SELECT TOP 1 * FROM user_journal WHERE user_identifier = @user_identifier AND journal_id <= @journal_id AND last_processed_line_number > 0 AND integration_data IS NOT NULL ORDER BY journal_date DESC",
                     new SqlParameter("user_identifier", userIdentifier),
                     new SqlParameter("journal_id", firstAvailableGameState.JournalId)
                 );
 
-                if (previousJournal != null && previousJournal.IntegrationData.ContainsKey(integrationKey))
+                if (lastJournal != null && lastJournal.IntegrationData.ContainsKey(integrationKey))
                 {
-                    previousGameState = previousJournal.IntegrationData[integrationKey].CurrentGameState;
+                    previousGameState = lastJournal.IntegrationData[integrationKey].CurrentGameState;
 
                     context.WriteLine($"Found previous gamestate: {JsonSerializer.Serialize(previousGameState, new JsonSerializerOptions { WriteIndented = true })}");
                 }
             }
 
-            return previousGameState;
+            return (previousGameState, lastJournal);
+        }
+
+        public static IntegrationJournalData GetIntegrationJournalData(UserJournal journalItem, UserJournal lastJournal, string integrationKey)
+        {
+            IntegrationJournalData ijd;
+            if (journalItem.IntegrationData.ContainsKey(integrationKey))
+            {
+                ijd = journalItem.IntegrationData[integrationKey];
+            }
+            else
+            {
+                ijd = new IntegrationJournalData
+                {
+                    FullySent = false,
+                    LastSentLineNumber = 0,
+                    CurrentGameState = lastJournal?.IntegrationData[integrationKey].CurrentGameState ?? new EDGameState()
+                };
+            }
+
+            ijd.CurrentGameState.SendEvents = true;
+            return ijd;
         }
     }
 }
