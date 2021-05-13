@@ -26,5 +26,7 @@ namespace Journal_Limpet.Shared.Models.Journal
         public string BodyName { get; set; }
         [JsonPropertyName("bodyId")]
         public long? BodyId { get; set; }
+        [JsonPropertyName("odyssey")]
+        public bool Odyssey { get; set; }
     }
 }

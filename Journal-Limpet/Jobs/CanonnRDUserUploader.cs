@@ -1,6 +1,7 @@
 ﻿using Hangfire;
 using Hangfire.Console;
 using Hangfire.Server;
+using Journal_Limpet.Jobs.SharedCode;
 using Journal_Limpet.Shared;
 using Journal_Limpet.Shared.Database;
 using Journal_Limpet.Shared.Models;
@@ -72,24 +73,8 @@ new SqlParameter("user_identifier", userIdentifier)
 
                     context.WriteLine($"Found {userJournals.Count} journals to send to Canonn R&D!");
 
-                    EDGameState previousGameState = null;
+                    EDGameState previousGameState = await GameStateHandler.LoadGameState(db, userIdentifier, userJournals, "Canonn R&D", context);
 
-                    var firstAvailableGameState = userJournals.FirstOrDefault();
-                    if (firstAvailableGameState != null)
-                    {
-                        var previousJournal = await db.ExecuteSingleRowAsync<UserJournal>(
-                            "SELECT TOP 1 * FROM user_journal WHERE user_identifier = @user_identifier AND journal_id <= @journal_id AND last_processed_line_number > 0 AND integration_data IS NOT NULL ORDER BY journal_date DESC",
-                            new SqlParameter("user_identifier", userIdentifier),
-                            new SqlParameter("journal_id", firstAvailableGameState.JournalId)
-                        );
-
-                        if (previousJournal != null && previousJournal.IntegrationData.ContainsKey("Canonn R&D"))
-                        {
-                            previousGameState = previousJournal.IntegrationData["Canonn R&D"].CurrentGameState;
-
-                            context.WriteLine($"Found previous gamestate: {JsonSerializer.Serialize(previousGameState, new JsonSerializerOptions { WriteIndented = true })}");
-                        }
-                    }
                     string lastLine = string.Empty;
                     UserJournal lastJournal = null;
 
@@ -503,6 +488,7 @@ new SqlParameter("user_identifier", userIdentifier)
                 bodyName = gameState.BodyName,
                 bodyId = gameState.BodyId,
                 clientVersion = "Journal Limpet: " + SharedSettings.VersionNumber,
+                odyssey = gameState.Odyssey,
                 isBeta = false
             };
 

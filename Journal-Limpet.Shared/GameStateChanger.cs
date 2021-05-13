@@ -19,17 +19,21 @@ namespace Journal_Limpet.Shared
             // And for some reason, Location wasn't written to the journals,
             // maybe it only appears if you actually restart the entire game?
 
-            /*if (eventName == "LoadGame")
+            if (eventName == "LoadGame")
             {
-                gameState.SystemAddress = null;
-                gameState.SystemName = null;
-                gameState.SystemCoordinates = null;
-                gameState.MarketId = null;
-                gameState.StationName = null;
-                gameState.ShipId = null;
-                gameState.BodyId = null;
-                gameState.BodyName = null;
-            }*/
+                //gameState.SystemAddress = null;
+                //gameState.SystemName = null;
+                //gameState.SystemCoordinates = null;
+                //gameState.MarketId = null;
+                //gameState.StationName = null;
+                //gameState.ShipId = null;
+                //gameState.BodyId = null;
+                //gameState.BodyName = null;
+                if (elementAsDictionary.ContainsKey("Odyssey"))
+                {
+                    gameState.Odyssey = elementAsDictionary["Odyssey"].GetBoolean();
+                }
+            }
 
             if (eventName == "SetUserShipName")
             {
