@@ -1,6 +1,8 @@
 ﻿using Hangfire.Console;
 using Hangfire.Server;
+using Journal_Limpet.Shared;
 using Journal_Limpet.Shared.Database;
+using Journal_Limpet.Shared.Models;
 using Journal_Limpet.Shared.Models.Journal;
 using Microsoft.Data.SqlClient;
 using System;
@@ -57,6 +59,32 @@ namespace Journal_Limpet.Jobs.SharedCode
 
             ijd.CurrentGameState.SendEvents = true;
             return ijd;
+        }
+
+        public static async Task<JsonElement> SetGamestateProperties(JsonElement element, EDGameState gameState, string commander, StarSystemChecker starSystemChecker, Func<EDGameState, object> setProperties, Action<JsonElement, Dictionary<string, JsonElement>> addStateToElement = null)
+        {
+            var _rdb = SharedSettings.RedisClient.GetDatabase(1);
+            var elementAsDictionary = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(element.GetRawText());
+
+            bool setCache = await EDSystemCache.GetSystemCache(elementAsDictionary, _rdb, starSystemChecker);
+
+            GameStateChanger.GameStateFixer(gameState, commander, elementAsDictionary);
+
+            var addItems = setProperties(gameState);
+
+            var transientState = JsonDocument.Parse(JsonSerializer.Serialize(addItems)).RootElement;
+
+            await EDSystemCache.SetSystemCache(gameState, _rdb, setCache);
+
+            if (addStateToElement != null)
+            {
+                addStateToElement(transientState, elementAsDictionary);
+
+                var json = JsonSerializer.Serialize(elementAsDictionary);
+                return JsonDocument.Parse(json).RootElement;
+            }
+
+            return transientState;
         }
     }
 }
