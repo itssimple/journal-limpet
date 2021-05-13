@@ -73,10 +73,9 @@ new SqlParameter("user_identifier", userIdentifier)
 
                     context.WriteLine($"Found {userJournals.Count} journals to send to Canonn R&D!");
 
-                    EDGameState previousGameState = await GameStateHandler.LoadGameState(db, userIdentifier, userJournals, "Canonn R&D", context);
+                    (EDGameState previousGameState, UserJournal lastJournal) = await GameStateHandler.LoadGameState(db, userIdentifier, userJournals, "Canonn R&D", context);
 
                     string lastLine = string.Empty;
-                    UserJournal lastJournal = null;
 
                     var _rdb = SharedSettings.RedisClient.GetDatabase(3);
                     var validCanonnEvents = await _rdb.StringGetAsyncWithRetriesSaveIfMissing("canonn:allowedEvents", 10, GetValidCanonnEvents);
@@ -89,22 +88,7 @@ new SqlParameter("user_identifier", userIdentifier)
                         var loggingEnabledRedis = await _rdb.StringGetAsyncWithRetries("logging:canonn:enabled");
                         bool.TryParse(loggingEnabledRedis, out bool loggingEnabled);
 
-                        IntegrationJournalData ijd;
-                        if (journalItem.IntegrationData.ContainsKey("Canonn R&D"))
-                        {
-                            ijd = journalItem.IntegrationData["Canonn R&D"];
-                        }
-                        else
-                        {
-                            ijd = new IntegrationJournalData
-                            {
-                                FullySent = false,
-                                LastSentLineNumber = 0,
-                                CurrentGameState = lastJournal?.IntegrationData["Canonn R&D"].CurrentGameState ?? new EDGameState()
-                            };
-                        }
-
-                        ijd.CurrentGameState.SendEvents = true;
+                        IntegrationJournalData ijd = GameStateHandler.GetIntegrationJournalData(journalItem, lastJournal, "Canonn R&D");
 
                         try
                         {
@@ -473,30 +457,20 @@ new SqlParameter("user_identifier", userIdentifier)
 
         public static async Task<JsonElement> SetGamestateProperties(JsonElement element, EDGameState gameState, string commander, StarSystemChecker starSystemChecker)
         {
-            var _rdb = SharedSettings.RedisClient.GetDatabase(1);
-            var elementAsDictionary = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(element.GetRawText());
-
-            bool setCache = await EDSystemCache.GetSystemCache(elementAsDictionary, _rdb, starSystemChecker);
-
-            GameStateChanger.GameStateFixer(gameState, commander, elementAsDictionary);
-
-            var addItems = new
+            return await GameStateHandler.SetGamestateProperties(element, gameState, commander, starSystemChecker, (newState) =>
             {
-                systemName = gameState.SystemName,
-                systemAddress = gameState.SystemAddress,
-                systemCoordinates = gameState.SystemCoordinates,
-                bodyName = gameState.BodyName,
-                bodyId = gameState.BodyId,
-                clientVersion = "Journal Limpet: " + SharedSettings.VersionNumber,
-                odyssey = gameState.Odyssey,
-                isBeta = false
-            };
-
-            var transientState = JsonDocument.Parse(JsonSerializer.Serialize(addItems)).RootElement;
-
-            await EDSystemCache.SetSystemCache(gameState, _rdb, setCache);
-
-            return transientState;
+                return new
+                {
+                    systemName = gameState.SystemName,
+                    systemAddress = gameState.SystemAddress,
+                    systemCoordinates = gameState.SystemCoordinates,
+                    bodyName = gameState.BodyName,
+                    bodyId = gameState.BodyId,
+                    clientVersion = "Journal Limpet: " + SharedSettings.VersionNumber,
+                    odyssey = gameState.Odyssey,
+                    isBeta = false
+                };
+            });
         }
     }
 }

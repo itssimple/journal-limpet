@@ -73,32 +73,15 @@ new SqlParameter("user_identifier", userIdentifier)
 
                     context.WriteLine($"Found {userJournals.Count} to send to EDSM!");
 
-                    EDGameState previousGameState = await GameStateHandler.LoadGameState(db, userIdentifier, userJournals, "EDSM", context);
+                    (EDGameState previousGameState, UserJournal lastJournal) = await GameStateHandler.LoadGameState(db, userIdentifier, userJournals, "EDSM", context);
 
                     string lastLine = string.Empty;
-
-                    UserJournal lastJournal = null;
 
                     bool disableIntegration = false;
 
                     foreach (var journalItem in userJournals.WithProgress(context))
                     {
-                        IntegrationJournalData ijd;
-                        if (journalItem.IntegrationData.ContainsKey("EDSM"))
-                        {
-                            ijd = journalItem.IntegrationData["EDSM"];
-                        }
-                        else
-                        {
-                            ijd = new IntegrationJournalData
-                            {
-                                FullySent = false,
-                                LastSentLineNumber = 0,
-                                CurrentGameState = lastJournal?.IntegrationData["EDSM"].CurrentGameState ?? new EDGameState()
-                            };
-                        }
-
-                        ijd.CurrentGameState.SendEvents = true;
+                        IntegrationJournalData ijd = GameStateHandler.GetIntegrationJournalData(journalItem, lastJournal, "EDSM");
 
                         try
                         {
@@ -504,37 +487,27 @@ new SqlParameter("user_identifier", userIdentifier)
 
         public static async Task<JsonElement> SetGamestateProperties(JsonElement element, EDGameState gameState, string commander, StarSystemChecker starSystemChecker)
         {
-            var elementAsDictionary = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(element.GetRawText());
-
-            var _rdb = SharedSettings.RedisClient.GetDatabase(1);
-            bool setCache = await EDSystemCache.GetSystemCache(elementAsDictionary, _rdb, starSystemChecker);
-
-            GameStateChanger.GameStateFixer(gameState, commander, elementAsDictionary);
-
-            var addItems = new
-            {
-                _systemAddress = gameState.SystemAddress,
-                _systemName = gameState.SystemName,
-                _systemCoordinates = gameState.SystemCoordinates,
-                _marketId = gameState.MarketId,
-                _stationName = gameState.StationName,
-                _shipId = gameState.ShipId,
-                _odyssey = gameState.Odyssey
-            };
-
-            var transientState = JsonDocument.Parse(JsonSerializer.Serialize(addItems)).RootElement;
-
-            elementAsDictionary["_systemAddress"] = transientState.GetProperty("_systemAddress");
-            elementAsDictionary["_systemName"] = transientState.GetProperty("_systemName");
-            elementAsDictionary["_systemCoordinates"] = transientState.GetProperty("_systemCoordinates");
-            elementAsDictionary["_marketId"] = transientState.GetProperty("_marketId");
-            elementAsDictionary["_stationName"] = transientState.GetProperty("_stationName");
-            elementAsDictionary["_shipId"] = transientState.GetProperty("_shipId");
-
-            await EDSystemCache.SetSystemCache(gameState, _rdb, setCache);
-
-            var json = JsonSerializer.Serialize(elementAsDictionary);
-            return JsonDocument.Parse(json).RootElement;
+            return await GameStateHandler.SetGamestateProperties(element, gameState, commander, starSystemChecker,
+                (newState) => new
+                {
+                    _systemAddress = gameState.SystemAddress,
+                    _systemName = gameState.SystemName,
+                    _systemCoordinates = gameState.SystemCoordinates,
+                    _marketId = gameState.MarketId,
+                    _stationName = gameState.StationName,
+                    _shipId = gameState.ShipId,
+                    _odyssey = gameState.Odyssey
+                },
+                (transientState, elementAsDictionary) =>
+                {
+                    elementAsDictionary["_systemAddress"] = transientState.GetProperty("_systemAddress");
+                    elementAsDictionary["_systemName"] = transientState.GetProperty("_systemName");
+                    elementAsDictionary["_systemCoordinates"] = transientState.GetProperty("_systemCoordinates");
+                    elementAsDictionary["_marketId"] = transientState.GetProperty("_marketId");
+                    elementAsDictionary["_stationName"] = transientState.GetProperty("_stationName");
+                    elementAsDictionary["_shipId"] = transientState.GetProperty("_shipId");
+                }
+            );
         }
     }
 }

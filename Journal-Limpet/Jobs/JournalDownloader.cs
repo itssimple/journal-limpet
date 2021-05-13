@@ -154,7 +154,7 @@ namespace Journal_Limpet.Jobs
                         if (userJournals > 0)
                         {
                             context.WriteLine($"Sending {userJournals} journals to EDDN");
-                            BackgroundJob.Enqueue(() => EDDNUserUploader.UploadAsync(user.UserIdentifier, null));
+                            BackgroundJob.Enqueue(() => EDDNUserUploader.UploadAsync(user.UserIdentifier, profileData.Commander.Name, null));
                         }
                     }
 
@@ -175,7 +175,7 @@ namespace Journal_Limpet.Jobs
                         }
                     }
 
-                    if (user.IntegrationSettings.ContainsKey("Canonn R&D") && user.IntegrationSettings["Canonn R&D"].GetTypedObject<EDSMIntegrationSettings>().Enabled)
+                    if (user.IntegrationSettings.ContainsKey("Canonn R&D") && user.IntegrationSettings["Canonn R&D"].GetTypedObject<CanonnRDIntegrationSettings>().Enabled)
                     {
                         var userJournals = await db.ExecuteScalarAsync<long>(
                             "SELECT COUNT_BIG(journal_id) FROM user_journal WHERE user_identifier = @user_identifier AND ISNULL(JSON_VALUE(integration_data, '$.\"Canonn R\\u0026D\".lastSentLineNumber'), '0') <= last_processed_line_number AND last_processed_line_number > 0 AND ISNULL(JSON_VALUE(integration_data, '$.\"Canonn R\\u0026D\".fullySent'), 'false') = 'false'",
