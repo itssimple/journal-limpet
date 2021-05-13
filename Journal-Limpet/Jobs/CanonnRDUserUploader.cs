@@ -94,20 +94,7 @@ new SqlParameter("user_identifier", userIdentifier)
                         {
                             using (MemoryStream outFile = new MemoryStream())
                             {
-                                var stats = await _minioClient.StatObjectAsync("journal-limpet", journalItem.S3Path);
-
-                                await _minioClient.GetObjectAsync("journal-limpet", journalItem.S3Path,
-                                    0, stats.Size,
-                                    cb =>
-                                    {
-                                        cb.CopyTo(outFile);
-                                    }
-                                );
-
-                                outFile.Seek(0, SeekOrigin.Begin);
-
-                                var journalContent = ZipManager.Unzip(outFile.ToArray());
-                                var journalRows = journalContent.Trim().Split('\n', StringSplitOptions.RemoveEmptyEntries);
+                                var journalRows = await JournalLoader.LoadJournal(_minioClient, journalItem, outFile);
 
                                 int line_number = ijd.LastSentLineNumber;
 
