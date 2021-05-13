@@ -49,11 +49,19 @@ namespace Journal_Limpet.Jobs.SharedCode
             }
             else
             {
+
+                EDGameState oldState = null;
+
+                if (lastJournal != null && lastJournal.IntegrationData != null && lastJournal.IntegrationData.ContainsKey(integrationKey) && lastJournal.IntegrationData[integrationKey].CurrentGameState != null)
+                {
+                    oldState = lastJournal.IntegrationData[integrationKey].CurrentGameState;
+                }
+
                 ijd = new IntegrationJournalData
                 {
                     FullySent = false,
                     LastSentLineNumber = 0,
-                    CurrentGameState = lastJournal?.IntegrationData[integrationKey]?.CurrentGameState ?? new EDGameState()
+                    CurrentGameState = oldState ?? new EDGameState()
                 };
             }
 
