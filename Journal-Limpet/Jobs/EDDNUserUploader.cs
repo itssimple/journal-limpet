@@ -12,6 +12,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Minio;
 using Polly;
+using StackExchange.Redis;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -239,11 +240,12 @@ namespace Journal_Limpet.Jobs
 
             if (!element.TryGetProperty("event", out JsonElement journalEvent)) return TimeSpan.Zero;
 
-            element = await SetGamestateProperties(element, gameState, commander, starSystemChecker);
+            var transientState = await SetGamestateProperties(element, gameState, commander, starSystemChecker);
 
             if (!System.Enum.TryParse(typeof(AllowedEvents), journalEvent.GetString(), false, out _)) return TimeSpan.Zero;
 
             element = FixEDDNJson(element);
+            element = await AddMissingProperties(element, starSystemChecker, transientState.GetProperty("odyssey"));
 
             if (HasMissingProperties(element)) return TimeSpan.Zero;
 
@@ -308,6 +310,93 @@ namespace Journal_Limpet.Jobs
             return requiredProperties.Count() < 5;
         }
 
+        internal async static Task<JsonElement> AddMissingProperties(JsonElement element, StarSystemChecker starSystemChecker, JsonElement odyssey)
+        {
+            var _rdb = SharedSettings.RedisClient.GetDatabase(1);
+
+            var elementAsDictionary = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(element.GetRawText());
+
+            elementAsDictionary["odyssey"] = odyssey;
+
+            var reqProps = typeof(RequiredPropertiesForCache).GetEnumNames();
+
+            var requiredProperties = elementAsDictionary.Keys.Where(k => System.Enum.TryParse(typeof(RequiredPropertiesForCache), k, false, out _));
+
+            var missingProps = reqProps.Except(requiredProperties);
+
+            if (!missingProps.Any())
+            {
+                await _rdb.StringSetAsyncWithRetries(
+                    $"SystemAddress:{elementAsDictionary["SystemAddress"].GetInt64()}",
+                    JsonSerializer.Serialize(new
+                    {
+                        SystemAddress = elementAsDictionary["SystemAddress"].GetInt64(),
+                        StarSystem = elementAsDictionary["StarSystem"].GetString(),
+                        StarPos = elementAsDictionary["StarPos"]
+                    }),
+                    TimeSpan.FromHours(10),
+                    flags: CommandFlags.FireAndForget
+                );
+
+                var arrayEnum = elementAsDictionary["StarPos"].EnumerateArray().ToArray();
+
+                var edSysData = new EDSystemData
+                {
+                    Id64 = elementAsDictionary["SystemAddress"].GetInt64(),
+                    Name = elementAsDictionary["StarSystem"].GetString(),
+                    Coordinates = new EDSystemCoordinates
+                    {
+                        X = arrayEnum[0].GetDouble(),
+                        Y = arrayEnum[1].GetDouble(),
+                        Z = arrayEnum[2].GetDouble()
+                    }
+                };
+
+                await starSystemChecker.InsertOrUpdateSystemAsync(edSysData);
+
+                return JsonDocument.Parse(JsonSerializer.Serialize(elementAsDictionary)).RootElement;
+            }
+
+            var importantProps = new[] { "StarPos", "StarSystem", "SystemAddress" };
+
+            // We're missing all important props, just let it go and ignore the event
+            if (importantProps.All(i => missingProps.Contains(i)))
+            {
+                return JsonDocument.Parse(JsonSerializer.Serialize(elementAsDictionary)).RootElement;
+            }
+
+            if (!missingProps.Contains("SystemAddress"))
+            {
+                var cachedSystem = await _rdb.StringGetAsyncWithRetries($"SystemAddress:{elementAsDictionary["SystemAddress"].GetInt64()}");
+                if (cachedSystem != RedisValue.Null)
+                {
+                    var jel = JsonDocument.Parse(cachedSystem.ToString()).RootElement;
+                    elementAsDictionary["SystemAddress"] = jel.GetProperty("SystemAddress");
+                    elementAsDictionary["StarSystem"] = jel.GetProperty("StarSystem");
+                    elementAsDictionary["StarPos"] = jel.GetProperty("StarPos");
+                }
+                else
+                {
+                    var systemData = await starSystemChecker.GetSystemDataAsync(elementAsDictionary["SystemAddress"].GetInt64());
+                    if (systemData != null)
+                    {
+                        var jel = JsonDocument.Parse(JsonSerializer.Serialize(new
+                        {
+                            SystemAddress = systemData.Id64,
+                            StarSystem = systemData.Name,
+                            StarPos = new[] { systemData.Coordinates.X, systemData.Coordinates.Y, systemData.Coordinates.Z }
+                        })).RootElement;
+
+                        elementAsDictionary["SystemAddress"] = jel.GetProperty("SystemAddress");
+                        elementAsDictionary["StarSystem"] = jel.GetProperty("StarSystem");
+                        elementAsDictionary["StarPos"] = jel.GetProperty("StarPos");
+                    }
+                }
+            }
+
+            return JsonDocument.Parse(JsonSerializer.Serialize(elementAsDictionary)).RootElement;
+        }
+
         public static async Task<JsonElement> SetGamestateProperties(JsonElement element, EDGameState gameState, string commander, StarSystemChecker starSystemChecker)
         {
             return await GameStateHandler.SetGamestateProperties(element, gameState, commander, starSystemChecker, (newState) =>
@@ -323,13 +412,6 @@ namespace Journal_Limpet.Jobs
                     odyssey = gameState.Odyssey,
                     isBeta = false
                 };
-            },
-            (transientState, elementAsDictionary) =>
-            {
-                elementAsDictionary["SystemAddress"] = transientState.GetProperty("systemAddress");
-                elementAsDictionary["StarSystem"] = transientState.GetProperty("systemName");
-                elementAsDictionary["StarPos"] = transientState.GetProperty("systemCoordinates");
-                elementAsDictionary["odyssey"] = transientState.GetProperty("odyssey");
             });
         }
 
