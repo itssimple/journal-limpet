@@ -94,7 +94,7 @@ namespace Journal_Limpet.Jobs
                                     {
                                         if (!string.IsNullOrWhiteSpace(row))
                                         {
-                                            var time = await UploadJournalItemToEDDN(hc, row, cmdrName, ijd.CurrentGameState, userIdentifier, starSystemChecker);
+                                            var time = await UploadJournalItemToEDDN(hc, row, cmdrName, ijd.CurrentGameState, userIdentifier, starSystemChecker, discordClient);
 
                                             if (time.TotalMilliseconds > 500)
                                             {
@@ -232,7 +232,7 @@ namespace Journal_Limpet.Jobs
             SquadronFaction
         }
 
-        internal static async Task<TimeSpan> UploadJournalItemToEDDN(HttpClient hc, string journalRow, string commander, EDGameState gameState, Guid userIdentifier, StarSystemChecker starSystemChecker)
+        internal static async Task<TimeSpan> UploadJournalItemToEDDN(HttpClient hc, string journalRow, string commander, EDGameState gameState, Guid userIdentifier, StarSystemChecker starSystemChecker, DiscordWebhook discordClient)
         {
             var element = JsonDocument.Parse(journalRow).RootElement;
             if (element.ValueKind != JsonValueKind.Object) return TimeSpan.Zero;
@@ -282,6 +282,19 @@ namespace Journal_Limpet.Jobs
 
             if (!status.IsSuccessStatusCode)
             {
+                await discordClient.SendMessageAsync("**[EDDN Upload]** Problem with upload to EDDN", new List<DiscordWebhookEmbed>
+                {
+                    new DiscordWebhookEmbed
+                    {
+                        Description = "Got an error while posting data to EDDN",
+                        Fields = new Dictionary<string, string>() {
+                            { "User identifier", userIdentifier.ToString() },
+                            { "Last line", journalRow },
+                            { "JSON Sent", json }
+                        }.Select(k => new DiscordWebhookEmbedField { Name = k.Key, Value = k.Value }).ToList()
+                    }
+                });
+
                 throw new Exception("EDDN exception: " + postResponse);
             }
 
