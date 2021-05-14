@@ -68,7 +68,7 @@ namespace Journal_Limpet.Jobs
                     {
                         IntegrationJournalData ijd = GameStateHandler.GetIntegrationJournalData(journalItem, lastJournal, "EDDN");
 
-                        if (ijd.LastSentLineNumber != lastJournal.SentToEDDNLine)
+                        if (ijd != null && lastJournal != null && ijd.LastSentLineNumber != lastJournal.SentToEDDNLine)
                         {
                             ijd = new IntegrationJournalData
                             {
