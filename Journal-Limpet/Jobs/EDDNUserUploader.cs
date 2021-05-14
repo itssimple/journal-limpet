@@ -67,6 +67,16 @@ namespace Journal_Limpet.Jobs
                     {
                         IntegrationJournalData ijd = GameStateHandler.GetIntegrationJournalData(journalItem, lastJournal, "EDDN");
 
+                        if (ijd.LastSentLineNumber != lastJournal.SentToEDDNLine)
+                        {
+                            ijd = new IntegrationJournalData
+                            {
+                                FullySent = false,
+                                LastSentLineNumber = 0,
+                                CurrentGameState = new EDGameState()
+                            };
+                        }
+
                         try
                         {
                             using (MemoryStream outFile = new MemoryStream())
@@ -166,6 +176,8 @@ namespace Journal_Limpet.Jobs
                                     );
                                 }
                             }
+
+                            lastJournal = journalItem;
                         }
                         catch (Exception ex)
                         {

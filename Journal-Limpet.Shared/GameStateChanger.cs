@@ -55,6 +55,11 @@ namespace Journal_Limpet.Shared
                 gameState.ShipId = elementAsDictionary["ShipID"].GetInt64();
             }
 
+            if (eventName == "NavBeaconScan")
+            {
+                gameState.SystemAddress = elementAsDictionary["SystemAddress"].GetInt64();
+            }
+
             if (eventName == "Undocked")
             {
                 gameState.MarketId = null;
