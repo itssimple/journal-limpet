@@ -49,7 +49,10 @@
         </div>
         <hr />
         <h4>Canonn R&amp;D - Journal import</h4>
-        <small class="form-text text-info">If you enable this integration, we will send your journals to Canonn R&amp;D, more specifically the <code>SAASignalsFound</code>, <code>CodexEntry</code> and some <code>Docked</code>-events</small>
+        <small class="form-text text-info">
+        If you enable this integration, we will send some journal events to Canonn R&amp;D. You can find the current list of events
+        <a href="https://us-central1-canonn-api-236217.cloudfunctions.net/postEventWhitelist" target="_blank">in the Canonn API</a>.
+        The event list will change from time to time as more features are added.</small>
         <br />
         <div class="form-group">
             <label asp-for="CanonnRD.Enabled">
