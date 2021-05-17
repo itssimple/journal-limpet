@@ -145,11 +145,8 @@ namespace Journal_Limpet.Jobs
                                     }
 
                                     line_number++;
-                                    if (line_number <= journalItem.LastProcessedLineNumber)
-                                    {
-                                        ijd.LastSentLineNumber = line_number;
-                                        journalItem.IntegrationData["EDDN"] = ijd;
-                                    }
+                                    ijd.LastSentLineNumber = line_number;
+                                    journalItem.IntegrationData["EDDN"] = ijd;
 
                                     await Task.Delay(delay_time);
                                 }
