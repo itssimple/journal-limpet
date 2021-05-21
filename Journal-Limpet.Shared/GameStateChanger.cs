@@ -15,6 +15,11 @@ namespace Journal_Limpet.Shared
 
             gameState.Timestamp = timestamp;
 
+            if (OdysseyEvents.Contains(eventName))
+            {
+                gameState.Odyssey = true;
+            }
+
             // We'll disable this reset for now, since commanders do re-log at times
             // And for some reason, Location wasn't written to the journals,
             // maybe it only appears if you actually restart the entire game?
@@ -32,6 +37,14 @@ namespace Journal_Limpet.Shared
                 if (elementAsDictionary.ContainsKey("Odyssey"))
                 {
                     gameState.Odyssey = elementAsDictionary["Odyssey"].GetBoolean();
+                }
+            }
+
+            if (eventName == "Rank")
+            {
+                if (elementAsDictionary.ContainsKey("Soldier") || elementAsDictionary.ContainsKey("Exobiologist"))
+                {
+                    gameState.Odyssey = true;
                 }
             }
 
@@ -90,6 +103,11 @@ namespace Journal_Limpet.Shared
                 gameState.BodyId = null;
             }
 
+            if (eventName == "ShipLockerMaterials")
+            {
+                gameState.Odyssey = true;
+            }
+
             if (eventName == "SupercruiseExit")
             {
                 gameState.SystemName = elementAsDictionary["StarSystem"].GetString();
@@ -124,9 +142,12 @@ namespace Journal_Limpet.Shared
                     gameState.BodyName = null;
                 }
 
-                if (elementAsDictionary.ContainsKey("Taxi") && elementAsDictionary["Taxi"].GetBoolean())
+                if (elementAsDictionary.ContainsKey("StationServices"))
                 {
-                    gameState.Odyssey = true;
+                    if (elementAsDictionary["StationServices"].GetRawText().Contains("socialspace"))
+                    {
+                        gameState.Odyssey = true;
+                    }
                 }
 
                 if (elementAsDictionary["StarSystem"].GetString() != "ProvingGround" && elementAsDictionary["StarSystem"].GetString() != "CQC")
@@ -221,6 +242,45 @@ namespace Journal_Limpet.Shared
                 gameState.BodyId = null;
                 gameState.BodyName = null;
             }
+
+            if (elementAsDictionary.ContainsKey("Taxi"))
+            {
+                gameState.Odyssey = true;
+            }
+
+            if (elementAsDictionary.ContainsKey("OnFoot"))
+            {
+                gameState.Odyssey = true;
+            }
         }
+
+        public readonly static string[] OdysseyEvents = new string[] {
+            "ShipLockerMaterials",
+            "SuitLoadout",
+            "BackPack",
+            "BookTaxi",
+            "BuyMicroResources",
+            "TransferMicroResources",
+            "CancelTaxi",
+            "BuySuit",
+            "BuyWeapon",
+            "CreateSuitLoadout",
+            "SwitchSuitLoadout",
+            "ShieldState",
+            "BackpackChange",
+            "LoadoutEquipModule",
+            "CancelDropship",
+            "CollectItems",
+            "UseConsumable",
+            "BackPackMaterials",
+            "ScanOrganic",
+            "SellOrganicData",
+            "DeleteSuitLoadout",
+            "DropshipDeploy",
+            "BookDropship",
+            "SellSuit",
+            "TradeMicroResources",
+            "SellMicroResources"
+        };
     }
 }
