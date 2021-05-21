@@ -61,7 +61,9 @@ namespace Journal_Limpet.Jobs
 
                     var profile = await GetProfileAsync(hc);
 
-                    if (!profile.IsSuccessStatusCode)
+                    var profileJson = await profile.Content.ReadAsStringAsync();
+
+                    if (!profile.IsSuccessStatusCode || string.IsNullOrWhiteSpace(profileJson))
                     {
                         context.WriteLine($"Invalid statuscode: {profile.StatusCode} {profile.ReasonPhrase}");
                         bool resetAuth = false;
@@ -75,6 +77,11 @@ namespace Journal_Limpet.Jobs
                                 // Invalid token (or Epic games)
                                 resetAuth = true;
                                 break;
+                        }
+
+                        if (string.IsNullOrWhiteSpace(profileJson))
+                        {
+                            resetAuth = true;
                         }
 
                         if (resetAuth)
@@ -96,7 +103,6 @@ namespace Journal_Limpet.Jobs
                         return;
                     }
 
-                    var profileJson = await profile.Content.ReadAsStringAsync();
                     var profileData = JsonSerializer.Deserialize<EliteProfile>(profileJson);
 
                     context.WriteLine(profileJson);
