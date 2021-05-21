@@ -124,6 +124,11 @@ namespace Journal_Limpet.Shared
                     gameState.BodyName = null;
                 }
 
+                if (elementAsDictionary.ContainsKey("Taxi") && elementAsDictionary["Taxi"].GetBoolean())
+                {
+                    gameState.Odyssey = true;
+                }
+
                 if (elementAsDictionary["StarSystem"].GetString() != "ProvingGround" && elementAsDictionary["StarSystem"].GetString() != "CQC")
                 {
                     if (elementAsDictionary.ContainsKey("SystemAddress"))
