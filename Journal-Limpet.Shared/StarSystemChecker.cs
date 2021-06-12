@@ -31,12 +31,12 @@ namespace Journal_Limpet.Shared
         {
             var jsPos = JsonSerializer.Serialize(systemData.Coordinates);
 
-            await _db.ExecuteNonQueryAsync($@"UPDATE EliteSystem WITH (UPDLOCK, SERIALIZABLE) SET StarSystem = '{systemData.Name.Replace("'", "''")}', StarPos = '{jsPos}' WHERE SystemAddress = {systemData.Id64};
+            await _db.ExecuteNonQueryAsync($@"UPDATE EliteSystem WITH (UPDLOCK, SERIALIZABLE) SET StarSystem = @starSystem, StarPos = @starPos WHERE SystemAddress = @systemAddress;
 
 IF @@ROWCOUNT = 0
 BEGIN
-  INSERT INTO EliteSystem (SystemAddress, StarSystem, StarPos) VALUES ({systemData.Id64}, '{systemData.Name.Replace("'", "''")}', '{jsPos}');
-END;");
+  INSERT INTO EliteSystem (SystemAddress, StarSystem, StarPos) VALUES (@systemAddress, @starSystem, @starPos);
+END;", new SqlParameter("systemAddress", systemData.Id64), new SqlParameter("starSystem", systemData.Name), new SqlParameter("starPos", jsPos));
         }
     }
 
