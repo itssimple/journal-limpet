@@ -20,6 +20,20 @@ namespace Journal_Limpet.Shared
                 gameState.Odyssey = true;
             }
 
+            if (elementAsDictionary.ContainsKey("SystemAddress"))
+            {
+                if (elementAsDictionary["SystemAddress"].GetInt64() != gameState.SystemAddress)
+                {
+                    gameState.SystemAddress = null;
+                    gameState.SystemName = null;
+                    gameState.SystemCoordinates = null;
+                    gameState.MarketId = null;
+                    gameState.StationName = null;
+                    gameState.BodyId = null;
+                    gameState.BodyName = null;
+                }
+            }
+
             // We'll disable this reset for now, since commanders do re-log at times
             // And for some reason, Location wasn't written to the journals,
             // maybe it only appears if you actually restart the entire game?
@@ -97,7 +111,23 @@ namespace Journal_Limpet.Shared
 
             if (eventName == "SupercruiseEntry")
             {
-                gameState.SystemName = elementAsDictionary["StarSystem"].GetString();
+                if (elementAsDictionary.ContainsKey("StarSystem"))
+                {
+                    if (elementAsDictionary["StarSystem"].GetString() != gameState.SystemName)
+                    {
+                        gameState.SystemCoordinates = null;
+                        gameState.SystemAddress = null;
+                        gameState.BodyId = null;
+                        gameState.BodyName = null;
+                    }
+
+                    gameState.SystemName = elementAsDictionary["StarSystem"].GetString();
+                }
+
+                if (elementAsDictionary.ContainsKey("SystemAddress"))
+                {
+                    gameState.SystemAddress = elementAsDictionary["SystemAddress"].GetInt64();
+                }
 
                 gameState.BodyName = null;
                 gameState.BodyId = null;

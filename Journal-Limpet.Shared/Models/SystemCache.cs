@@ -30,7 +30,7 @@ namespace Journal_Limpet.Shared.Models
 
             if (!missingProps.Any())
             {
-                await _rdb.StringSetAsyncWithRetries(
+                /*await _rdb.StringSetAsyncWithRetries(
                     $"SystemAddress:{elementAsDictionary["SystemAddress"].GetInt64()}",
                     JsonSerializer.Serialize(new
                     {
@@ -40,7 +40,7 @@ namespace Journal_Limpet.Shared.Models
                     }),
                     TimeSpan.FromHours(10),
                     flags: CommandFlags.FireAndForget
-                );
+                );*/
 
                 var arrayEnum = elementAsDictionary["StarPos"].EnumerateArray().ToArray();
 
@@ -59,14 +59,14 @@ namespace Journal_Limpet.Shared.Models
                 await starSystemChecker.InsertOrUpdateSystemAsync(edSysData);
 
                 // Since the event has all properties, we allow setting the cache
-                setCache = true;
+                //setCache = true;
             }
 
             var importantProps = new[] { "StarPos", "StarSystem", "SystemAddress" };
 
             if (!missingProps.Contains("SystemAddress"))
             {
-                var cachedSystem = await _rdb.StringGetAsyncWithRetries($"SystemAddress:{elementAsDictionary["SystemAddress"].GetInt64()}");
+                /*var cachedSystem = await _rdb.StringGetAsyncWithRetries($"SystemAddress:{elementAsDictionary["SystemAddress"].GetInt64()}");
                 if (cachedSystem != RedisValue.Null)
                 {
                     var jel = JsonDocument.Parse(cachedSystem.ToString()).RootElement;
@@ -84,7 +84,7 @@ namespace Journal_Limpet.Shared.Models
                     // Do not allow setting the cache, just because we fetched it from the cache.
                     setCache = false;
                 }
-                else
+                else*/
                 {
                     var systemData = await starSystemChecker.GetSystemDataAsync(elementAsDictionary["SystemAddress"].GetInt64());
                     if (systemData != null)
@@ -108,7 +108,7 @@ namespace Journal_Limpet.Shared.Models
                         }
 
                         // It's safe to set the cache here, since we fetch the data from the database
-                        setCache = true;
+                        //setCache = true;
                     }
                 }
             }
@@ -118,7 +118,7 @@ namespace Journal_Limpet.Shared.Models
 
         public static async Task SetSystemCache(EDGameState gameState, IDatabase _rdb, bool setCache)
         {
-            if (!setCache && gameState.SystemAddress.HasValue && gameState.SystemCoordinates.HasValue && !string.IsNullOrWhiteSpace(gameState.SystemName))
+            /*if (!setCache && gameState.SystemAddress.HasValue && gameState.SystemCoordinates.HasValue && !string.IsNullOrWhiteSpace(gameState.SystemName))
             {
                 await _rdb.StringSetAsyncWithRetries(
                     $"SystemAddress:{gameState.SystemAddress}",
@@ -131,7 +131,7 @@ namespace Journal_Limpet.Shared.Models
                     TimeSpan.FromHours(10),
                     flags: CommandFlags.FireAndForget
                 );
-            }
+            }*/
         }
     }
 }

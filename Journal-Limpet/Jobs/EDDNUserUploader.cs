@@ -12,7 +12,6 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Minio;
 using Polly;
-using StackExchange.Redis;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -330,17 +329,17 @@ namespace Journal_Limpet.Jobs
 
             if (!missingProps.Any())
             {
-                await _rdb.StringSetAsyncWithRetries(
-                    $"SystemAddress:{elementAsDictionary["SystemAddress"].GetInt64()}",
-                    JsonSerializer.Serialize(new
-                    {
-                        SystemAddress = elementAsDictionary["SystemAddress"].GetInt64(),
-                        StarSystem = elementAsDictionary["StarSystem"].GetString(),
-                        StarPos = elementAsDictionary["StarPos"]
-                    }),
-                    TimeSpan.FromHours(10),
-                    flags: CommandFlags.FireAndForget
-                );
+                //await _rdb.StringSetAsyncWithRetries(
+                //    $"SystemAddress:{elementAsDictionary["SystemAddress"].GetInt64()}",
+                //    JsonSerializer.Serialize(new
+                //    {
+                //        SystemAddress = elementAsDictionary["SystemAddress"].GetInt64(),
+                //        StarSystem = elementAsDictionary["StarSystem"].GetString(),
+                //        StarPos = elementAsDictionary["StarPos"]
+                //    }),
+                //    TimeSpan.FromHours(10),
+                //    flags: CommandFlags.FireAndForget
+                //);
 
                 var arrayEnum = elementAsDictionary["StarPos"].EnumerateArray().ToArray();
 
@@ -371,7 +370,7 @@ namespace Journal_Limpet.Jobs
 
             if (!missingProps.Contains("SystemAddress"))
             {
-                var cachedSystem = await _rdb.StringGetAsyncWithRetries($"SystemAddress:{elementAsDictionary["SystemAddress"].GetInt64()}");
+                /*var cachedSystem = await _rdb.StringGetAsyncWithRetries($"SystemAddress:{elementAsDictionary["SystemAddress"].GetInt64()}");
                 if (cachedSystem != RedisValue.Null)
                 {
                     var jel = JsonDocument.Parse(cachedSystem.ToString()).RootElement;
@@ -386,7 +385,7 @@ namespace Journal_Limpet.Jobs
                         elementAsDictionary["StarPos"] = jel.GetProperty("StarPos");
                     }
                 }
-                else
+                else*/
                 {
                     var systemData = await starSystemChecker.GetSystemDataAsync(elementAsDictionary["SystemAddress"].GetInt64());
                     if (systemData != null)
