@@ -375,9 +375,16 @@ namespace Journal_Limpet.Jobs
                 if (cachedSystem != RedisValue.Null)
                 {
                     var jel = JsonDocument.Parse(cachedSystem.ToString()).RootElement;
-                    elementAsDictionary["SystemAddress"] = jel.GetProperty("SystemAddress");
-                    elementAsDictionary["StarSystem"] = jel.GetProperty("StarSystem");
-                    elementAsDictionary["StarPos"] = jel.GetProperty("StarPos");
+                    // Don't replace values that already exists on the event, supposedly the journal is supposed to be correct on those already
+                    //elementAsDictionary["SystemAddress"] = jel.GetProperty("SystemAddress");
+                    if (!elementAsDictionary.ContainsKey("StarSystem"))
+                    {
+                        elementAsDictionary["StarSystem"] = jel.GetProperty("StarSystem");
+                    }
+                    if (!elementAsDictionary.ContainsKey("StarPos"))
+                    {
+                        elementAsDictionary["StarPos"] = jel.GetProperty("StarPos");
+                    }
                 }
                 else
                 {
@@ -391,9 +398,16 @@ namespace Journal_Limpet.Jobs
                             StarPos = new[] { systemData.Coordinates.X, systemData.Coordinates.Y, systemData.Coordinates.Z }
                         })).RootElement;
 
-                        elementAsDictionary["SystemAddress"] = jel.GetProperty("SystemAddress");
-                        elementAsDictionary["StarSystem"] = jel.GetProperty("StarSystem");
-                        elementAsDictionary["StarPos"] = jel.GetProperty("StarPos");
+                        // Don't replace values that already exists on the event, supposedly the journal is supposed to be correct on those already
+                        //elementAsDictionary["SystemAddress"] = jel.GetProperty("SystemAddress");
+                        if (!elementAsDictionary.ContainsKey("StarSystem"))
+                        {
+                            elementAsDictionary["StarSystem"] = jel.GetProperty("StarSystem");
+                        }
+                        if (!elementAsDictionary.ContainsKey("StarPos"))
+                        {
+                            elementAsDictionary["StarPos"] = jel.GetProperty("StarPos");
+                        }
                     }
                 }
             }

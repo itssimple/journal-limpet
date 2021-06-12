@@ -58,6 +58,7 @@ namespace Journal_Limpet.Shared.Models
 
                 await starSystemChecker.InsertOrUpdateSystemAsync(edSysData);
 
+                // Since the event has all properties, we allow setting the cache
                 setCache = true;
             }
 
@@ -69,11 +70,19 @@ namespace Journal_Limpet.Shared.Models
                 if (cachedSystem != RedisValue.Null)
                 {
                     var jel = JsonDocument.Parse(cachedSystem.ToString()).RootElement;
-                    elementAsDictionary["SystemAddress"] = jel.GetProperty("SystemAddress");
-                    elementAsDictionary["StarSystem"] = jel.GetProperty("StarSystem");
-                    elementAsDictionary["StarPos"] = jel.GetProperty("StarPos");
+                    // Don't replace values that already exists on the event, supposedly the journal is supposed to be correct on those already
+                    //elementAsDictionary["SystemAddress"] = jel.GetProperty("SystemAddress");
+                    if (!elementAsDictionary.ContainsKey("StarSystem"))
+                    {
+                        elementAsDictionary["StarSystem"] = jel.GetProperty("StarSystem");
+                    }
+                    if (!elementAsDictionary.ContainsKey("StarPos"))
+                    {
+                        elementAsDictionary["StarPos"] = jel.GetProperty("StarPos");
+                    }
 
-                    setCache = true;
+                    // Do not allow setting the cache, just because we fetched it from the cache.
+                    setCache = false;
                 }
                 else
                 {
@@ -87,9 +96,19 @@ namespace Journal_Limpet.Shared.Models
                             StarPos = new[] { systemData.Coordinates.X, systemData.Coordinates.Y, systemData.Coordinates.Z }
                         })).RootElement;
 
-                        elementAsDictionary["SystemAddress"] = jel.GetProperty("SystemAddress");
-                        elementAsDictionary["StarSystem"] = jel.GetProperty("StarSystem");
-                        elementAsDictionary["StarPos"] = jel.GetProperty("StarPos");
+                        // Don't replace values that already exists on the event, supposedly the journal is supposed to be correct on those already
+                        //elementAsDictionary["SystemAddress"] = jel.GetProperty("SystemAddress");
+                        if (!elementAsDictionary.ContainsKey("StarSystem"))
+                        {
+                            elementAsDictionary["StarSystem"] = jel.GetProperty("StarSystem");
+                        }
+                        if (!elementAsDictionary.ContainsKey("StarPos"))
+                        {
+                            elementAsDictionary["StarPos"] = jel.GetProperty("StarPos");
+                        }
+
+                        // It's safe to set the cache here, since we fetch the data from the database
+                        setCache = true;
                     }
                 }
             }
