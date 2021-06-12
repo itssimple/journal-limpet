@@ -75,6 +75,14 @@ namespace Journal_Limpet.Jobs.SharedCode
             var _rdb = SharedSettings.RedisClient.GetDatabase(1);
             var elementAsDictionary = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(element.GetRawText());
 
+            if (elementAsDictionary.TryGetValue("timestamp", out var timeStampElement))
+            {
+                if (!timeStampElement.TryGetDateTimeOffset(out _))
+                {
+                    throw new InvalidTimestampException();
+                }
+            }
+
             bool setCache = await EDSystemCache.GetSystemCache(elementAsDictionary, _rdb, starSystemChecker);
 
             GameStateChanger.GameStateFixer(gameState, commander, elementAsDictionary);

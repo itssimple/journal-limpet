@@ -422,44 +422,51 @@ new SqlParameter("user_identifier", userIdentifier)
             Stopwatch sw = new Stopwatch();
             sw.Start();
 
-            element = await SetGamestateProperties(element, gameState, edsmSettings.CommanderName.Trim(), starSystemChecker);
-
-            if (System.Enum.TryParse(typeof(IgnoredEvents), journalEvent.GetString(), false, out _)) return (304, string.Empty, TimeSpan.Zero, false);
-
-            if (!gameState.SendEvents)
-                return (104, string.Empty, TimeSpan.Zero, false);
-
-            var formContent = new MultipartFormDataContent();
-
-            var json = JsonSerializer.Serialize(element, new JsonSerializerOptions() { WriteIndented = true });
-
-            formContent.Add(new StringContent(edsmSettings.CommanderName.Trim()), "commanderName");
-            formContent.Add(new StringContent(edsmSettings.ApiKey), "apiKey");
-            formContent.Add(new StringContent("Journal Limpet"), "fromSoftware");
-            formContent.Add(new StringContent(SharedSettings.VersionNumber), "fromSoftwareVersion");
-            formContent.Add(new StringContent(json), "message");
-
-            await SSEActivitySender.SendUserLogDataAsync(userIdentifier, new { fromIntegration = "EDSM", data = element });
-
-            var policy = Policy
-                .HandleResult<HttpResponseMessage>(res => !res.IsSuccessStatusCode)
-                .Or<HttpRequestException>()
-                .WaitAndRetryAsync(30, retryCount => TimeSpan.FromSeconds(retryCount * 5));
-
-            var status = await policy.ExecuteAsync(() => hc.PostAsync("https://www.edsm.net/api-journal-v1", formContent));
-            var postResponseBytes = await status.Content.ReadAsByteArrayAsync();
-
-            var postResponse = System.Text.Encoding.UTF8.GetString(postResponseBytes);
-            if (!status.IsSuccessStatusCode)
+            try
             {
-                return ((int)status.StatusCode, postResponse, TimeSpan.FromSeconds(30), true);
+                element = await SetGamestateProperties(element, gameState, edsmSettings.CommanderName.Trim(), starSystemChecker);
+
+                if (System.Enum.TryParse(typeof(IgnoredEvents), journalEvent.GetString(), false, out _)) return (304, string.Empty, TimeSpan.Zero, false);
+
+                if (!gameState.SendEvents)
+                    return (104, string.Empty, TimeSpan.Zero, false);
+
+                var formContent = new MultipartFormDataContent();
+
+                var json = JsonSerializer.Serialize(element, new JsonSerializerOptions() { WriteIndented = true });
+
+                formContent.Add(new StringContent(edsmSettings.CommanderName.Trim()), "commanderName");
+                formContent.Add(new StringContent(edsmSettings.ApiKey), "apiKey");
+                formContent.Add(new StringContent("Journal Limpet"), "fromSoftware");
+                formContent.Add(new StringContent(SharedSettings.VersionNumber), "fromSoftwareVersion");
+                formContent.Add(new StringContent(json), "message");
+
+                await SSEActivitySender.SendUserLogDataAsync(userIdentifier, new { fromIntegration = "EDSM", data = element });
+
+                var policy = Policy
+                    .HandleResult<HttpResponseMessage>(res => !res.IsSuccessStatusCode)
+                    .Or<HttpRequestException>()
+                    .WaitAndRetryAsync(30, retryCount => TimeSpan.FromSeconds(retryCount * 5));
+
+                var status = await policy.ExecuteAsync(() => hc.PostAsync("https://www.edsm.net/api-journal-v1", formContent));
+                var postResponseBytes = await status.Content.ReadAsByteArrayAsync();
+
+                var postResponse = System.Text.Encoding.UTF8.GetString(postResponseBytes);
+                if (!status.IsSuccessStatusCode)
+                {
+                    return ((int)status.StatusCode, postResponse, TimeSpan.FromSeconds(30), true);
+                }
+
+                var resp = JsonSerializer.Deserialize<EDSMApiResponse>(postResponse);
+
+                sw.Stop();
+
+                return (resp.ResultCode, postResponse, sw.Elapsed, true);
             }
-
-            var resp = JsonSerializer.Deserialize<EDSMApiResponse>(postResponse);
-
-            sw.Stop();
-
-            return (resp.ResultCode, postResponse, sw.Elapsed, true);
+            catch (InvalidTimestampException)
+            {
+                return (206, string.Empty, TimeSpan.FromMilliseconds(100), false);
+            }
         }
 
         public class EDSMApiResponse : EliteBaseJsonObject

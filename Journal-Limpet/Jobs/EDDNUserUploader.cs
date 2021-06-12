@@ -237,51 +237,53 @@ namespace Journal_Limpet.Jobs
 
             if (!element.TryGetProperty("event", out JsonElement journalEvent)) return TimeSpan.Zero;
 
-            var transientState = await SetGamestateProperties(element, gameState, commander, starSystemChecker);
+            try
+            {
+                var transientState = await SetGamestateProperties(element, gameState, commander, starSystemChecker);
 
-            if (!System.Enum.TryParse(typeof(AllowedEvents), journalEvent.GetString(), false, out _)) return TimeSpan.Zero;
+                if (!System.Enum.TryParse(typeof(AllowedEvents), journalEvent.GetString(), false, out _)) return TimeSpan.Zero;
 
-            element = FixEDDNJson(element);
-            element = await AddMissingProperties(element, starSystemChecker, transientState.GetProperty("odyssey"));
+                element = FixEDDNJson(element);
+                element = await AddMissingProperties(element, starSystemChecker, transientState.GetProperty("odyssey"));
 
-            if (HasMissingProperties(element)) return TimeSpan.Zero;
+                if (HasMissingProperties(element)) return TimeSpan.Zero;
 
-            var eddnItem = new Dictionary<string, object>()
-    {
-        { "$schemaRef", "https://eddn.edcd.io/schemas/journal/1" },
-        { "header", new Dictionary<string, object>() {
-            { "uploaderID", userIdentifier.ToString() },
-            { "softwareName", "Journal Limpet" },
-            { "softwareVersion", SharedSettings.VersionNumber }
-        } },
-        { "message", element }
-    };
+                var eddnItem = new Dictionary<string, object>()
+                {
+                    { "$schemaRef", "https://eddn.edcd.io/schemas/journal/1" },
+                    { "header", new Dictionary<string, object>() {
+                        { "uploaderID", userIdentifier.ToString() },
+                        { "softwareName", "Journal Limpet" },
+                        { "softwareVersion", SharedSettings.VersionNumber }
+                    } },
+                    { "message", element }
+                };
 
-            await SSEActivitySender.SendUserLogDataAsync(userIdentifier, new { fromIntegration = "EDDN", data = eddnItem });
+                await SSEActivitySender.SendUserLogDataAsync(userIdentifier, new { fromIntegration = "EDDN", data = eddnItem });
 
-            var json = JsonSerializer.Serialize(eddnItem, new JsonSerializerOptions() { WriteIndented = true });
+                var json = JsonSerializer.Serialize(eddnItem, new JsonSerializerOptions() { WriteIndented = true });
 
-            Stopwatch sw = new Stopwatch();
-            sw.Start();
+                Stopwatch sw = new Stopwatch();
+                sw.Start();
 
-            var policy = Policy
-                .Handle<HttpRequestException>()
-                .WaitAndRetryAsync(new[] {
+                var policy = Policy
+                    .Handle<HttpRequestException>()
+                    .WaitAndRetryAsync(new[] {
                     TimeSpan.FromSeconds(1),
                     TimeSpan.FromSeconds(2),
                     TimeSpan.FromSeconds(4),
                     TimeSpan.FromSeconds(8),
                     TimeSpan.FromSeconds(16),
-                });
+                    });
 
-            var status = await policy.ExecuteAsync(() => hc.PostAsync("https://eddn.edcd.io:4430/upload/", new StringContent(json, Encoding.UTF8, "application/json")));
-            sw.Stop();
+                var status = await policy.ExecuteAsync(() => hc.PostAsync("https://eddn.edcd.io:4430/upload/", new StringContent(json, Encoding.UTF8, "application/json")));
+                sw.Stop();
 
-            var postResponse = await status.Content.ReadAsStringAsync();
+                var postResponse = await status.Content.ReadAsStringAsync();
 
-            if (!status.IsSuccessStatusCode)
-            {
-                await discordClient.SendMessageAsync("**[EDDN Upload]** Problem with upload to EDDN", new List<DiscordWebhookEmbed>
+                if (!status.IsSuccessStatusCode)
+                {
+                    await discordClient.SendMessageAsync("**[EDDN Upload]** Problem with upload to EDDN", new List<DiscordWebhookEmbed>
                 {
                     new DiscordWebhookEmbed
                     {
@@ -294,10 +296,15 @@ namespace Journal_Limpet.Jobs
                     }
                 });
 
-                throw new Exception("EDDN exception: " + postResponse);
-            }
+                    throw new Exception("EDDN exception: " + postResponse);
+                }
 
-            return sw.Elapsed;
+                return sw.Elapsed;
+            }
+            catch (InvalidTimestampException)
+            {
+                return TimeSpan.FromMilliseconds(100);
+            }
         }
 
         internal static bool HasMissingProperties(JsonElement element)

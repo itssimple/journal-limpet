@@ -334,53 +334,60 @@ new SqlParameter("user_identifier", userIdentifier)
             Stopwatch sw = new Stopwatch();
             sw.Start();
 
-            var newGameState = await SetGamestateProperties(element, gameState, cmdrName, starSystemChecker);
-
-            var matchingValidEvents = validCanonnEvents.Where(e => e.Event == journalEvent.GetString());
-
-            if (!matchingValidEvents.Any()) return null;
-
-            bool foundMatchingEvent = false;
-
-            foreach (var matchingValidEvent in matchingValidEvents)
+            try
             {
-                var fieldsToMatch = matchingValidEvent.ExtensionData ?? new Dictionary<string, object>();
-                if (fieldsToMatch.Count > 0)
-                {
-                    var elementAsDictionary = JsonSerializer.Deserialize<Dictionary<string, object>>(element.GetRawText());
+                var newGameState = await SetGamestateProperties(element, gameState, cmdrName, starSystemChecker);
 
-                    if (fieldsToMatch.All(k => elementAsDictionary.ContainsKey(k.Key) && elementAsDictionary[k.Key].ToString() == k.Value.ToString()))
+                var matchingValidEvents = validCanonnEvents.Where(e => e.Event == journalEvent.GetString());
+
+                if (!matchingValidEvents.Any()) return null;
+
+                bool foundMatchingEvent = false;
+
+                foreach (var matchingValidEvent in matchingValidEvents)
+                {
+                    var fieldsToMatch = matchingValidEvent.ExtensionData ?? new Dictionary<string, object>();
+                    if (fieldsToMatch.Count > 0)
+                    {
+                        var elementAsDictionary = JsonSerializer.Deserialize<Dictionary<string, object>>(element.GetRawText());
+
+                        if (fieldsToMatch.All(k => elementAsDictionary.ContainsKey(k.Key) && elementAsDictionary[k.Key].ToString() == k.Value.ToString()))
+                        {
+                            foundMatchingEvent = true;
+                            break;
+                        }
+                    }
+                    else
                     {
                         foundMatchingEvent = true;
                         break;
                     }
                 }
-                else
+
+                if (!foundMatchingEvent)
                 {
-                    foundMatchingEvent = true;
-                    break;
+                    return null;
                 }
-            }
 
-            if (!foundMatchingEvent)
+                if (!gameState.SendEvents)
+                {
+                    return null;
+                }
+
+                var eddnItem = new Dictionary<string, object>()
+                {
+                    { "gameState", newGameState },
+                    { "rawEvent", element },
+                    { "eventType", journalEvent.GetString() },
+                    { "cmdrName", cmdrName }
+                };
+
+                return eddnItem;
+            }
+            catch (InvalidTimestampException)
             {
                 return null;
             }
-
-            if (!gameState.SendEvents)
-            {
-                return null;
-            }
-
-            var eddnItem = new Dictionary<string, object>()
-            {
-                { "gameState", newGameState },
-                { "rawEvent", element },
-                { "eventType", journalEvent.GetString() },
-                { "cmdrName", cmdrName }
-            };
-
-            return eddnItem;
         }
 
         private static async Task<(int errorCode, string resultContent, bool sentData)> SendEventsToCanonn(HttpClient hc, IConfiguration configuration, string json, PerformContext context)
