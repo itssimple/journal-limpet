@@ -274,6 +274,20 @@ new SqlParameter("user_identifier", userIdentifier)
                     context.WriteLine("We're sending stuff too quickly, breaking out of the loop");
                     context.WriteLine(lastLine);
                     context.WriteLine(res.resultContent);
+
+                    await discordClient.SendMessageAsync("**[Canonn R&D Upload]** Rate limited by Canonn", new List<DiscordWebhookEmbed>
+                                                    {
+                                                        new DiscordWebhookEmbed
+                                                        {
+                                                            Description = res.resultContent,
+                                                            Fields = new Dictionary<string, string>() {
+                                                                { "User identifier", userIdentifier.ToString() },
+                                                                { "Last line", lastLine },
+                                                                { "Journal", journalItem.S3Path },
+                                                                { "Current GameState", JsonSerializer.Serialize(ijd.CurrentGameState, new JsonSerializerOptions { WriteIndented = true })}
+                                                            }.Select(k => new DiscordWebhookEmbedField { Name = k.Key, Value = k.Value }).ToList()
+                                                        }
+                                                    });
                     await Task.Delay(30000);
                     break;
 
