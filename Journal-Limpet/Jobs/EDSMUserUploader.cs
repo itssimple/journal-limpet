@@ -150,6 +150,19 @@ new SqlParameter("user_identifier", userIdentifier)
                                                 case 205: // Blacklisted software
                                                     disableIntegration = true;
                                                     breakJournal = true;
+                                                    await discordClient.SendMessageAsync("**[EDSM Upload]** Disabled integration for user", new List<DiscordWebhookEmbed>
+                                                    {
+                                                        new DiscordWebhookEmbed
+                                                        {
+                                                            Description = res.resultContent,
+                                                            Fields = new Dictionary<string, string>() {
+                                                                { "Status code", res.errorCode.ToString() },
+                                                                { "User identifier", userIdentifier.ToString() },
+                                                                { "Last line", lastLine },
+                                                                { "Journal", journalItem.S3Path }
+                                                            }.Select(k => new DiscordWebhookEmbedField { Name = k.Key, Value = k.Value }).ToList()
+                                                        }
+                                                    });
                                                     break;
                                                 case 206: // Cannot decode JSON
                                                     break;
@@ -222,11 +235,13 @@ new SqlParameter("user_identifier", userIdentifier)
                                     await Task.Delay(delay_time);
                                 }
 
-                                await db.ExecuteNonQueryAsync(
-                                    "UPDATE user_journal SET integration_data = @integration_data WHERE journal_id = @journal_id",
-                                    new SqlParameter("journal_id", journalItem.JournalId),
-                                    new SqlParameter("integration_data", JsonSerializer.Serialize(journalItem.IntegrationData))
-                                );
+                                await GameStateHandler.UpdateJournalIntegrationDataAsync(db, journalItem.JournalId, IntegrationNames.EDSM, ijd);
+
+                                //await db.ExecuteNonQueryAsync(
+                                //    "UPDATE user_journal SET integration_data = @integration_data WHERE journal_id = @journal_id",
+                                //    new SqlParameter("journal_id", journalItem.JournalId),
+                                //    new SqlParameter("integration_data", JsonSerializer.Serialize(journalItem.IntegrationData))
+                                //);
 
                                 if (breakJournal)
                                 {
@@ -241,22 +256,26 @@ new SqlParameter("user_identifier", userIdentifier)
                                     ijd.FullySent = true;
                                     journalItem.IntegrationData["EDSM"] = ijd;
 
-                                    await db.ExecuteNonQueryAsync(
-                                        "UPDATE user_journal SET integration_data = @integration_data WHERE journal_id = @journal_id",
-                                        new SqlParameter("journal_id", journalItem.JournalId),
-                                        new SqlParameter("integration_data", JsonSerializer.Serialize(journalItem.IntegrationData))
-                                    );
+                                    await GameStateHandler.UpdateJournalIntegrationDataAsync(db, journalItem.JournalId, IntegrationNames.EDSM, ijd);
+
+                                    //await db.ExecuteNonQueryAsync(
+                                    //    "UPDATE user_journal SET integration_data = @integration_data WHERE journal_id = @journal_id",
+                                    //    new SqlParameter("journal_id", journalItem.JournalId),
+                                    //    new SqlParameter("integration_data", JsonSerializer.Serialize(journalItem.IntegrationData))
+                                    //);
                                 }
                             }
                             lastJournal = journalItem;
                         }
                         catch (Exception ex)
                         {
-                            await db.ExecuteNonQueryAsync(
-                                "UPDATE user_journal SET integration_data = @integration_data WHERE journal_id = @journal_id",
-                                new SqlParameter("journal_id", journalItem.JournalId),
-                                new SqlParameter("integration_data", JsonSerializer.Serialize(journalItem.IntegrationData))
-                            );
+                            await GameStateHandler.UpdateJournalIntegrationDataAsync(db, journalItem.JournalId, IntegrationNames.EDSM, ijd);
+
+                            //await db.ExecuteNonQueryAsync(
+                            //    "UPDATE user_journal SET integration_data = @integration_data WHERE journal_id = @journal_id",
+                            //    new SqlParameter("journal_id", journalItem.JournalId),
+                            //    new SqlParameter("integration_data", JsonSerializer.Serialize(journalItem.IntegrationData))
+                            //);
 
                             await discordClient.SendMessageAsync("**[EDSM Upload]** Problem with upload to EDSM", new List<DiscordWebhookEmbed>
                                 {

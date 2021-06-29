@@ -150,13 +150,12 @@ namespace Journal_Limpet.Jobs
                                     await Task.Delay(delay_time);
                                 }
 
-                                var integration_json = JsonSerializer.Serialize(journalItem.IntegrationData);
+                                await GameStateHandler.UpdateJournalIntegrationDataAsync(db, journalItem.JournalId, IntegrationNames.EDDN, ijd);
 
                                 await db.ExecuteNonQueryAsync(
-                                    "UPDATE user_journal SET sent_to_eddn_line = @line_number, integration_data = @integration_data WHERE journal_id = @journal_id",
+                                    "UPDATE user_journal SET sent_to_eddn_line = @line_number WHERE journal_id = @journal_id",
                                     new SqlParameter("journal_id", journalItem.JournalId),
-                                    new SqlParameter("line_number", line_number),
-                                    new SqlParameter("integration_data", integration_json)
+                                    new SqlParameter("line_number", line_number)
                                 );
 
                                 if (journalItem.CompleteEntry)
@@ -165,11 +164,12 @@ namespace Journal_Limpet.Jobs
                                     ijd.FullySent = true;
                                     journalItem.IntegrationData["EDDN"] = ijd;
 
+                                    await GameStateHandler.UpdateJournalIntegrationDataAsync(db, journalItem.JournalId, IntegrationNames.EDDN, ijd);
+
                                     await db.ExecuteNonQueryAsync(
-                                        "UPDATE user_journal SET sent_to_eddn = 1, sent_to_eddn_line = @line_number, integration_data = @integration_data WHERE journal_id = @journal_id",
+                                        "UPDATE user_journal SET sent_to_eddn = 1, sent_to_eddn_line = @line_number WHERE journal_id = @journal_id",
                                         new SqlParameter("journal_id", journalItem.JournalId),
-                                        new SqlParameter("line_number", line_number),
-                                        new SqlParameter("integration_data", integration_json)
+                                        new SqlParameter("line_number", line_number)
                                     );
                                 }
                             }
@@ -178,11 +178,13 @@ namespace Journal_Limpet.Jobs
                         }
                         catch (Exception ex)
                         {
-                            await db.ExecuteNonQueryAsync(
-                                "UPDATE user_journal SET integration_data = @integration_data WHERE journal_id = @journal_id",
-                                new SqlParameter("journal_id", journalItem.JournalId),
-                                new SqlParameter("integration_data", JsonSerializer.Serialize(journalItem.IntegrationData))
-                            );
+                            await GameStateHandler.UpdateJournalIntegrationDataAsync(db, journalItem.JournalId, IntegrationNames.EDDN, ijd);
+
+                            //await db.ExecuteNonQueryAsync(
+                            //    "UPDATE user_journal SET integration_data = @integration_data WHERE journal_id = @journal_id",
+                            //    new SqlParameter("journal_id", journalItem.JournalId),
+                            //    new SqlParameter("integration_data", JsonSerializer.Serialize(journalItem.IntegrationData))
+                            //);
 
                             await discordClient.SendMessageAsync("**[EDDN Upload]** Problem with upload to EDDN", new List<DiscordWebhookEmbed>
                             {

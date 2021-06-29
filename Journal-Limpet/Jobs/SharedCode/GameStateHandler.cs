@@ -15,7 +15,7 @@ namespace Journal_Limpet.Jobs.SharedCode
 {
     public static class GameStateHandler
     {
-        public static async Task<(EDGameState gameState, UserJournal lastJournal)> LoadGameState(MSSQLDB db, Guid userIdentifier, List<UserJournal> userJournals, string integrationKey, PerformContext context)
+        public async static Task<(EDGameState gameState, UserJournal lastJournal)> LoadGameState(MSSQLDB db, Guid userIdentifier, List<UserJournal> userJournals, string integrationKey, PerformContext context)
         {
             EDGameState previousGameState = null;
             UserJournal lastJournal = null;
@@ -70,7 +70,16 @@ namespace Journal_Limpet.Jobs.SharedCode
             return ijd;
         }
 
-        public static async Task<JsonElement> SetGamestateProperties(JsonElement element, EDGameState gameState, string commander, StarSystemChecker starSystemChecker, Func<EDGameState, object> setProperties, Action<JsonElement, Dictionary<string, JsonElement>> addStateToElement = null)
+        public async static Task<bool> UpdateJournalIntegrationDataAsync(MSSQLDB db, long journalId, string integrationKey, IntegrationJournalData integrationJournalData)
+        {
+            return (await db.ExecuteNonQueryAsync(
+                "UPDATE user_journal SET integration_data = JSON_MODIFY(integration_data, '$.\"" + integrationKey + "\"', JSON_QUERY(@integration_data)) WHERE journal_id = @journal_id",
+                new SqlParameter("journal_id", journalId),
+                new SqlParameter("integration_data", JsonSerializer.Serialize(integrationJournalData))
+            )) > 0;
+        }
+
+        public async static Task<JsonElement> SetGamestateProperties(JsonElement element, EDGameState gameState, string commander, StarSystemChecker starSystemChecker, Func<EDGameState, object> setProperties, Action<JsonElement, Dictionary<string, JsonElement>> addStateToElement = null)
         {
             var _rdb = SharedSettings.RedisClient.GetDatabase(1);
             var elementAsDictionary = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(element.GetRawText());
