@@ -73,7 +73,7 @@ namespace Journal_Limpet.Jobs.SharedCode
         public async static Task<bool> UpdateJournalIntegrationDataAsync(MSSQLDB db, long journalId, string integrationKey, IntegrationJournalData integrationJournalData)
         {
             return (await db.ExecuteNonQueryAsync(
-                "UPDATE user_journal SET integration_data = JSON_MODIFY(integration_data, '$.\"" + integrationKey + "\"', JSON_QUERY(@integration_data)) WHERE journal_id = @journal_id",
+                "UPDATE user_journal SET integration_data = JSON_MODIFY(ISNULL(integration_data, JSON_QUERY('{}')), '$.\"" + integrationKey + "\"', JSON_QUERY(@integration_data)) WHERE journal_id = @journal_id",
                 new SqlParameter("journal_id", journalId),
                 new SqlParameter("integration_data", JsonSerializer.Serialize(integrationJournalData))
             )) > 0;
