@@ -22,15 +22,18 @@ namespace Journal_Limpet.Shared
 
             if (elementAsDictionary.ContainsKey("SystemAddress"))
             {
-                if (elementAsDictionary["SystemAddress"].GetInt64() != gameState.SystemAddress)
+                if (!IgnoredChangedSystemAddressEvents.Contains(eventName))
                 {
-                    gameState.SystemAddress = null;
-                    gameState.SystemName = null;
-                    gameState.SystemCoordinates = null;
-                    gameState.MarketId = null;
-                    gameState.StationName = null;
-                    gameState.BodyId = null;
-                    gameState.BodyName = null;
+                    if (elementAsDictionary["SystemAddress"].GetInt64() != gameState.SystemAddress)
+                    {
+                        gameState.SystemAddress = null;
+                        gameState.SystemName = null;
+                        gameState.SystemCoordinates = null;
+                        gameState.MarketId = null;
+                        gameState.StationName = null;
+                        gameState.BodyId = null;
+                        gameState.BodyName = null;
+                    }
                 }
             }
 
@@ -223,7 +226,7 @@ namespace Journal_Limpet.Shared
                 }
             }
 
-            if (eventName == "SAASignalsFound")
+            if (new[] { "SAASignalsFound", "Scan", "FSSDiscoveryScan", "CodexEntry", "FSSAllBodiesFound", "SAAScanComplete" }.Contains(eventName))
             {
                 if (elementAsDictionary.ContainsKey("SystemAddress"))
                 {
@@ -311,6 +314,11 @@ namespace Journal_Limpet.Shared
             "SellSuit",
             "TradeMicroResources",
             "SellMicroResources"
+        };
+
+        public readonly static string[] IgnoredChangedSystemAddressEvents = new string[]
+        {
+            "FSDTarget"
         };
     }
 }
