@@ -164,7 +164,7 @@ namespace Journal_Limpet.Shared
                 }
             }
 
-            if (new[] { "Location", "FSDJump", "Docked", "CarrierJump", "Touchdown", "Liftoff" }.Contains(eventName))
+            if (new[] { "Location", "FSDJump", "Docked", "CarrierJump"/*, "Touchdown", "Liftoff"*/ }.Contains(eventName))
             {
                 // Docked don"t have coordinates, if system changed reset
                 if (elementAsDictionary["StarSystem"].GetString() != gameState.SystemName)
