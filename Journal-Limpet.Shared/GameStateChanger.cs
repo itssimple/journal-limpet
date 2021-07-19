@@ -164,7 +164,7 @@ namespace Journal_Limpet.Shared
                 }
             }
 
-            if (new[] { "Location", "FSDJump", "Docked", "CarrierJump"/*, "Touchdown", "Liftoff"*/ }.Contains(eventName))
+            if (new[] { "Location", "FSDJump", "Docked", "CarrierJump" }.Contains(eventName))
             {
                 // Docked don"t have coordinates, if system changed reset
                 if (elementAsDictionary["StarSystem"].GetString() != gameState.SystemName)
@@ -226,7 +226,7 @@ namespace Journal_Limpet.Shared
                 }
             }
 
-            if (new[] { "SAASignalsFound", "Scan", "FSSDiscoveryScan", "CodexEntry", "FSSAllBodiesFound", "SAAScanComplete" }.Contains(eventName))
+            if (new[] { "SAASignalsFound", "Scan", "FSSDiscoveryScan", "CodexEntry", "FSSAllBodiesFound", "SAAScanComplete", "Touchdown", "Liftoff" }.Contains(eventName))
             {
                 if (elementAsDictionary.ContainsKey("SystemAddress"))
                 {
