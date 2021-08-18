@@ -306,7 +306,7 @@ namespace Journal_Limpet.Jobs
             return (true, false);
         }
 
-        static async Task<(HttpStatusCode code, HttpResponseMessage message)> GetJournalAsync(DateTime journalDate, Shared.Models.User.Profile user, MSSQLDB db, HttpClient hc, MinioClient minioClient)
+        static async Task<(HttpStatusCode code, HttpResponseMessage message)> GetJournalAsync(DateTime journalDate, Shared.Models.User.Profile user, MSSQLDB db, HttpClient hc, MinioClient minioClient, DiscordWebhook discord)
         {
             var oldJournalRow = await db.ExecuteListAsync<UserJournal>(
                 "SELECT TOP 1 * FROM user_journal WHERE user_identifier = @user_identifier AND journal_date = @journal_date",
@@ -350,22 +350,39 @@ namespace Journal_Limpet.Jobs
                 var firstRow = journalRows.FirstOrDefault();
                 if (!string.IsNullOrWhiteSpace(firstRow))
                 {
-                    var row = JsonDocument.Parse(firstRow).RootElement;
-
-                    var apiFileHeader = new
+                    try
                     {
-                        Timestamp = row.GetProperty("timestamp").GetString(),
-                        Event = "JournalLimpetFileheader",
-                        Description = "Missing fileheader from cAPI journal"
-                    };
+                        var row = JsonDocument.Parse(firstRow).RootElement;
 
-                    var serializedApiFileHeader = JsonSerializer.Serialize(apiFileHeader, new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase });
-                    serializedApiFileHeader = serializedApiFileHeader.Insert(serializedApiFileHeader.Length - 1, " ").Insert(1, " ");
+                        var apiFileHeader = new
+                        {
+                            Timestamp = row.GetProperty("timestamp").GetString(),
+                            Event = "JournalLimpetFileheader",
+                            Description = "Missing fileheader from cAPI journal"
+                        };
 
-                    journalContent =
-                        serializedApiFileHeader +
-                        "\n" +
-                        journalContent;
+                        var serializedApiFileHeader = JsonSerializer.Serialize(apiFileHeader, new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase });
+                        serializedApiFileHeader = serializedApiFileHeader.Insert(serializedApiFileHeader.Length - 1, " ").Insert(1, " ");
+
+                        journalContent =
+                            serializedApiFileHeader +
+                            "\n" +
+                            journalContent;
+                    }
+                    catch (Exception ex)
+                    {
+                        if (ex.ToString().Contains("JsonReaderException"))
+                        {
+                            var errorMessage = ex.ToString() + "\n\n" + JsonSerializer.Serialize(user, new JsonSerializerOptions() { WriteIndented = true }) + "\n\nLine failed: " + firstRow;
+
+                            await SendAdminNotification(discord,
+                                "**[JOURNAL]** JSON Reader Exception while fetching first item",
+                                errorMessage
+                                );
+
+                            throw;
+                        }
+                    }
                 }
             }
 
