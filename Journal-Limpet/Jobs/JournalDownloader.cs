@@ -371,16 +371,16 @@ namespace Journal_Limpet.Jobs
                     }
                     catch (Exception ex)
                     {
-                        if (ex.ToString().Contains("JsonReaderException"))
+                        if (ex.ToString().Contains("Json"))
                         {
-                            var errorMessage = ex.ToString() + "\n\n" + JsonSerializer.Serialize(user, new JsonSerializerOptions() { WriteIndented = true }) + "\n\nLine failed: " + firstRow;
+                            var errorMessage = "Line failed: " + firstRow;
 
                             await SendAdminNotification(discord,
                                 "**[JOURNAL]** JSON Reader Exception while fetching first item",
                                 errorMessage
                                 );
 
-                            throw;
+                            return (HttpStatusCode.InternalServerError, new HttpResponseMessage(HttpStatusCode.InternalServerError) { Content = new StringContent("faulty row: " + firstRow) });
                         }
                     }
                 }
