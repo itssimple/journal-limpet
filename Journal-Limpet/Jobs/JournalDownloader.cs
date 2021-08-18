@@ -129,7 +129,7 @@ namespace Journal_Limpet.Jobs
                     while (journalDate.Date != DateTime.Today)
                     {
                         context.WriteLine($"Fetching data for {journalDate.ToString("yyyy-MM-dd")}");
-                        var req = await TryGetJournalAsync(discordClient, journalDate, user, db, hc, minioClient);
+                        var req = await TryGetJournalAsync(discordClient, journalDate, user, db, hc, minioClient, context);
                         if (req.shouldBail)
                         {
                             // Failed to get loop journal
@@ -141,7 +141,7 @@ namespace Journal_Limpet.Jobs
                     }
 
                     context.WriteLine($"Fetching data for {journalDate.ToString("yyyy-MM-dd")}");
-                    var reqOut = await TryGetJournalAsync(discordClient, journalDate, user, db, hc, minioClient);
+                    var reqOut = await TryGetJournalAsync(discordClient, journalDate, user, db, hc, minioClient, context);
 
                     if (reqOut.shouldBail)
                     {
@@ -221,7 +221,7 @@ namespace Journal_Limpet.Jobs
             });
         }
 
-        static async Task<(bool failedRequest, bool shouldBail)> TryGetJournalAsync(DiscordWebhook discord, DateTime journalDate, Shared.Models.User.Profile user, MSSQLDB db, HttpClient hc, MinioClient minioClient)
+        static async Task<(bool failedRequest, bool shouldBail)> TryGetJournalAsync(DiscordWebhook discord, DateTime journalDate, Shared.Models.User.Profile user, MSSQLDB db, HttpClient hc, MinioClient minioClient, PerformContext context)
         {
             try
             {
@@ -347,12 +347,25 @@ namespace Journal_Limpet.Jobs
 
             if (!string.IsNullOrWhiteSpace(journalContent) && journalContent.Trim() != "{}")
             {
-                var firstRow = journalRows.FirstOrDefault();
-                if (!string.IsNullOrWhiteSpace(firstRow))
+                var firstValidRow = string.Empty;
+
+                foreach (var row in journalRows)
                 {
                     try
                     {
-                        var row = JsonDocument.Parse(firstRow).RootElement;
+                        _ = JsonDocument.Parse(row).RootElement;
+                        firstValidRow = row;
+                    }
+                    catch
+                    {
+                    }
+                }
+
+                if (!string.IsNullOrWhiteSpace(firstValidRow))
+                {
+                    try
+                    {
+                        var row = JsonDocument.Parse(firstValidRow).RootElement;
 
                         var apiFileHeader = new
                         {
@@ -373,14 +386,14 @@ namespace Journal_Limpet.Jobs
                     {
                         if (ex.ToString().Contains("Json"))
                         {
-                            var errorMessage = "Line failed: " + firstRow;
+                            var errorMessage = "Line failed: " + firstValidRow;
 
                             await SendAdminNotification(discord,
                                 "**[JOURNAL]** JSON Reader Exception while fetching first item",
                                 errorMessage
                                 );
 
-                            return (HttpStatusCode.InternalServerError, new HttpResponseMessage(HttpStatusCode.InternalServerError) { Content = new StringContent("faulty row: " + firstRow) });
+                            return (HttpStatusCode.InternalServerError, new HttpResponseMessage(HttpStatusCode.InternalServerError) { Content = new StringContent("faulty row: " + firstValidRow) });
                         }
                     }
                 }
