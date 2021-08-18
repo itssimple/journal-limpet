@@ -225,7 +225,7 @@ namespace Journal_Limpet.Jobs
         {
             try
             {
-                var res = await GetJournalAsync(journalDate, user, db, hc, minioClient);
+                var res = await GetJournalAsync(journalDate, user, db, hc, minioClient, discord);
                 int loop_counter = 0;
 
                 while (res.code != HttpStatusCode.OK)
@@ -274,7 +274,7 @@ namespace Journal_Limpet.Jobs
                     {
                         case HttpStatusCode.PartialContent:
                             Thread.Sleep(5000);
-                            res = await GetJournalAsync(journalDate, user, db, hc, minioClient);
+                            res = await GetJournalAsync(journalDate, user, db, hc, minioClient, discord);
                             break;
                     }
                     loop_counter++;
