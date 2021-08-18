@@ -226,7 +226,7 @@ namespace Journal_Limpet.Shared
                 }
             }
 
-            if (new[] { "SAASignalsFound", "Scan", "FSSDiscoveryScan", "CodexEntry", "FSSAllBodiesFound", "SAAScanComplete", "Touchdown", "Liftoff" }.Contains(eventName))
+            if (new[] { "SAASignalsFound", "Scan", "FSSDiscoveryScan", "CodexEntry", "FSSAllBodiesFound", "SAAScanComplete", "Touchdown", "Liftoff", "ApproachSettlement" }.Contains(eventName))
             {
                 if (elementAsDictionary.ContainsKey("SystemAddress"))
                 {
