@@ -18,6 +18,7 @@ using StackExchange.Exceptional;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.IO.Compression;
 using System.Linq;
 using System.Net.Http;
 using System.Security.Claims;
@@ -175,18 +176,49 @@ new SqlParameter("customerId", profile.CustomerId))
         [HttpGet("{journalDate}/download")]
         public async Task<IActionResult> DownloadJournalAsync(DateTime journalDate)
         {
-            var journalItem = await _db.ExecuteSingleRowAsync<UserJournal>(
-                "SELECT * FROM user_journal WHERE user_identifier = @user_identifier AND journal_date = @journal_date",
-                new SqlParameter("user_identifier", User.Identity.Name),
-                new SqlParameter("journal_date", journalDate.Date)
-            );
+            var journal = await GetJournalForDate(journalDate);
 
-            if (journalItem == null)
+            if (journal.fileName == null)
                 return NotFound();
 
-            MemoryStream outFile = new MemoryStream();
+            MemoryStream unzippedContent = new MemoryStream(Encoding.UTF8.GetBytes(journal.journalContent));
+            return File(unzippedContent, "application/octet-stream", journal.fileName);
+        }
 
-            var journalIdentifier = journalItem.S3Path;
+        [HttpGet("all-journals/download")]
+        public async Task<IActionResult> DownloadAllJournalsAsync()
+        {
+            var allUserJournals = await _db.ExecuteListAsync<UserJournal>("SELECT * FROM user_journal WHERE user_identifier = @user_identifier AND last_processed_line_number > 0 ORDER BY journal_date ASC",
+                new SqlParameter("user_identifier", User.Identity.Name));
+
+            byte[] outBytes;
+
+            using (var ms = new MemoryStream())
+            {
+                using (var archive = new ZipArchive(ms, ZipArchiveMode.Create, true))
+                {
+                    foreach (var journal in allUserJournals)
+                    {
+                        var journalData = await GetJournalForDate(journal.JournalDate.Date);
+                        var fileEntry = archive.CreateEntry(journalData.fileName);
+
+                        using var fs = fileEntry.Open();
+                        using var sw = new StreamWriter(fs);
+                        {
+                            await sw.WriteAsync(journalData.journalContent);
+                        }
+                    }
+                }
+                ms.Seek(0, SeekOrigin.Begin);
+
+                outBytes = ms.ToArray();
+            }
+
+            return File(outBytes, "application/zip", $"JL-JournalBackup-{DateTime.Now.Date.ToShortDateString()}.zip");
+        }
+
+        async Task<(string fileName, string journalContent)> GetJournalForDate(DateTime journalDate)
+        {
             var f = "Journal." +
                        journalDate.Year.ToString().Substring(2) +
                        journalDate.Month.ToString().PadLeft(2, '0') +
@@ -196,29 +228,41 @@ new SqlParameter("customerId", profile.CustomerId))
                        journalDate.Second.ToString().PadLeft(2, '0') +
                        ".01.log";
 
-            try
+            var journalItem = await _db.ExecuteSingleRowAsync<UserJournal>(
+                "SELECT * FROM user_journal WHERE user_identifier = @user_identifier AND journal_date = @journal_date",
+                new SqlParameter("user_identifier", User.Identity.Name),
+                new SqlParameter("journal_date", journalDate.Date)
+            );
+
+            if (journalItem == null)
+                return (null, null);
+
+            using (MemoryStream outFile = new MemoryStream())
             {
-                var stats = await _minioClient.StatObjectAsync("journal-limpet", journalIdentifier);
+                var journalIdentifier = journalItem.S3Path;
 
-                await _minioClient.GetObjectAsync("journal-limpet", journalIdentifier,
-                    0, stats.Size,
-                    cb =>
-                    {
-                        cb.CopyTo(outFile);
-                    }
-                );
+                try
+                {
+                    var stats = await _minioClient.StatObjectAsync("journal-limpet", journalIdentifier);
 
-                outFile.Seek(0, SeekOrigin.Begin);
+                    await _minioClient.GetObjectAsync("journal-limpet", journalIdentifier,
+                        0, stats.Size,
+                        cb =>
+                        {
+                            cb.CopyTo(outFile);
+                        }
+                    );
 
-                var journalContent = ZipManager.Unzip(outFile.ToArray());
+                    outFile.Seek(0, SeekOrigin.Begin);
 
-                MemoryStream unzippedContent = new MemoryStream(Encoding.UTF8.GetBytes(journalContent));
+                    var journalContent = ZipManager.Unzip(outFile.ToArray());
 
-                return File(unzippedContent, "application/octet-stream", f);
-            }
-            catch (ObjectNotFoundException)
-            {
-                return NotFound();
+                    return (f, journalContent);
+                }
+                catch (ObjectNotFoundException)
+                {
+                    return (null, null);
+                }
             }
         }
 
