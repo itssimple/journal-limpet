@@ -8,6 +8,11 @@
     <thead>
         <tr>
             <th scope="col"
+                data-field="JournalId"
+                data-width="20" data-formatter="viewLinkFormatter">
+                &nbsp;
+            </th>
+            <th scope="col"
                 data-field="JournalDate"
                 data-width="50" data-formatter="dateLinkFormatter">Journal Date</th>
             <th scope="col"
@@ -44,5 +49,9 @@
     function dateLinkFormatter(value) {
         return `<a href="/api/journal/${value}/download" rel="noopener"><abbr title="Click to download the journal for ${value}">${value}</abbr></a>`
     }
+
+        function viewLinkFormatter(value) {
+            return `<a href="/ViewJournal?journal_id=${value}"><abbr title="Click to view the journal online">View</abbr></a>`
+        }
     </script>
 }

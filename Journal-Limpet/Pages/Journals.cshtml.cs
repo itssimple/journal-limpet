@@ -1,10 +1,9 @@
 using Journal_Limpet.Shared.Database;
+using Journal_Limpet.Shared.Models.Journal;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.Data.SqlClient;
-using System;
 using System.Collections.Generic;
-using System.Data;
 using System.Threading.Tasks;
 
 namespace Journal_Limpet.Pages
@@ -23,22 +22,6 @@ namespace Journal_Limpet.Pages
         public async Task OnGetAsync()
         {
             JournalItems = await _db.ExecuteListAsync<JournalListItem>("select * from user_journal where last_processed_line_number > 0 AND user_identifier = @user_identifier ORDER BY journal_date DESC", new SqlParameter("user_identifier", User.Identity.Name));
-        }
-
-        public class JournalListItem
-        {
-            public long JournalId { get; set; }
-            public string JournalDate { get; set; }
-            public string CompleteEntry { get; set; }
-            public long NumberOfLines { get; set; }
-
-            public JournalListItem(DataRow row)
-            {
-                JournalId = row.Field<long>("journal_id");
-                JournalDate = new DateTimeOffset(row.Field<DateTime>("journal_date"), TimeSpan.Zero).Date.ToString("yyyy-MM-dd");
-                CompleteEntry = row.Field<bool>("complete_entry") ? "Yes" : "No";
-                NumberOfLines = row.Field<long>("last_processed_line_number");
-            }
         }
     }
 }

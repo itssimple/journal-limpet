@@ -1,0 +1,26 @@
+﻿@page
+@model Journal_Limpet.Pages.ViewJournalModel
+@{
+    ViewData["Title"] = $"View journal - {Model.JournalItem.JournalDate.Date.ToShortDateString()}";
+
+    var journalRows = Model.JournalContent.Split(new char[] {'\n'});
+    long lineCounter = 0;
+}
+<style type="text/css">
+    pre {
+        white-space: normal;
+        max-width: 100%;
+    }
+
+    .alternating-row {
+        background-color: #191919;
+    }
+</style>
+<div class="row">
+    <div class="col-12 border border-light p-2">
+    @foreach(var line in journalRows) {
+        <pre class="text-white-50 m-0@(lineCounter % 2 == 0 ? " alternating-row" : "")">@line</pre>
+        { lineCounter++; }
+    }
+    </div>
+</div>
