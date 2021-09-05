@@ -87,7 +87,7 @@ namespace Journal_Limpet.Shared
 
             if (eventName == "NavBeaconScan")
             {
-                gameState.SystemAddress = elementAsDictionary["SystemAddress"].GetInt64();
+                SetSystemAddress(gameState, elementAsDictionary, false);
             }
 
             if (eventName == "Undocked")
@@ -100,10 +100,10 @@ namespace Journal_Limpet.Shared
 
             if (eventName == "ApproachBody")
             {
-                gameState.SystemName = elementAsDictionary["StarSystem"].GetString();
-                gameState.SystemAddress = elementAsDictionary["SystemAddress"].GetInt64();
-                gameState.BodyId = elementAsDictionary["BodyID"].GetInt64();
-                gameState.BodyName = elementAsDictionary["Body"].GetString();
+                SetStarSystem(gameState, elementAsDictionary, false);
+                SetSystemAddress(gameState, elementAsDictionary, false);
+                SetBodyName(gameState, elementAsDictionary, false);
+                SetBodyID(gameState, elementAsDictionary, false);
             }
 
             if (eventName == "LeaveBody")
@@ -124,13 +124,10 @@ namespace Journal_Limpet.Shared
                         gameState.BodyName = null;
                     }
 
-                    gameState.SystemName = elementAsDictionary["StarSystem"].GetString();
+                    SetStarSystem(gameState, elementAsDictionary, false);
                 }
 
-                if (elementAsDictionary.ContainsKey("SystemAddress"))
-                {
-                    gameState.SystemAddress = elementAsDictionary["SystemAddress"].GetInt64();
-                }
+                SetSystemAddress(gameState, elementAsDictionary, false);
 
                 gameState.BodyName = null;
                 gameState.BodyId = null;
@@ -143,25 +140,10 @@ namespace Journal_Limpet.Shared
 
             if (eventName == "SupercruiseExit")
             {
-                gameState.SystemName = elementAsDictionary["StarSystem"].GetString();
+                SetStarSystem(gameState, elementAsDictionary, false);
 
-                if (elementAsDictionary.ContainsKey("Body"))
-                {
-                    gameState.BodyName = elementAsDictionary["Body"].GetString();
-                }
-                else
-                {
-                    gameState.BodyName = null;
-                }
-
-                if (elementAsDictionary.ContainsKey("BodyID"))
-                {
-                    gameState.BodyId = elementAsDictionary["BodyID"].GetInt64();
-                }
-                else
-                {
-                    gameState.BodyId = null;
-                }
+                SetBodyName(gameState, elementAsDictionary, true);
+                SetBodyID(gameState, elementAsDictionary, true);
             }
 
             if (new[] { "Location", "FSDJump", "Docked", "CarrierJump" }.Contains(eventName))
@@ -185,27 +167,12 @@ namespace Journal_Limpet.Shared
 
                 if (elementAsDictionary["StarSystem"].GetString() != "ProvingGround" && elementAsDictionary["StarSystem"].GetString() != "CQC")
                 {
-                    if (elementAsDictionary.ContainsKey("SystemAddress"))
-                    {
-                        gameState.SystemAddress = elementAsDictionary["SystemAddress"].GetInt64();
-                    }
+                    SetSystemAddress(gameState, elementAsDictionary, false);
+                    SetStarSystem(gameState, elementAsDictionary, false);
+                    SetStarPos(gameState, elementAsDictionary, false);
 
-                    gameState.SystemName = elementAsDictionary["StarSystem"].GetString();
-
-                    if (elementAsDictionary.ContainsKey("StarPos"))
-                    {
-                        gameState.SystemCoordinates = elementAsDictionary["StarPos"];
-                    }
-
-                    if (elementAsDictionary.ContainsKey("Body"))
-                    {
-                        gameState.BodyName = elementAsDictionary["Body"].GetString();
-                    }
-
-                    if (elementAsDictionary.ContainsKey("BodyID"))
-                    {
-                        gameState.BodyId = elementAsDictionary["BodyID"].GetInt64();
-                    }
+                    SetBodyName(gameState, elementAsDictionary, false);
+                    SetBodyID(gameState, elementAsDictionary, false);
                 }
                 else
                 {
@@ -226,32 +193,21 @@ namespace Journal_Limpet.Shared
                 }
             }
 
-            if (new[] { "SAASignalsFound", "Scan", "FSSDiscoveryScan", "CodexEntry", "FSSAllBodiesFound", "SAAScanComplete", "Touchdown", "Liftoff", "ApproachSettlement" }.Contains(eventName))
+            if (new[] { "SAASignalsFound", "SAAScanComplete", "Scan", }.Contains(eventName))
             {
-                if (elementAsDictionary.ContainsKey("SystemAddress"))
-                {
-                    gameState.SystemAddress = elementAsDictionary["SystemAddress"].GetInt64();
-                }
+                SetSystemAddress(gameState, elementAsDictionary, false);
+                SetStarSystem(gameState, elementAsDictionary, false);
+                SetStarPos(gameState, elementAsDictionary, false);
+            }
 
-                if (elementAsDictionary.ContainsKey("StarSystem"))
-                {
-                    gameState.SystemName = elementAsDictionary["StarSystem"].GetString();
-                }
+            if (new[] { "FSSDiscoveryScan", "CodexEntry", "FSSAllBodiesFound", "Touchdown", "Liftoff", "ApproachSettlement", "Disembark", "Embark" }.Contains(eventName))
+            {
+                SetSystemAddress(gameState, elementAsDictionary, false);
+                SetStarSystem(gameState, elementAsDictionary, false);
+                SetStarPos(gameState, elementAsDictionary, false);
 
-                if (elementAsDictionary.ContainsKey("StarPos"))
-                {
-                    gameState.SystemCoordinates = elementAsDictionary["StarPos"];
-                }
-
-                if (elementAsDictionary.ContainsKey("BodyName"))
-                {
-                    gameState.BodyName = elementAsDictionary["BodyName"].GetString();
-                }
-
-                if (elementAsDictionary.ContainsKey("BodyID"))
-                {
-                    gameState.BodyId = elementAsDictionary["BodyID"].GetInt64();
-                }
+                SetBodyName(gameState, elementAsDictionary, false);
+                SetBodyID(gameState, elementAsDictionary, false);
             }
 
             if (new[] { "JoinACrew", "QuitACrew" }.Contains(eventName))
@@ -284,6 +240,81 @@ namespace Journal_Limpet.Shared
             if (elementAsDictionary.ContainsKey("OnFoot"))
             {
                 gameState.Odyssey = true;
+            }
+        }
+
+        private static void SetBodyID(EDGameState gameState, Dictionary<string, JsonElement> elementAsDictionary, bool nullIfMissing)
+        {
+            if (elementAsDictionary.ContainsKey("BodyID"))
+            {
+                gameState.BodyId = elementAsDictionary["BodyID"].GetInt64();
+            }
+            else
+            {
+                if (nullIfMissing)
+                {
+                    gameState.BodyId = null;
+                }
+            }
+        }
+
+        private static void SetBodyName(EDGameState gameState, Dictionary<string, JsonElement> elementAsDictionary, bool nullIfMissing)
+        {
+            if (elementAsDictionary.ContainsKey("BodyName"))
+            {
+                gameState.BodyName = elementAsDictionary["BodyName"].GetString();
+            }
+            else
+            {
+                if (nullIfMissing)
+                {
+                    gameState.BodyName = null;
+                }
+            }
+        }
+
+        private static void SetStarPos(EDGameState gameState, Dictionary<string, JsonElement> elementAsDictionary, bool nullIfMissing)
+        {
+            if (elementAsDictionary.ContainsKey("StarPos"))
+            {
+                gameState.SystemCoordinates = elementAsDictionary["StarPos"];
+            }
+            else
+            {
+                if (nullIfMissing)
+                {
+                    gameState.SystemCoordinates = null;
+                }
+            }
+        }
+
+        private static void SetStarSystem(EDGameState gameState, Dictionary<string, JsonElement> elementAsDictionary, bool nullIfMissing)
+        {
+            if (elementAsDictionary.ContainsKey("StarSystem"))
+            {
+                gameState.SystemName = elementAsDictionary["StarSystem"].GetString();
+            }
+            else
+            {
+                if (nullIfMissing)
+                {
+                    gameState.SystemName = null;
+                }
+            }
+        }
+
+        private static void SetSystemAddress(EDGameState gameState, Dictionary<string, JsonElement> elementAsDictionary, bool nullIfMissing)
+        {
+            if (elementAsDictionary.ContainsKey("SystemAddress"))
+            {
+                gameState.SystemAddress = elementAsDictionary["SystemAddress"].GetInt64();
+            }
+            else
+            {
+                if (nullIfMissing)
+                {
+                    gameState.SystemAddress = null;
+                }
             }
         }
 
