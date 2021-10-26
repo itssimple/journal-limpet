@@ -219,7 +219,7 @@ new SqlParameter("customerId", profile.CustomerId))
 
         async Task<(string fileName, string journalContent)> GetJournalForDate(DateTime journalDate)
         {
-            var f = "Journal." +
+            var f = "CAPIJournal." +
                        journalDate.Year.ToString().Substring(2) +
                        journalDate.Month.ToString().PadLeft(2, '0') +
                        journalDate.Day.ToString().PadLeft(2, '0') +
