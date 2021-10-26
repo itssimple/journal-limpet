@@ -355,6 +355,7 @@ namespace Journal_Limpet.Jobs
                     {
                         _ = JsonDocument.Parse(row).RootElement;
                         firstValidRow = row;
+                        break;
                     }
                     catch
                     {
