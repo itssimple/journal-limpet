@@ -29,7 +29,7 @@ namespace Journal_Limpet.Jobs
                 var soonExpiringUsers = await db.ExecuteListAsync<Shared.Models.User.Profile>(
     @"SELECT *
 FROM user_profile
-WHERE DATEDIFF(MINUTE, GETUTCDATE(), CAST(JSON_VALUE(user_settings, '$.TokenExpiration') as DATETIMEOFFSET)) < 60
+WHERE DATEDIFF(MINUTE, GETUTCDATE(), CAST(JSON_VALUE(user_settings, '$.TokenExpiration') as DATETIMEOFFSET)) < 10
 AND last_notification_mail IS NULL
 AND deleted = 0"
                 );
