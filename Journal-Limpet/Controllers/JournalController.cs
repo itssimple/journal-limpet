@@ -276,7 +276,7 @@ new SqlParameter("customerId", profile.CustomerId))
         [Route("exceptions/{path?}/{subPath?}")]
         public async Task Exceptions()
         {
-            if (User.Identity.IsAuthenticated && User.Identity.Name.ToUpper() == "C5D73046-489B-4D54-8F46-EB8024D12D99")
+            if (User.Identity.IsAuthenticated && User.Identity.Name.Equals(_configuration["ErrorUserId"], StringComparison.InvariantCultureIgnoreCase))
             {
                 await ExceptionalMiddleware.HandleRequestAsync(HttpContext).ConfigureAwait(false);
             }
