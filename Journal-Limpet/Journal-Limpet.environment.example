@@ -1,0 +1,38 @@
+{
+  "EliteDangerous": {
+    "ClientId": "",
+    "ClientSecret": ""
+  },
+  "Database": {
+    "ConnectionString": "",
+    "HangfireConnection": ""
+  },
+  "Minio": {
+    "ConnectionString": "",
+    "AccessKey": "",
+    "SecretKey": ""
+  },
+  "Patreon": {
+    "GoalApiUrl": ""
+  },
+  "Hangfire": {
+    "AuthKey": ""
+  },
+  "SendGrid": {
+    "ApiKey": ""
+  },
+  "Discord": {
+    "ErrorWebhook": ""
+  },
+  "Twitter": {
+    "ConsumerKey": "",
+    "ConsumerSecret": "",
+    "AccessToken": "",
+    "AccessSecret": ""
+  },
+  "ErrorMail": "",
+  "CanonnRD": {
+    "QueryString": "",
+    "JournalEndpoint": ""
+  }
+}
