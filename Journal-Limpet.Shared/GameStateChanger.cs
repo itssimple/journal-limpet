@@ -159,10 +159,10 @@ namespace Journal_Limpet.Shared
 
                 if (elementAsDictionary.ContainsKey("StationServices"))
                 {
-                    if (elementAsDictionary["StationServices"].GetRawText().Contains("socialspace"))
+                    /*if (elementAsDictionary["StationServices"].GetRawText().Contains("socialspace"))
                     {
                         gameState.Odyssey = true;
-                    }
+                    }*/
                 }
 
                 if (elementAsDictionary["StarSystem"].GetString() != "ProvingGround" && elementAsDictionary["StarSystem"].GetString() != "CQC")
