@@ -69,16 +69,23 @@ namespace Journal_Limpet.Pages
                         return Redirect("~/api/journal/logout");
                     }
 
-                    var cmdrInfo = JsonSerializer.Deserialize<EliteProfile>(cmdrJson);
-
-                    CommanderName = cmdrInfo.Commander.Name;
-
-                    if (string.IsNullOrWhiteSpace(CommanderName))
+                    if (!string.IsNullOrWhiteSpace(cmdrJson))
                     {
-                        return Redirect("~/api/journal/logout"); ;
-                    }
+                        var cmdrInfo = JsonSerializer.Deserialize<EliteProfile>(cmdrJson);
 
-                    await rdb.StringSetAsyncWithRetries($"commanderName:{User.Identity.Name}", CommanderName, TimeSpan.FromMinutes(30));
+                        CommanderName = cmdrInfo.Commander.Name;
+
+                        if (string.IsNullOrWhiteSpace(CommanderName))
+                        {
+                            return Redirect("~/api/journal/logout"); ;
+                        }
+
+                        await rdb.StringSetAsyncWithRetries($"commanderName:{User.Identity.Name}", CommanderName, TimeSpan.FromMinutes(30));
+                    }
+                    else
+                    {
+                        CommanderName = "(Unknown, API Issues)";
+                    }
                 }
                 else
                 {
