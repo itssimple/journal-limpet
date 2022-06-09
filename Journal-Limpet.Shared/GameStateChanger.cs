@@ -193,7 +193,7 @@ namespace Journal_Limpet.Shared
                 }
             }
 
-            if (new[] { "SAASignalsFound", "SAAScanComplete", "Scan", }.Contains(eventName))
+            if (new[] { "FSSBodySignals", "SAASignalsFound", "SAAScanComplete", "Scan", }.Contains(eventName))
             {
                 SetSystemAddress(gameState, elementAsDictionary, false);
                 SetStarSystem(gameState, elementAsDictionary, false);
