@@ -4,7 +4,7 @@ using Hangfire.Server;
 using Journal_Limpet.Jobs.SharedCode;
 using Journal_Limpet.Shared;
 using Journal_Limpet.Shared.Database;
-using Journal_Limpet.Shared.Models;
+using Journal_Limpet.Shared.EDDN;
 using Journal_Limpet.Shared.Models.Journal;
 using Journal_Limpet.Shared.Models.User;
 using Microsoft.Data.SqlClient;
@@ -17,6 +17,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Net;
 using System.Net.Http;
 using System.Text;
 using System.Text.Json;
@@ -27,105 +28,103 @@ namespace Journal_Limpet.Jobs
     public class EDDNUserUploader
     {
         [JobDisplayName("EDDN uploader for {1} ({0}")]
-        public static async Task UploadAsync(Guid userIdentifier, string cmdrName, PerformContext context)
+        public async static Task UploadAsync(Guid userIdentifier, string cmdrName, PerformContext context)
         {
-            using (var rlock = new RedisJobLock($"EDDNUserUploader.UploadAsync.{userIdentifier}"))
+            using var rlock = new RedisJobLock($"EDDNUserUploader.UploadAsync.{userIdentifier}");
+            if (!rlock.TryTakeLock()) return;
+
+            using var scope = Startup.ServiceProvider.CreateScope();
+            var db = scope.ServiceProvider.GetRequiredService<MSSQLDB>();
+            var configuration = scope.ServiceProvider.GetRequiredService<IConfiguration>();
+
+            var _minioClient = scope.ServiceProvider.GetRequiredService<MinioClient>();
+            var discordClient = scope.ServiceProvider.GetRequiredService<DiscordWebhook>();
+
+            var starSystemChecker = scope.ServiceProvider.GetRequiredService<StarSystemChecker>();
+
+            var hc = SharedSettings.GetHttpClient(scope);
+
+            var user = await db.ExecuteSingleRowAsync<Profile>(
+                "SELECT * FROM user_profile WHERE user_identifier = @user_identifier AND deleted = 0 AND send_to_eddn = 1",
+                new SqlParameter("user_identifier", userIdentifier)
+            );
+
+            if (user == null)
+                return;
+
+            var userJournals = await db.ExecuteListAsync<UserJournal>(
+                "SELECT * FROM user_journal WHERE user_identifier = @user_identifier AND sent_to_eddn = 0 AND last_processed_line_number > 0 ORDER BY journal_date ASC",
+                    new SqlParameter("user_identifier", userIdentifier)
+                );
+
+            (EDGameState previousGameState, UserJournal lastJournal) = await GameStateHandler.LoadGameState(db, userIdentifier, userJournals, "EDDN", context);
+
+            context.WriteLine($"Uploading journals for user {userIdentifier}");
+            string lastLine = string.Empty;
+
+            foreach (var journalItem in userJournals.WithProgress(context))
             {
-                if (!rlock.TryTakeLock()) return;
+                IntegrationJournalData ijd = GameStateHandler.GetIntegrationJournalData(journalItem, lastJournal, "EDDN");
 
-                using (var scope = Startup.ServiceProvider.CreateScope())
+                if (ijd != null && lastJournal != null && ijd.LastSentLineNumber != lastJournal.SentToEDDNLine)
                 {
-                    var db = scope.ServiceProvider.GetRequiredService<MSSQLDB>();
-                    var configuration = scope.ServiceProvider.GetRequiredService<IConfiguration>();
-
-                    var _minioClient = scope.ServiceProvider.GetRequiredService<MinioClient>();
-                    var discordClient = scope.ServiceProvider.GetRequiredService<DiscordWebhook>();
-
-                    var starSystemChecker = scope.ServiceProvider.GetRequiredService<StarSystemChecker>();
-
-                    var hc = SharedSettings.GetHttpClient(scope);
-
-                    var user = await db.ExecuteSingleRowAsync<Profile>(
-                        "SELECT * FROM user_profile WHERE user_identifier = @user_identifier AND deleted = 0 AND send_to_eddn = 1",
-                        new SqlParameter("user_identifier", userIdentifier)
-                    );
-
-                    if (user == null)
-                        return;
-
-                    var userJournals = await db.ExecuteListAsync<UserJournal>(
-                        "SELECT * FROM user_journal WHERE user_identifier = @user_identifier AND sent_to_eddn = 0 AND last_processed_line_number > 0 ORDER BY journal_date ASC",
-                            new SqlParameter("user_identifier", userIdentifier)
-                        );
-
-                    (EDGameState previousGameState, UserJournal lastJournal) = await GameStateHandler.LoadGameState(db, userIdentifier, userJournals, "EDDN", context);
-
-                    context.WriteLine($"Uploading journals for user {userIdentifier}");
-                    string lastLine = string.Empty;
-
-                    foreach (var journalItem in userJournals.WithProgress(context))
+                    ijd = new IntegrationJournalData
                     {
-                        IntegrationJournalData ijd = GameStateHandler.GetIntegrationJournalData(journalItem, lastJournal, "EDDN");
+                        FullySent = false,
+                        LastSentLineNumber = 0,
+                        CurrentGameState = new EDGameState()
+                    };
+                }
 
-                        if (ijd != null && lastJournal != null && ijd.LastSentLineNumber != lastJournal.SentToEDDNLine)
+                try
+                {
+                    using (MemoryStream outFile = new MemoryStream())
+                    {
+                        var journalRows = await JournalLoader.LoadJournal(_minioClient, journalItem, outFile);
+
+                        int line_number = journalItem.SentToEDDNLine;
+                        int delay_time = 50;
+                        var restOfTheLines = journalRows.Skip(line_number).ToList();
+
+                        foreach (var row in restOfTheLines.WithProgress(context, journalItem.JournalDate.ToString("yyyy-MM-dd")))
                         {
-                            ijd = new IntegrationJournalData
+                            lastLine = row;
+                            try
                             {
-                                FullySent = false,
-                                LastSentLineNumber = 0,
-                                CurrentGameState = new EDGameState()
-                            };
-                        }
-
-                        try
-                        {
-                            using (MemoryStream outFile = new MemoryStream())
-                            {
-                                var journalRows = await JournalLoader.LoadJournal(_minioClient, journalItem, outFile);
-
-                                int line_number = journalItem.SentToEDDNLine;
-                                int delay_time = 50;
-                                var restOfTheLines = journalRows.Skip(line_number).ToList();
-
-                                foreach (var row in restOfTheLines.WithProgress(context, journalItem.JournalDate.ToString("yyyy-MM-dd")))
+                                if (!string.IsNullOrWhiteSpace(row))
                                 {
-                                    lastLine = row;
-                                    try
-                                    {
-                                        if (!string.IsNullOrWhiteSpace(row))
-                                        {
-                                            var time = await UploadJournalItemToEDDN(hc, row, cmdrName, ijd.CurrentGameState, userIdentifier, starSystemChecker, discordClient);
+                                    var time = await UploadJournalItemToEDDN(hc, row, cmdrName, ijd.CurrentGameState, userIdentifier, starSystemChecker, discordClient);
 
-                                            if (time.TotalMilliseconds > 500)
-                                            {
-                                                delay_time = 500;
-                                            }
-                                            else if (time.TotalMilliseconds > 250)
-                                            {
-                                                delay_time = 250;
-                                            }
-                                            else if (time.TotalMilliseconds > 100)
-                                            {
-                                                delay_time = 100;
-                                            }
-                                            else if (time.TotalMilliseconds < 100)
-                                            {
-                                                delay_time = 50;
-                                            }
-                                        }
-                                    }
-                                    catch (Exception ex)
+                                    if (time.TotalMilliseconds > 500)
                                     {
-                                        if (ex.ToString().Contains("JsonReaderException"))
-                                        {
-                                            // Ignore rows we cannot parse
-                                            context.WriteLine("Error");
-                                            context.WriteLine(ex.ToString());
-                                            context.WriteLine(row);
-                                        }
-                                        else
-                                        {
-                                            await discordClient.SendMessageAsync("**[EDDN Upload]** Unhandled exception", new List<DiscordWebhookEmbed>
+                                        delay_time = 500;
+                                    }
+                                    else if (time.TotalMilliseconds > 250)
+                                    {
+                                        delay_time = 250;
+                                    }
+                                    else if (time.TotalMilliseconds > 100)
+                                    {
+                                        delay_time = 100;
+                                    }
+                                    else if (time.TotalMilliseconds < 100)
+                                    {
+                                        delay_time = 50;
+                                    }
+                                }
+                            }
+                            catch (Exception ex)
+                            {
+                                if (ex.ToString().Contains("JsonReaderException"))
+                                {
+                                    // Ignore rows we cannot parse
+                                    context.WriteLine("Error");
+                                    context.WriteLine(ex.ToString());
+                                    context.WriteLine(row);
+                                }
+                                else
+                                {
+                                    await discordClient.SendMessageAsync("**[EDDN Upload]** Unhandled exception", new List<DiscordWebhookEmbed>
                                             {
                                                 new DiscordWebhookEmbed
                                                 {
@@ -139,54 +138,48 @@ namespace Journal_Limpet.Jobs
                                                     }.Select(k => new DiscordWebhookEmbedField { Name = k.Key, Value = k.Value }).ToList()
                                                 }
                                             });
-                                            throw;
-                                        }
-                                    }
-
-                                    line_number++;
-                                    ijd.LastSentLineNumber = line_number;
-                                    journalItem.IntegrationData["EDDN"] = ijd;
-
-                                    await Task.Delay(delay_time);
-                                }
-
-                                await GameStateHandler.UpdateJournalIntegrationDataAsync(db, journalItem.JournalId, IntegrationNames.EDDN, ijd);
-
-                                await db.ExecuteNonQueryAsync(
-                                    "UPDATE user_journal SET sent_to_eddn_line = @line_number WHERE journal_id = @journal_id",
-                                    new SqlParameter("journal_id", journalItem.JournalId),
-                                    new SqlParameter("line_number", line_number)
-                                );
-
-                                if (journalItem.CompleteEntry)
-                                {
-                                    ijd.LastSentLineNumber = line_number;
-                                    ijd.FullySent = true;
-                                    journalItem.IntegrationData["EDDN"] = ijd;
-
-                                    await GameStateHandler.UpdateJournalIntegrationDataAsync(db, journalItem.JournalId, IntegrationNames.EDDN, ijd);
-
-                                    await db.ExecuteNonQueryAsync(
-                                        "UPDATE user_journal SET sent_to_eddn = 1, sent_to_eddn_line = @line_number WHERE journal_id = @journal_id",
-                                        new SqlParameter("journal_id", journalItem.JournalId),
-                                        new SqlParameter("line_number", line_number)
-                                    );
+                                    throw;
                                 }
                             }
 
-                            lastJournal = journalItem;
+                            line_number++;
+                            ijd.LastSentLineNumber = line_number;
+                            journalItem.IntegrationData["EDDN"] = ijd;
+
+                            await Task.Delay(delay_time);
                         }
-                        catch (Exception ex)
+
+                        await GameStateHandler.UpdateJournalIntegrationDataAsync(db, journalItem.JournalId, IntegrationNames.EDDN, ijd);
+
+                        await db.ExecuteNonQueryAsync(
+                            "UPDATE user_journal SET sent_to_eddn_line = @line_number WHERE journal_id = @journal_id",
+                            new SqlParameter("journal_id", journalItem.JournalId),
+                            new SqlParameter("line_number", line_number)
+                        );
+
+                        if (journalItem.CompleteEntry)
                         {
+                            ijd.LastSentLineNumber = line_number;
+                            ijd.FullySent = true;
+                            journalItem.IntegrationData["EDDN"] = ijd;
+
                             await GameStateHandler.UpdateJournalIntegrationDataAsync(db, journalItem.JournalId, IntegrationNames.EDDN, ijd);
 
-                            //await db.ExecuteNonQueryAsync(
-                            //    "UPDATE user_journal SET integration_data = @integration_data WHERE journal_id = @journal_id",
-                            //    new SqlParameter("journal_id", journalItem.JournalId),
-                            //    new SqlParameter("integration_data", JsonSerializer.Serialize(journalItem.IntegrationData))
-                            //);
+                            await db.ExecuteNonQueryAsync(
+                                "UPDATE user_journal SET sent_to_eddn = 1, sent_to_eddn_line = @line_number WHERE journal_id = @journal_id",
+                                new SqlParameter("journal_id", journalItem.JournalId),
+                                new SqlParameter("line_number", line_number)
+                            );
+                        }
+                    }
 
-                            await discordClient.SendMessageAsync("**[EDDN Upload]** Problem with upload to EDDN", new List<DiscordWebhookEmbed>
+                    lastJournal = journalItem;
+                }
+                catch (Exception ex)
+                {
+                    await GameStateHandler.UpdateJournalIntegrationDataAsync(db, journalItem.JournalId, IntegrationNames.EDDN, ijd);
+
+                    await discordClient.SendMessageAsync("**[EDDN Upload]** Problem with upload to EDDN", new List<DiscordWebhookEmbed>
                             {
                                 new DiscordWebhookEmbed
                                 {
@@ -198,40 +191,23 @@ namespace Journal_Limpet.Jobs
                                     }.Select(k => new DiscordWebhookEmbedField { Name = k.Key, Value = k.Value }).ToList()
                                 }
                             });
-                        }
-                    }
                 }
             }
         }
 
-        public enum AllowedEvents
+        private static readonly List<EventBase> EventSchemas = new()
         {
-            Docked,
-            FSDJump,
-            Scan,
-            Location,
-            SAASignalsFound,
-            CarrierJump
-        }
+            new ApproachSettlement(),
+            new CodexEntry(),
+            new FSSAllBodiesFound(),
+            new FSSBodySignals(),
+            new FSSDiscoveryScan(),
+            new Journal(),
+            new NavBeaconScan(),
+            new ScanBaryCentre()
+        };
 
-        public enum RemoveJournalProperties
-        {
-            Wanted,
-            ActiveFine,
-            CockpitBreach,
-            BoostUsed,
-            FuelLevel,
-            FuelUsed,
-            JumpDist,
-            Latitude,
-            Longitude,
-            HappiestSystem,
-            HomeSystem,
-            MyReputation,
-            SquadronFaction
-        }
-
-        internal static async Task<TimeSpan> UploadJournalItemToEDDN(HttpClient hc, string journalRow, string commander, EDGameState gameState, Guid userIdentifier, StarSystemChecker starSystemChecker, DiscordWebhook discordClient)
+        internal async static Task<TimeSpan> UploadJournalItemToEDDN(HttpClient hc, string journalRow, string commander, EDGameState gameState, Guid userIdentifier, StarSystemChecker starSystemChecker, DiscordWebhook discordClient)
         {
             var element = JsonDocument.Parse(journalRow).RootElement;
             if (element.ValueKind != JsonValueKind.Object) return TimeSpan.Zero;
@@ -242,16 +218,18 @@ namespace Journal_Limpet.Jobs
             {
                 var transientState = await SetGamestateProperties(element, gameState, commander, starSystemChecker);
 
-                if (!System.Enum.TryParse(typeof(AllowedEvents), journalEvent.GetString(), false, out _)) return TimeSpan.Zero;
+                var eddnSchema = EventSchemas.FirstOrDefault(es => System.Enum.TryParse(es.GetAllowedEvents(), journalEvent.GetString(), false, out _));
 
-                element = FixEDDNJson(element);
-                element = await AddMissingProperties(element, starSystemChecker, transientState.GetProperty("odyssey"));
+                if (eddnSchema == null) return TimeSpan.Zero;
 
-                if (HasMissingProperties(element)) return TimeSpan.Zero;
+                element = FixEDDNJson(element, eddnSchema.GetRemoveProperties());
+                element = await AddMissingProperties(element, starSystemChecker, transientState.GetProperty("odyssey"), eddnSchema.GetRequiredProperties());
+
+                if (HasMissingProperties(element, eddnSchema.GetRequiredProperties())) return TimeSpan.Zero;
 
                 var eddnItem = new Dictionary<string, object>()
                 {
-                    { "$schemaRef", "https://eddn.edcd.io/schemas/journal/1" },
+                    { "$schemaRef", eddnSchema.SchemaRef() },
                     { "header", new Dictionary<string, object>() {
                         { "uploaderID", userIdentifier.ToString() },
                         { "softwareName", "Journal Limpet" },
@@ -268,13 +246,21 @@ namespace Journal_Limpet.Jobs
                 sw.Start();
 
                 var policy = Policy
-                    .Handle<HttpRequestException>()
+                    .Handle<HttpRequestException>(ex =>
+                    {
+                        if (ex.StatusCode == HttpStatusCode.BadRequest || ex.StatusCode == HttpStatusCode.UpgradeRequired)
+                        {
+                            return false;
+                        }
+
+                        return true;
+                    })
                     .WaitAndRetryAsync(new[] {
-                    TimeSpan.FromSeconds(1),
-                    TimeSpan.FromSeconds(2),
-                    TimeSpan.FromSeconds(4),
-                    TimeSpan.FromSeconds(8),
-                    TimeSpan.FromSeconds(16),
+                        TimeSpan.FromSeconds(60),
+                        TimeSpan.FromSeconds(60),
+                        TimeSpan.FromSeconds(60),
+                        TimeSpan.FromSeconds(60),
+                        TimeSpan.FromSeconds(60),
                     });
 
                 var status = await policy.ExecuteAsync(() => hc.PostAsync("https://eddn.edcd.io:4430/upload/", new StringContent(json, Encoding.UTF8, "application/json")));
@@ -308,14 +294,17 @@ namespace Journal_Limpet.Jobs
             }
         }
 
-        internal static bool HasMissingProperties(JsonElement element)
+        internal static bool HasMissingProperties(JsonElement element, Type requiredPropertiesEnumType)
         {
             var elementAsDictionary = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(element.GetRawText());
-            var requiredProperties = elementAsDictionary.Keys.Where(k => System.Enum.TryParse(typeof(RequiredPropertiesForCache), k, false, out _));
-            return requiredProperties.Count() < 5;
+            var requiredProperties = elementAsDictionary.Keys.Where(k => System.Enum.TryParse(requiredPropertiesEnumType, k, false, out _));
+
+            var requiredPropertiesFromType = requiredPropertiesEnumType.GetEnumNames();
+
+            return requiredProperties.Count() < requiredPropertiesFromType.Length;
         }
 
-        internal async static Task<JsonElement> AddMissingProperties(JsonElement element, StarSystemChecker starSystemChecker, JsonElement odyssey)
+        internal async static Task<JsonElement> AddMissingProperties(JsonElement element, StarSystemChecker starSystemChecker, JsonElement odyssey, Type requiredPropertiesEnumType)
         {
             var _rdb = SharedSettings.RedisClient.GetDatabase(1);
 
@@ -323,32 +312,26 @@ namespace Journal_Limpet.Jobs
 
             elementAsDictionary["odyssey"] = odyssey;
 
-            var reqProps = typeof(RequiredPropertiesForCache).GetEnumNames();
+            var reqProps = requiredPropertiesEnumType.GetEnumNames();
 
-            var requiredProperties = elementAsDictionary.Keys.Where(k => System.Enum.TryParse(typeof(RequiredPropertiesForCache), k, false, out _));
+            var sysNameString = reqProps
+                .FirstOrDefault(p =>
+                    p.Equals("SystemName", StringComparison.InvariantCultureIgnoreCase) ||
+                    p.Equals("StarSystem", StringComparison.InvariantCultureIgnoreCase) ||
+                    p.Equals("System", StringComparison.InvariantCultureIgnoreCase)) ?? "StarSystem";
+
+            var requiredProperties = elementAsDictionary.Keys.Where(k => System.Enum.TryParse(requiredPropertiesEnumType, k, false, out _));
 
             var missingProps = reqProps.Except(requiredProperties);
 
             if (!missingProps.Any())
             {
-                //await _rdb.StringSetAsyncWithRetries(
-                //    $"SystemAddress:{elementAsDictionary["SystemAddress"].GetInt64()}",
-                //    JsonSerializer.Serialize(new
-                //    {
-                //        SystemAddress = elementAsDictionary["SystemAddress"].GetInt64(),
-                //        StarSystem = elementAsDictionary["StarSystem"].GetString(),
-                //        StarPos = elementAsDictionary["StarPos"]
-                //    }),
-                //    TimeSpan.FromHours(10),
-                //    flags: CommandFlags.FireAndForget
-                //);
-
                 var arrayEnum = elementAsDictionary["StarPos"].EnumerateArray().ToArray();
 
                 var edSysData = new EDSystemData
                 {
                     Id64 = elementAsDictionary["SystemAddress"].GetInt64(),
-                    Name = elementAsDictionary["StarSystem"].GetString(),
+                    Name = elementAsDictionary[sysNameString].GetString(),
                     Coordinates = new EDSystemCoordinates
                     {
                         X = arrayEnum[0].GetDouble(),
@@ -362,7 +345,7 @@ namespace Journal_Limpet.Jobs
                 return JsonDocument.Parse(JsonSerializer.Serialize(elementAsDictionary)).RootElement;
             }
 
-            var importantProps = new[] { "StarPos", "StarSystem", "SystemAddress" };
+            var importantProps = new[] { "StarPos", sysNameString, "SystemAddress" };
 
             // We're missing all important props, just let it go and ignore the event
             if (importantProps.All(i => missingProps.Contains(i)))
@@ -372,43 +355,25 @@ namespace Journal_Limpet.Jobs
 
             if (!missingProps.Contains("SystemAddress"))
             {
-                /*var cachedSystem = await _rdb.StringGetAsyncWithRetries($"SystemAddress:{elementAsDictionary["SystemAddress"].GetInt64()}");
-                if (cachedSystem != RedisValue.Null)
+                var systemData = await starSystemChecker.GetSystemDataAsync(elementAsDictionary["SystemAddress"].GetInt64());
+                if (systemData != null)
                 {
-                    var jel = JsonDocument.Parse(cachedSystem.ToString()).RootElement;
+                    var jel = JsonDocument.Parse(JsonSerializer.Serialize(new
+                    {
+                        SystemAddress = systemData.Id64,
+                        StarSystem = systemData.Name,
+                        StarPos = new[] { systemData.Coordinates.X, systemData.Coordinates.Y, systemData.Coordinates.Z }
+                    })).RootElement;
+
                     // Don't replace values that already exists on the event, supposedly the journal is supposed to be correct on those already
                     //elementAsDictionary["SystemAddress"] = jel.GetProperty("SystemAddress");
-                    if (!elementAsDictionary.ContainsKey("StarSystem"))
+                    if (!elementAsDictionary.ContainsKey(sysNameString))
                     {
-                        elementAsDictionary["StarSystem"] = jel.GetProperty("StarSystem");
+                        elementAsDictionary[sysNameString] = jel.GetProperty("StarSystem");
                     }
                     if (!elementAsDictionary.ContainsKey("StarPos"))
                     {
                         elementAsDictionary["StarPos"] = jel.GetProperty("StarPos");
-                    }
-                }
-                else*/
-                {
-                    var systemData = await starSystemChecker.GetSystemDataAsync(elementAsDictionary["SystemAddress"].GetInt64());
-                    if (systemData != null)
-                    {
-                        var jel = JsonDocument.Parse(JsonSerializer.Serialize(new
-                        {
-                            SystemAddress = systemData.Id64,
-                            StarSystem = systemData.Name,
-                            StarPos = new[] { systemData.Coordinates.X, systemData.Coordinates.Y, systemData.Coordinates.Z }
-                        })).RootElement;
-
-                        // Don't replace values that already exists on the event, supposedly the journal is supposed to be correct on those already
-                        //elementAsDictionary["SystemAddress"] = jel.GetProperty("SystemAddress");
-                        if (!elementAsDictionary.ContainsKey("StarSystem"))
-                        {
-                            elementAsDictionary["StarSystem"] = jel.GetProperty("StarSystem");
-                        }
-                        if (!elementAsDictionary.ContainsKey("StarPos"))
-                        {
-                            elementAsDictionary["StarPos"] = jel.GetProperty("StarPos");
-                        }
                     }
                 }
             }
@@ -434,7 +399,7 @@ namespace Journal_Limpet.Jobs
             });
         }
 
-        internal static JsonElement FixEDDNJson(JsonElement element)
+        internal static JsonElement FixEDDNJson(JsonElement element, Type removePropertiesType)
         {
             if (element.ValueKind != JsonValueKind.Object && element.ValueKind != JsonValueKind.Array) return element;
 
@@ -445,7 +410,7 @@ namespace Journal_Limpet.Jobs
                 for (var i = 0; i < elementAsList.Count; i++)
                 {
                     var lElement = elementAsList[i];
-                    elementAsList[i] = FixEDDNJson(lElement);
+                    elementAsList[i] = FixEDDNJson(lElement, removePropertiesType);
                 }
 
                 return JsonDocument.Parse(JsonSerializer.Serialize(elementAsList)).RootElement;
@@ -459,7 +424,7 @@ namespace Journal_Limpet.Jobs
                 elementAsDictionary.Remove(localised);
             }
 
-            var removeProperties = elementAsDictionary.Keys.Where(k => System.Enum.TryParse(typeof(RemoveJournalProperties), k, false, out _));
+            var removeProperties = elementAsDictionary.Keys.Where(k => System.Enum.TryParse(removePropertiesType, k, false, out _));
             foreach (var remove in removeProperties)
             {
                 elementAsDictionary.Remove(remove);
@@ -468,7 +433,7 @@ namespace Journal_Limpet.Jobs
             for (var i = 0; i < elementAsDictionary.Count; i++)
             {
                 var key = elementAsDictionary.Keys.ElementAt(i);
-                elementAsDictionary[key] = FixEDDNJson(elementAsDictionary[key]);
+                elementAsDictionary[key] = FixEDDNJson(elementAsDictionary[key], removePropertiesType);
             }
 
             var json = JsonSerializer.Serialize(elementAsDictionary);
