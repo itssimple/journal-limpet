@@ -36,8 +36,13 @@ namespace Journal_Limpet.Pages
                 var article = newsFiles.FirstOrDefault(s => s.Contains(title));
                 if (article != null)
                 {
+                    var newsItem = await LoadNewsItem(article);
+                    ViewData["meta-title"] = newsItem.Title;
+                    ViewData["meta-description"] = newsItem.CleanText;
+                    ViewData["meta-url"] = $"{Request.Scheme}://{Request.Host}{Request.Path}";
+
                     Items.Clear();
-                    Items.Add(await LoadNewsItem(article));
+                    Items.Add(newsItem);
                     return Page();
                 }
                 else
@@ -85,7 +90,8 @@ namespace Journal_Limpet.Pages
             {
                 Title = itemTitle.ToString(),
                 Description = cleanedOutput,
-                Link = Url.Page("/News", null, null, HttpContext.Request.Scheme, HttpContext.Request.Host.ToString()) + "/" + fileName.Replace(".md", "")
+                Link = Url.Page("/News", null, null, HttpContext.Request.Scheme, HttpContext.Request.Host.ToString()) + "/" + fileName.Replace(".md", ""),
+                CleanText = clearText
             };
 
             if (data.ContainsKey("pubdate"))
@@ -111,6 +117,8 @@ namespace Journal_Limpet.Pages
             public string Link { get; set; }
             public DateTimeOffset PubDate { get; set; }
             public string Category { get; set; }
+
+            public string CleanText { get; set; }
         }
     }
 }

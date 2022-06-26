@@ -1,13 +1,20 @@
-﻿<meta name="description" content="Journal Limpet is a long term journal storage for Elite: Dangerous, and has connections to other third party applications in the Elite-community" />
+﻿@{
+    var title = ViewData["meta-title"] ?? "Journal Limpet";
+    var description = ViewData["meta-description"] ?? "Journal Limpet is a long term journal storage for Elite: Dangerous, and has connections to other third party applications in the Elite-community";
+
+    var url = ViewData["meta-url"] ?? "https://journal-limpet.com";
+}
+
+<meta name="description" content="@description" />
 
 <meta name="twitter:site" content="@@NoLifeKing85" />
 <meta name="twitter:creator" content="@@NoLifeKing85" />
 <meta name="twitter:card" content="summary" />
 <meta name="twitter:image:alt" content="Journal Limpet logotype" />
 
-<meta property="og:title" content="Journal Limpet" />
-<meta property="og:url" content="https://journal-limpet.com" />
+<meta property="og:title" content="@title" />
+<meta property="og:url" content="@url" />
 <meta property="og:image" content="https://journal-limpet.com/journal-limpet.png" />
 
-<meta name="twitter:description" content="Journal Limpet is a long term journal storage for Elite: Dangerous, and has connections to other third party applications in the Elite-community" />
-<meta property="og:description" content="Journal Limpet is a long term journal storage for Elite: Dangerous, and has connections to other third party applications in the Elite-community" />
+<meta name="twitter:description" content="@description" />
+<meta property="og:description" content="@description" />
