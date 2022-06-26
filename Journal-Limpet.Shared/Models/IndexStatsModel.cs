@@ -4,9 +4,11 @@ namespace Journal_Limpet.Shared.Models
 {
     public class IndexStatsModel
     {
-        public long TotalUserCount { get; }
-        public long TotalUserJournalCount { get; }
-        public long TotalUserJournalLines { get; }
+        public long TotalUserCount { get; set; }
+        public long TotalUserJournalCount { get; set; }
+        public long TotalUserJournalLines { get; set; }
+
+        public IndexStatsModel() { }
 
         public IndexStatsModel(DataRow row)
         {

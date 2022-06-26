@@ -2,8 +2,11 @@
 using Hangfire.Server;
 using Journal_Limpet.Shared;
 using Journal_Limpet.Shared.Database;
+using Journal_Limpet.Shared.Models;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Newtonsoft.Json;
+using System.Text;
 using System.Threading.Tasks;
 
 namespace Journal_Limpet.Jobs
@@ -20,15 +23,66 @@ namespace Journal_Limpet.Jobs
 
                 var tweetSender = scope.ServiceProvider.GetRequiredService<TwitterSender>();
 
+                var _rdb = SharedSettings.RedisClient.GetDatabase(0);
+
+                var prevIndexStats = await _rdb.StringGetAsync("weekly-stats-json");
+
                 var mod = await SharedSettings.GetIndexStatsAsync(db);
 
-                var res = await tweetSender.SendAsync(
-$@"Nightly stats #EliteDangerous
+                StringBuilder sb = new StringBuilder();
 
-{SharedSettings.NumberFixer(mod.TotalUserCount)} users registered
-{SharedSettings.NumberFixer(mod.TotalUserJournalCount)} journals saved
-{SharedSettings.NumberFixer(mod.TotalUserJournalLines)} lines of journal
-https://journal-limpet.com");
+                sb.AppendLine("Weekly stats #EliteDangerous");
+                sb.AppendLine("");
+
+                if (!prevIndexStats.IsNullOrEmpty)
+                {
+                    try
+                    {
+                        var prevIndexModel = JsonConvert.DeserializeObject<IndexStatsModel>(prevIndexStats);
+                        var userDiff = mod.TotalUserCount - prevIndexModel.TotalUserCount;
+                        var journalDiff = mod.TotalUserJournalCount - prevIndexModel.TotalUserJournalCount;
+                        var linesDiff = mod.TotalUserJournalLines - prevIndexModel.TotalUserJournalLines;
+
+                        if (linesDiff == 0 && journalDiff == 0 && userDiff == 0)
+                        {
+                            // No changes, no need to send tweet
+                            return;
+                        }
+
+                        if (userDiff > 0)
+                        {
+                            sb.AppendLine($"{SharedSettings.NumberFixer(userDiff)} user(s) registered (Total {SharedSettings.NumberFixer(mod.TotalUserCount)})");
+                        }
+
+                        if (journalDiff > 0)
+                        {
+                            sb.AppendLine($"{SharedSettings.NumberFixer(journalDiff)} journal(s) saved (Total {SharedSettings.NumberFixer(mod.TotalUserJournalCount)})");
+                        }
+
+                        if (linesDiff > 0)
+                        {
+                            sb.AppendLine($"{SharedSettings.NumberFixer(linesDiff)} lines(s) saved (Total {SharedSettings.NumberFixer(mod.TotalUserJournalLines)})");
+                        }
+                    }
+                    catch
+                    {
+                        sb.AppendLine($"{SharedSettings.NumberFixer(mod.TotalUserCount)} users registered");
+                        sb.AppendLine($"{SharedSettings.NumberFixer(mod.TotalUserJournalCount)} journals saved");
+                        sb.AppendLine($"{SharedSettings.NumberFixer(mod.TotalUserJournalLines)} lines of journal");
+                    }
+                }
+                else
+                {
+                    sb.AppendLine($"{SharedSettings.NumberFixer(mod.TotalUserCount)} users registered");
+                    sb.AppendLine($"{SharedSettings.NumberFixer(mod.TotalUserJournalCount)} journals saved");
+                    sb.AppendLine($"{SharedSettings.NumberFixer(mod.TotalUserJournalLines)} lines of journal");
+                }
+
+                _rdb.StringSet("weekly-stats-json", JsonConvert.SerializeObject(mod));
+
+                sb.AppendLine("https://journal-limpet.com");
+
+                var res = await tweetSender.SendAsync(sb.ToString());
 
                 if (!res.status)
                 {

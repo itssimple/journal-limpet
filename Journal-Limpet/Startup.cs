@@ -168,7 +168,7 @@ namespace Journal_Limpet
             RecurringJob.AddOrUpdate(
                 "journal-limpet:tweet-stats",
                 () => TweetStatSender.SendStatsTweetAsync(null),
-                "30 0 * * *",
+                "30 0 * * MON",
                 TimeZoneInfo.Utc
             );
 
