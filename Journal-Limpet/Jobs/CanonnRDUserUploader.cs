@@ -80,7 +80,7 @@ new SqlParameter("user_identifier", userIdentifier)
                     string lastLine = string.Empty;
 
                     var _rdb = SharedSettings.RedisClient.GetDatabase(3);
-                    var validCanonnEvents = await _rdb.StringGetAsyncWithRetriesSaveIfMissing("canonn:allowedEvents", 10, GetValidCanonnEvents);
+                    var validCanonnEvents = await _rdb.StringGetAsyncWithRetriesSaveIfMissing("canonn:allowedEvents", 10, () => GetValidCanonnEvents(hc));
                     var canonnEvents = JsonSerializer.Deserialize<List<CanonnEvent>>(validCanonnEvents).Select(e => e.Definition).ToList();
 
                     context.WriteLine("Valid Canonn events: " + validCanonnEvents);
@@ -451,12 +451,9 @@ new SqlParameter("user_identifier", userIdentifier)
             return (200, postResponse, true);
         }
 
-        private async static Task<string> GetValidCanonnEvents()
+        private async static Task<string> GetValidCanonnEvents(HttpClient hc)
         {
-            using (var hc = new HttpClient())
-            {
-                return await hc.GetStringAsync("https://us-central1-canonn-api-236217.cloudfunctions.net/postEventWhitelist");
-            }
+            return await hc.GetStringAsync("https://us-central1-canonn-api-236217.cloudfunctions.net/postEventWhitelist");
         }
 
         public class CanonnEvent

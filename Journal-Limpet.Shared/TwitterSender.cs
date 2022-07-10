@@ -15,13 +15,13 @@ namespace Journal_Limpet.Shared
 
         readonly string _accessToken;
         readonly string _secretToken;
-
+        private readonly IHttpClientFactory _httpClientFactory;
         readonly HMACSHA1 _hash;
         readonly DateTime _epoch = new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc);
 
         static Random _rng = new Random();
 
-        public TwitterSender(string consumerKey, string consumerSecret, string accessToken, string secretToken)
+        public TwitterSender(string consumerKey, string consumerSecret, string accessToken, string secretToken, IHttpClientFactory httpClientFactory)
         {
             _consumerKey = consumerKey;
             _consumerSecret = consumerSecret;
@@ -29,6 +29,8 @@ namespace Journal_Limpet.Shared
             _secretToken = secretToken;
 
             _hash = new HMACSHA1(Encoding.ASCII.GetBytes($"{_consumerSecret}&{_secretToken}"));
+
+            _httpClientFactory = httpClientFactory;
         }
 
         public async Task<(bool status, string response)> SendAsync(string tweet)
@@ -87,15 +89,13 @@ namespace Journal_Limpet.Shared
         {
             var oauthData = generateOAuthSignatureData(url, data);
 
-            using (var hc = new HttpClient())
-            {
-                hc.DefaultRequestHeaders.Add("Authorization", oauthData.OAuthHeader);
+            var hc = _httpClientFactory.CreateClient();
+            hc.DefaultRequestHeaders.Add("Authorization", oauthData.OAuthHeader);
 
-                var resp = await hc.PostAsync(url, oauthData.FormData);
-                var content = await resp.Content.ReadAsStringAsync();
+            var resp = await hc.PostAsync(url, oauthData.FormData);
+            var content = await resp.Content.ReadAsStringAsync();
 
-                return (resp.IsSuccessStatusCode, content);
-            }
+            return (resp.IsSuccessStatusCode, content);
         }
 
         internal class TwitterOAuthData

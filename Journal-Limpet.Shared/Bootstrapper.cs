@@ -3,6 +3,7 @@ using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Minio;
+using System.Net.Http;
 
 namespace Journal_Limpet.Shared
 {
@@ -15,11 +16,30 @@ namespace Journal_Limpet.Shared
             sc.AddScoped<MSSQLDB>();
             sc.AddScoped<StarSystemChecker>();
 
-            sc.AddSingleton(x => new MinioClient(configuration["Minio:ConnectionString"], configuration["Minio:AccessKey"], configuration["Minio:SecretKey"]));
+            sc.AddSingleton(x =>
+                new MinioClient(
+                    configuration["Minio:ConnectionString"],
+                    configuration["Minio:AccessKey"],
+                    configuration["Minio:SecretKey"]
+                    )
+                );
 
-            sc.AddScoped(x => new TwitterSender(configuration["Twitter:ConsumerKey"], configuration["Twitter:ConsumerSecret"], configuration["Twitter:AccessToken"], configuration["Twitter:AccessSecret"]));
+            sc.AddScoped(x =>
+                new TwitterSender(
+                    configuration["Twitter:ConsumerKey"],
+                    configuration["Twitter:ConsumerSecret"],
+                    configuration["Twitter:AccessToken"],
+                    configuration["Twitter:AccessSecret"],
+                    x.GetRequiredService<IHttpClientFactory>()
+                    )
+                );
 
-            sc.AddScoped(x => new DiscordWebhook(configuration["Discord:ErrorWebhook"]));
+            sc.AddScoped(x =>
+                new DiscordWebhook(
+                    configuration["Discord:ErrorWebhook"],
+                    x.GetRequiredService<IHttpClientFactory>()
+                    )
+                );
         }
     }
 }

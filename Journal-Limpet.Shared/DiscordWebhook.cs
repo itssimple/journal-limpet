@@ -10,9 +10,11 @@ namespace Journal_Limpet.Shared
     public class DiscordWebhook
     {
         readonly string _webhookUrl;
+        readonly IHttpClientFactory _httpClientFactory;
 
-        public DiscordWebhook(string webhookUrl)
+        public DiscordWebhook(string webhookUrl, IHttpClientFactory httpClientFactory)
         {
+            _httpClientFactory = httpClientFactory;
             _webhookUrl = webhookUrl;
         }
 
@@ -24,10 +26,8 @@ namespace Journal_Limpet.Shared
                 Embeds = embeds ?? new List<DiscordWebhookEmbed>()
             };
 
-            using (var _hc = new HttpClient())
-            {
-                var res = await _hc.PostAsync(_webhookUrl, new StringContent(JsonSerializer.Serialize(jobj), Encoding.UTF8, "application/json"));
-            }
+            var _hc = _httpClientFactory.CreateClient();
+            await _hc.PostAsync(_webhookUrl, new StringContent(JsonSerializer.Serialize(jobj), Encoding.UTF8, "application/json"));
         }
     }
 

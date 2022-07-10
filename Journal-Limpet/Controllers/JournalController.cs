@@ -37,13 +37,15 @@ namespace Journal_Limpet.Controllers
         private readonly IConfiguration _configuration;
         private readonly IMemoryCache _memoryCache;
         private readonly MinioClient _minioClient;
+        private readonly IHttpClientFactory _httpClientFactory;
 
-        public JournalController(MSSQLDB db, IConfiguration configuration, IMemoryCache memoryCache, MinioClient minioClient)
+        public JournalController(MSSQLDB db, IConfiguration configuration, IMemoryCache memoryCache, MinioClient minioClient, IHttpClientFactory httpClientFactory)
         {
             _db = db;
             _configuration = configuration;
             _memoryCache = memoryCache;
             _minioClient = minioClient;
+            _httpClientFactory = httpClientFactory;
         }
 
         [HttpGet("info")]
@@ -86,7 +88,7 @@ namespace Journal_Limpet.Controllers
 
             var redirectUrl = string.Format("{0}://{1}{2}", Request.Scheme, Request.Host, Url.Content("~/api/journal/authenticate"));
 
-            using var c = new HttpClient();
+            var c = _httpClientFactory.CreateClient();
 
             var formData = new Dictionary<string, string>();
             formData.Add("grant_type", "authorization_code");
