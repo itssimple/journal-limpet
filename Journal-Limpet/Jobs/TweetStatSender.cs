@@ -32,7 +32,7 @@ namespace Journal_Limpet.Jobs
                 StringBuilder sb = new StringBuilder();
 
                 sb.AppendLine("Weekly stats #EliteDangerous");
-                sb.AppendLine("");
+                sb.AppendLine(string.Empty);
 
                 if (!prevIndexStats.IsNullOrEmpty)
                 {
@@ -51,21 +51,24 @@ namespace Journal_Limpet.Jobs
 
                         if (userDiff > 0)
                         {
-                            sb.AppendLine($"{SharedSettings.NumberFixer(userDiff)} user(s) registered (Total {SharedSettings.NumberFixer(mod.TotalUserCount)})");
+                            sb.AppendLine($"{userDiff.ToString("n0")} user(s) registered (Total {SharedSettings.NumberFixer(mod.TotalUserCount)})");
                         }
 
                         if (journalDiff > 0)
                         {
-                            sb.AppendLine($"{SharedSettings.NumberFixer(journalDiff)} journal(s) saved (Total {SharedSettings.NumberFixer(mod.TotalUserJournalCount)})");
+                            sb.AppendLine($"{journalDiff.ToString("n0")} journal(s) saved (Total {SharedSettings.NumberFixer(mod.TotalUserJournalCount)})");
                         }
 
                         if (linesDiff > 0)
                         {
-                            sb.AppendLine($"{SharedSettings.NumberFixer(linesDiff)} lines(s) saved (Total {SharedSettings.NumberFixer(mod.TotalUserJournalLines)})");
+                            sb.AppendLine($"{linesDiff.ToString("n0")} lines(s) saved (Total {SharedSettings.NumberFixer(mod.TotalUserJournalLines)})");
                         }
                     }
                     catch
                     {
+                        sb.Clear();
+                        sb.AppendLine("Weekly stats #EliteDangerous");
+                        sb.AppendLine(string.Empty);
                         sb.AppendLine($"{SharedSettings.NumberFixer(mod.TotalUserCount)} users registered");
                         sb.AppendLine($"{SharedSettings.NumberFixer(mod.TotalUserJournalCount)} journals saved");
                         sb.AppendLine($"{SharedSettings.NumberFixer(mod.TotalUserJournalLines)} lines of journal");
@@ -79,8 +82,6 @@ namespace Journal_Limpet.Jobs
                 }
 
                 _rdb.StringSet("weekly-stats-json", JsonConvert.SerializeObject(mod));
-
-                sb.AppendLine("https://journal-limpet.com");
 
                 var res = await tweetSender.SendAsync(sb.ToString());
 

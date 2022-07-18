@@ -21,6 +21,8 @@ namespace Journal_Limpet.Shared
 
         static Random _rng = new Random();
 
+        const int CHARACTER_LIMIT = 280;
+
         public TwitterSender(string consumerKey, string consumerSecret, string accessToken, string secretToken, IHttpClientFactory httpClientFactory)
         {
             _consumerKey = consumerKey;
@@ -35,9 +37,9 @@ namespace Journal_Limpet.Shared
 
         public async Task<(bool status, string response)> SendAsync(string tweet)
         {
-            if (tweet.Length > 160)
+            if (tweet.Length > CHARACTER_LIMIT)
             {
-                throw new ArgumentOutOfRangeException("tweet", tweet, "Message must be shorter than 160 characters to fit in a tweet");
+                throw new ArgumentOutOfRangeException("tweet", tweet, $"Message must be shorter than {CHARACTER_LIMIT} characters to fit in a tweet");
             }
 
             var data = new Dictionary<string, string>() {
