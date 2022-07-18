@@ -81,14 +81,14 @@ namespace Journal_Limpet.Jobs
                     sb.AppendLine($"{SharedSettings.NumberFixer(mod.TotalUserJournalLines)} lines of journal");
                 }
 
-                _rdb.StringSet("weekly-stats-json", JsonConvert.SerializeObject(mod));
-
                 var res = await tweetSender.SendAsync(sb.ToString());
 
                 if (!res.status)
                 {
                     await MailSender.SendSingleEmail(configuration, "no-reply+tweet@journal-limpet.com", "Failed to send tweet", res.response);
                 }
+
+                _rdb.StringSet("weekly-stats-json", JsonConvert.SerializeObject(mod));
             }
         }
     }
