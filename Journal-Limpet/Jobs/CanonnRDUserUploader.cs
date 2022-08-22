@@ -364,7 +364,12 @@ new SqlParameter("user_identifier", userIdentifier)
 
                 var matchingValidEvents = validCanonnEvents.Where(e => e.Event == journalEvent.GetString());
 
-                if (!matchingValidEvents.Any()) return null;
+                var hasEvent = true;
+
+                if (!matchingValidEvents.Any())
+                {
+                    hasEvent = false;
+                }
 
                 bool foundMatchingEvent = false;
 
@@ -394,6 +399,11 @@ new SqlParameter("user_identifier", userIdentifier)
                 }
 
                 if (!gameState.SendEvents)
+                {
+                    return null;
+                }
+
+                if (!hasEvent && !foundMatchingEvent)
                 {
                     return null;
                 }
