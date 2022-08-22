@@ -369,6 +369,7 @@ new SqlParameter("user_identifier", userIdentifier)
                 if (!matchingValidEvents.Any())
                 {
                     hasEvent = false;
+                    matchingValidEvents = validCanonnEvents;
                 }
 
                 bool foundMatchingEvent = false;
