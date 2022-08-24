@@ -389,7 +389,6 @@ new SqlParameter("user_identifier", userIdentifier)
                     }
                     else
                     {
-                        foundMatchingEvent = true;
                         break;
                     }
                 }
