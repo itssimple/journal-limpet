@@ -37,7 +37,7 @@ Hi there!<br />
 <br />
 This is an automated email, since you have logged in to <b>Journal Limpet</b> at least once.<br />
 <br />
-I'm sorry that I have to send you this email, but we need you to log in to <a href=""https://journal-limpet.com/Login"" target=""_blank"">Journal Limpet</a> again.<br />
+I'm sorry that I have to send you this email, but we need you to log in to <a href=""https://journal-limpet.com/ReauthRequired"" target=""_blank"">Journal Limpet</a> again.<br />
 <br />
 .. at least if you want us to be able to continue:<br />
 - Storing your Elite: Dangerous journals<br />
