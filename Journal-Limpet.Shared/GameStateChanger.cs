@@ -55,6 +55,10 @@ namespace Journal_Limpet.Shared
                 {
                     gameState.Odyssey = elementAsDictionary["Odyssey"].GetBoolean();
                 }
+                else
+                {
+                    gameState.Odyssey = false;
+                }
             }
 
             if (eventName == "Rank")
