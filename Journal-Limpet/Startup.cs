@@ -30,6 +30,9 @@ namespace Journal_Limpet
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
+            services.AddJournalLimpetDependencies(Configuration);
+            //services.AddSingleton<AuthenticationHandler<AuthenticationSchemeOptions>, APITokenAuthenticationHandler>();
+
             services.AddExceptional(Configuration.GetSection("Exceptional"), settings =>
             {
 #if DEBUG
@@ -61,7 +64,8 @@ namespace Journal_Limpet
             services.AddControllers();
             services.AddRazorPages();
 
-            services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme).AddCookie(options =>
+            services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
+            .AddCookie(options =>
             {
                 options.Cookie.HttpOnly = true;
                 options.Cookie.IsEssential = true;
@@ -76,10 +80,9 @@ namespace Journal_Limpet
                 options.AccessDeniedPath = "/AccessDenied";
 
                 options.SlidingExpiration = true;
-            });
+            })
+            .AddAPITokenAuthenticationSchema();
             services.AddAuthorization();
-
-            services.AddJournalLimpetDependencies(Configuration);
 
 #if !DEBUG
             services.AddHangfire(configuration =>

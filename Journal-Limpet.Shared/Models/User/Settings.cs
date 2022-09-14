@@ -9,6 +9,7 @@ namespace Journal_Limpet.Shared.Models.User
         public string AuthToken { get; set; }
         public Guid RefreshToken { get; set; }
         public DateTimeOffset TokenExpiration { get; set; }
+        public string JournalLimpetAPIToken { get; set; }
     }
 
     public class FrontierProfile

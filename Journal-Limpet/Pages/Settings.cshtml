@@ -18,6 +18,17 @@
         <h2>Integration settings</h2>
         <small class="form-text text-info">These settings will control all the available integrations that we have made for use with Journal Limpet!</small>
         <hr />
+        @if (!string.IsNullOrWhiteSpace(Model.JournalLimpetAPIToken))
+        {
+            <h4>Journal Limpet API Token (Personal API token)</h4>
+            <small class="form-text text-info">If you want to access your journals (in case you play with GeForce Now or something like that), you can use this API token to access our API.</small>
+            <br />
+            <div class="form-group">
+                <label asp-for="JournalLimpetAPIToken">API Token</label>
+                <input type="text" readonly="readonly" asp-for="JournalLimpetAPIToken" class="form-control" autocomplete="off" />
+            </div>
+            <hr />
+        }
         <h4>Elite: Dangerous Data Network (<a href="https://github.com/EDCD/EDDN/blob/master/README.md" target="_blank">EDDN</a>) - Journal import</h4>
         <small class="form-text text-info">By having this integration enabled, you will send your journals to EDDN. If you are already using software that does this (<a href="https://github.com/EDCD/EDMarketConnector/wiki" target="_blank">EDMC</a> and others), it is safe to turn this off.</small>
         <small class="form-text text-info">EDDN is one of the most used data sources for Elite: Dangerous third party applications</small>

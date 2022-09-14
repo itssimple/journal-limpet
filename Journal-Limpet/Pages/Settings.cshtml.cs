@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.Data.SqlClient;
+using Microsoft.Extensions.Configuration;
 using System.Text.Json;
 using System.Threading.Tasks;
 
@@ -14,6 +15,7 @@ namespace Journal_Limpet.Pages
     public class SettingsModel : PageModel
     {
         private readonly MSSQLDB _db;
+        IConfiguration _configuration;
 
         [BindProperty]
         public string NotificationEmail { get; set; }
@@ -26,9 +28,13 @@ namespace Journal_Limpet.Pages
         [BindProperty]
         public bool EDDNEnabled { get; set; }
 
-        public SettingsModel(MSSQLDB db)
+        [BindProperty]
+        public string JournalLimpetAPIToken { get; set; }
+
+        public SettingsModel(MSSQLDB db, IConfiguration configuration)
         {
             _db = db;
+            _configuration = configuration;
         }
 
         public async Task OnGetAsync()
@@ -37,6 +43,8 @@ namespace Journal_Limpet.Pages
             NotificationEmail = profile.NotificationEmail;
 
             EDDNEnabled = profile.SendToEDDN;
+
+            JournalLimpetAPIToken = profile.UserSettings.JournalLimpetAPIToken;
 
             if (profile.IntegrationSettings.ContainsKey("EDSM"))
             {

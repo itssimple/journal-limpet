@@ -2,8 +2,11 @@
 using Journal_Limpet.Shared.Models;
 using Microsoft.Extensions.DependencyInjection;
 using StackExchange.Redis;
+using System;
 using System.Globalization;
 using System.Net.Http;
+using System.Security.Cryptography;
+using System.Text;
 using System.Threading.Tasks;
 
 namespace Journal_Limpet
@@ -65,7 +68,12 @@ WHERE up.deleted = 0");
 
         private static string EmptyDecimalRemover(string formattedNumber)
         {
-            return formattedNumber.Replace($"{CultureInfo.CurrentCulture.NumberFormat.CurrencyDecimalSeparator[0]}0", "");
+            return formattedNumber.Replace($"{CultureInfo.CurrentCulture.NumberFormat.CurrencyDecimalSeparator[0]}0", string.Empty);
+        }
+
+        public static string GetHashedValue(string value, string salt)
+        {
+            return BitConverter.ToString(SHA512.HashData(Encoding.UTF8.GetBytes(value + salt))).Replace("-", string.Empty);
         }
     }
 }

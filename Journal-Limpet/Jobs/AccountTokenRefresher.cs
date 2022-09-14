@@ -26,7 +26,7 @@ namespace Journal_Limpet.Jobs
 
                 IConfiguration configuration = scope.ServiceProvider.GetRequiredService<IConfiguration>();
 
-                var soonExpiringUsers = await db.ExecuteListAsync<Shared.Models.User.Profile>(
+                var soonExpiringUsers = await db.ExecuteListAsync<Profile>(
     @"SELECT *
 FROM user_profile
 WHERE DATEDIFF(MINUTE, GETUTCDATE(), CAST(JSON_VALUE(user_settings, '$.TokenExpiration') as DATETIMEOFFSET)) < 10
@@ -71,8 +71,14 @@ AND deleted = 0"
                             AuthToken = tokenInfo.AccessToken,
                             TokenExpiration = DateTimeOffset.UtcNow.AddSeconds(tokenInfo.ExpiresIn),
                             RefreshToken = tokenInfo.RefreshToken,
-                            FrontierProfile = user.UserSettings.FrontierProfile
+                            FrontierProfile = user.UserSettings.FrontierProfile,
+                            JournalLimpetAPIToken = user.UserSettings.JournalLimpetAPIToken
                         };
+
+                        if (string.IsNullOrWhiteSpace(settings.JournalLimpetAPIToken))
+                        {
+                            settings.JournalLimpetAPIToken = Guid.NewGuid().ToString();
+                        }
 
                         // Update user with new token info
                         await db.ExecuteNonQueryAsync("UPDATE user_profile SET user_settings = @settings, last_notification_mail = NULL WHERE user_identifier = @userIdentifier",

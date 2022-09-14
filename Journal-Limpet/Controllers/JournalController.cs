@@ -1,6 +1,6 @@
 ﻿using Hangfire;
 using Journal_Limpet.Jobs;
-using Journal_Limpet.Shared;
+using Journal_Limpet.Jobs.SharedCode;
 using Journal_Limpet.Shared.Database;
 using Journal_Limpet.Shared.Models;
 using Journal_Limpet.Shared.Models.Journal;
@@ -13,7 +13,6 @@ using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Configuration;
 using Minio;
-using Minio.Exceptions;
 using StackExchange.Exceptional;
 using System;
 using System.Collections.Generic;
@@ -128,6 +127,11 @@ new SqlParameter("customerId", profile.CustomerId))
 
                 if (matchingUser != null)
                 {
+                    if (string.IsNullOrWhiteSpace(matchingUser.UserSettings.JournalLimpetAPIToken))
+                    {
+                        settings.JournalLimpetAPIToken = Guid.NewGuid().ToString();
+                    }
+
                     // Update user with new token info
                     await _db.ExecuteNonQueryAsync("UPDATE user_profile SET user_settings = @settings, last_notification_mail = NULL, skip_download = 0 WHERE user_identifier = @userIdentifier",
                         new SqlParameter("settings", JsonSerializer.Serialize(settings)),
@@ -138,6 +142,8 @@ new SqlParameter("customerId", profile.CustomerId))
                 }
                 else
                 {
+                    settings.JournalLimpetAPIToken = Guid.NewGuid().ToString();
+
                     // Create new user
                     matchingUser = await _db.ExecuteSingleRowAsync<Profile>("INSERT INTO user_profile (user_settings) OUTPUT INSERTED.* VALUES (@settings)",
                         new SqlParameter("settings", JsonSerializer.Serialize(settings))
@@ -178,7 +184,7 @@ new SqlParameter("customerId", profile.CustomerId))
         [HttpGet("{journalDate}/download")]
         public async Task<IActionResult> DownloadJournalAsync(DateTime journalDate)
         {
-            var journal = await GetJournalForDate(journalDate);
+            var journal = await JournalLoader.GetJournalForDate(_db, _minioClient, User, journalDate);
 
             if (journal.fileName == null)
                 return NotFound();
@@ -201,7 +207,7 @@ new SqlParameter("customerId", profile.CustomerId))
                 {
                     foreach (var journal in allUserJournals)
                     {
-                        var journalData = await GetJournalForDate(journal.JournalDate.Date);
+                        var journalData = await JournalLoader.GetJournalForDate(_db, _minioClient, User, journal.JournalDate.Date);
                         var fileEntry = archive.CreateEntry(journalData.fileName);
 
                         using var fs = fileEntry.Open();
@@ -217,55 +223,6 @@ new SqlParameter("customerId", profile.CustomerId))
             }
 
             return File(outBytes, "application/zip", $"JL-JournalBackup-{DateTime.Now.Date.ToShortDateString()}.zip");
-        }
-
-        async Task<(string fileName, string journalContent)> GetJournalForDate(DateTime journalDate)
-        {
-            var f = "CAPIJournal." +
-                       journalDate.Year.ToString().Substring(2) +
-                       journalDate.Month.ToString().PadLeft(2, '0') +
-                       journalDate.Day.ToString().PadLeft(2, '0') +
-                       journalDate.Hour.ToString().PadLeft(2, '0') +
-                       journalDate.Minute.ToString().PadLeft(2, '0') +
-                       journalDate.Second.ToString().PadLeft(2, '0') +
-                       ".01.log";
-
-            var journalItem = await _db.ExecuteSingleRowAsync<UserJournal>(
-                "SELECT * FROM user_journal WHERE user_identifier = @user_identifier AND journal_date = @journal_date",
-                new SqlParameter("user_identifier", User.Identity.Name),
-                new SqlParameter("journal_date", journalDate.Date)
-            );
-
-            if (journalItem == null)
-                return (null, null);
-
-            using (MemoryStream outFile = new MemoryStream())
-            {
-                var journalIdentifier = journalItem.S3Path;
-
-                try
-                {
-                    var stats = await _minioClient.StatObjectAsync("journal-limpet", journalIdentifier);
-
-                    await _minioClient.GetObjectAsync("journal-limpet", journalIdentifier,
-                        0, stats.Size,
-                        cb =>
-                        {
-                            cb.CopyTo(outFile);
-                        }
-                    );
-
-                    outFile.Seek(0, SeekOrigin.Begin);
-
-                    var journalContent = ZipManager.Unzip(outFile.ToArray());
-
-                    return (f, journalContent);
-                }
-                catch (ObjectNotFoundException)
-                {
-                    return (null, null);
-                }
-            }
         }
 
         [HttpGet("logout")]

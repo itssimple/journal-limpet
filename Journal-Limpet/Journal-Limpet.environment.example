@@ -35,5 +35,6 @@
   "CanonnRD": {
     "QueryString": "",
     "JournalEndpoint": ""
-  }
+  },
+  "APITokenKeyHash": ""
 }
