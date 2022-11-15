@@ -233,7 +233,9 @@ namespace Journal_Limpet.Jobs
                     { "header", new Dictionary<string, object>() {
                         { "uploaderID", userIdentifier.ToString() },
                         { "softwareName", "Journal Limpet" },
-                        { "softwareVersion", SharedSettings.VersionNumber }
+                        { "softwareVersion", SharedSettings.VersionNumber },
+                        { "gameversion", gameState.GameVersion },
+                        { "gamebuild", gameState.GameBuild }
                     } },
                     { "message", element }
                 };

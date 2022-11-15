@@ -132,6 +132,8 @@ namespace Journal_Limpet.Shared.Models
                     flags: CommandFlags.FireAndForget
                 );
             }*/
+
+            await Task.CompletedTask;
         }
     }
 }

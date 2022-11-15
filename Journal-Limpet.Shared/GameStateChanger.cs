@@ -37,6 +37,12 @@ namespace Journal_Limpet.Shared
                 }
             }
 
+            if (eventName == "Commander" || string.IsNullOrWhiteSpace(gameState.GameBuild))
+            {
+                gameState.GameVersion = "CAPI-journal";
+                gameState.GameBuild = "CAPI-journal";
+            }
+
             // We'll disable this reset for now, since commanders do re-log at times
             // And for some reason, Location wasn't written to the journals,
             // maybe it only appears if you actually restart the entire game?
@@ -58,6 +64,24 @@ namespace Journal_Limpet.Shared
                 else
                 {
                     gameState.Odyssey = false;
+                }
+
+                if (elementAsDictionary.ContainsKey("gameversion"))
+                {
+                    gameState.GameVersion = elementAsDictionary["gameversion"].GetString();
+                }
+                else
+                {
+                    gameState.GameVersion = "CAPI-journal";
+                }
+
+                if (elementAsDictionary.ContainsKey("build"))
+                {
+                    gameState.GameBuild = elementAsDictionary["build"].GetString();
+                }
+                else
+                {
+                    gameState.GameBuild = "CAPI-journal";
                 }
             }
 
