@@ -457,6 +457,8 @@ new SqlParameter("user_identifier", userIdentifier)
                 formContent.Add(new StringContent(edsmSettings.CommanderName.Trim()), "commanderName");
                 formContent.Add(new StringContent(edsmSettings.ApiKey), "apiKey");
                 formContent.Add(new StringContent("Journal Limpet"), "fromSoftware");
+                formContent.Add(new StringContent(gameState.GameVersion), "fromGameVersion");
+                formContent.Add(new StringContent(gameState.GameBuild), "fromGameBuild");
                 formContent.Add(new StringContent(SharedSettings.VersionNumber), "fromSoftwareVersion");
                 formContent.Add(new StringContent(json), "message");
 
