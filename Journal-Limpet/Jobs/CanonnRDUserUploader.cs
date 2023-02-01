@@ -379,6 +379,7 @@ new SqlParameter("user_identifier", userIdentifier)
                     var fieldsToMatch = matchingValidEvent.ExtensionData ?? new Dictionary<string, object>();
                     if (fieldsToMatch.Count > 0)
                     {
+                        foundMatchingEvent = false;
                         var elementAsDictionary = JsonSerializer.Deserialize<Dictionary<string, object>>(element.GetRawText());
 
                         if (fieldsToMatch.All(k => elementAsDictionary.ContainsKey(k.Key) && elementAsDictionary[k.Key].ToString() == k.Value.ToString()))
