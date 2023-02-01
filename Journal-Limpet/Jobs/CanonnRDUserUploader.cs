@@ -372,7 +372,7 @@ new SqlParameter("user_identifier", userIdentifier)
                     matchingValidEvents = validCanonnEvents;
                 }
 
-                bool foundMatchingEvent = false;
+                bool foundMatchingEvent = matchingValidEvents.Count() == 1;
 
                 foreach (var matchingValidEvent in matchingValidEvents)
                 {
