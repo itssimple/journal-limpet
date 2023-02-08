@@ -41,7 +41,7 @@
     <PackageReference Include="SendGrid" Version="9.28.0" />
     <PackageReference Include="StackExchange.Exceptional.AspNetCore" Version="2.2.32" />
     <PackageReference Include="StackExchange.Redis" Version="2.5.61" />
-    <PackageReference Include="System.Data.SqlClient" Version="4.8.3" />
+    <PackageReference Include="System.Data.SqlClient" Version="4.8.5" />
     <PackageReference Include="System.Text.Encoding.Extensions" Version="4.3.0" />
     <PackageReference Include="System.Runtime.InteropServices" Version="4.3.0" />
     <PackageReference Include="System.Runtime.Handles" Version="4.3.0" />
