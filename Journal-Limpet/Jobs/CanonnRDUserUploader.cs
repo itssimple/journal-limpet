@@ -27,6 +27,8 @@ namespace Journal_Limpet.Jobs
 {
     public static class CanonnRDUserUploader
     {
+        const int BatchSize = 15;
+
         [JobDisplayName("Canonn uploader for {1} ({0})")]
         public static async Task UploadAsync(Guid userIdentifier, string cmdrName, PerformContext context)
         {
@@ -167,19 +169,13 @@ new SqlParameter("user_identifier", userIdentifier)
                                         journalItem.IntegrationData["Canonn R&D"] = ijd;
                                     }
 
-                                    if (journalEvents.Count == 25)
+                                    if (journalEvents.Count == BatchSize)
                                     {
                                         context.WriteLine($"Got {journalEvents.Count} events to send to Canonn");
                                         breakJournal = await SendEventBatch(userIdentifier, context, configuration, discordClient, hc, lastLine, journalItem, loggingEnabled, ijd, journalEvents);
                                         journalEvents = new List<Dictionary<string, object>>();
 
                                         await GameStateHandler.UpdateJournalIntegrationDataAsync(db, journalItem.JournalId, IntegrationNames.CanonnRD, ijd);
-
-                                        //await db.ExecuteNonQueryAsync(
-                                        //    "UPDATE user_journal SET integration_data = @integration_data WHERE journal_id = @journal_id",
-                                        //    new SqlParameter("journal_id", journalItem.JournalId),
-                                        //    new SqlParameter("integration_data", JsonSerializer.Serialize(journalItem.IntegrationData))
-                                        //);
                                     }
                                 }
 
@@ -190,14 +186,6 @@ new SqlParameter("user_identifier", userIdentifier)
                                 }
 
                                 await GameStateHandler.UpdateJournalIntegrationDataAsync(db, journalItem.JournalId, IntegrationNames.CanonnRD, ijd);
-
-                                //var integration_json = JsonSerializer.Serialize(journalItem.IntegrationData);
-
-                                //await db.ExecuteNonQueryAsync(
-                                //    "UPDATE user_journal SET integration_data = JSON_MODIFY(integration_data, '$.\"Canonn R\\u0026D\"', JSON_QUERY(@integration_data)) WHERE journal_id = @journal_id",
-                                //    new SqlParameter("journal_id", journalItem.JournalId),
-                                //    new SqlParameter("integration_data", integration_json)
-                                //);
 
                                 if (breakJournal)
                                 {
@@ -213,12 +201,6 @@ new SqlParameter("user_identifier", userIdentifier)
                                     journalItem.IntegrationData["Canonn R&D"] = ijd;
 
                                     await GameStateHandler.UpdateJournalIntegrationDataAsync(db, journalItem.JournalId, IntegrationNames.CanonnRD, ijd);
-
-                                    //await db.ExecuteNonQueryAsync(
-                                    //    "UPDATE user_journal SET integration_data = @integration_data WHERE journal_id = @journal_id",
-                                    //    new SqlParameter("journal_id", journalItem.JournalId),
-                                    //    new SqlParameter("integration_data", JsonSerializer.Serialize(journalItem.IntegrationData))
-                                    //);
                                 }
 
                                 if (breakJournal)
@@ -232,12 +214,6 @@ new SqlParameter("user_identifier", userIdentifier)
                         catch (Exception ex)
                         {
                             await GameStateHandler.UpdateJournalIntegrationDataAsync(db, journalItem.JournalId, IntegrationNames.CanonnRD, ijd);
-
-                            //await db.ExecuteNonQueryAsync(
-                            //    "UPDATE user_journal SET integration_data = @integration_data WHERE journal_id = @journal_id",
-                            //    new SqlParameter("journal_id", journalItem.JournalId),
-                            //    new SqlParameter("integration_data", JsonSerializer.Serialize(journalItem.IntegrationData))
-                            //);
 
                             await discordClient.SendMessageAsync("**[Canonn R&D Upload]** Problem with upload to Canonn R&D", new List<DiscordWebhookEmbed>
                                 {
