@@ -33,6 +33,12 @@ namespace Journal_Limpet.Shared.EDDN
 
         public enum RemoveProperties
         {
+            StationGovernment,
+            StationEconomies,
+            StationFaction,
+            StationServices,
+            StationEconomy,
+            StationAllegiance,
         }
     }
 }
