@@ -9,7 +9,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
 
     - name: Set version
       id: set-version
@@ -18,9 +18,9 @@ jobs:
         sed -i "s/{{version}}/$(date +'%Y.%m.%d.%H%M')/g" Journal-Limpet/SharedSettings.cs
 
     - name: Setup .NET Core
-      uses: actions/setup-dotnet@v1
+      uses: actions/setup-dotnet@v3
       with:
-        dotnet-version: 6.0.x
+        dotnet-version: 8.0.x
 
     - name: Install Octopus CLI
       run: |
