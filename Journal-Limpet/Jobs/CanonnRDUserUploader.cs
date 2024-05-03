@@ -444,7 +444,9 @@ new SqlParameter("user_identifier", userIdentifier)
             [JsonPropertyName("description")]
             public string Description { get; set; }
             [JsonPropertyName("definition")]
-            public CanonnEventDefinition Definition { get; set; }
+            public string DefinitionJson { get; set; }
+            [JsonIgnore]
+            public CanonnEventDefinition Definition { get { return JsonSerializer.Deserialize<CanonnEventDefinition>(DefinitionJson); } }
         }
 
         public class CanonnEventDefinition : EliteBaseJsonObject
