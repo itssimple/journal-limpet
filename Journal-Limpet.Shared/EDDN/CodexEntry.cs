@@ -31,7 +31,6 @@ namespace Journal_Limpet.Shared.EDDN
         {
             IsNewEntry,
             NewTraitsDiscovered,
-            BodyID,
             BodyName
         }
     }
