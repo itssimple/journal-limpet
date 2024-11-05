@@ -12,7 +12,7 @@ namespace Journal_Limpet.Pages
         private readonly IHttpClientFactory _httpClientFactory;
         private readonly IConfiguration _configuration;
 
-        public PatreonGoal Goal { get; set; }
+        public PatreonGoal Goal { get; set; } = null;
 
         public AboutModel(IConfiguration configuration, IHttpClientFactory httpClientFactory)
         {
@@ -22,14 +22,22 @@ namespace Journal_Limpet.Pages
 
         public async Task OnGetAsync()
         {
-            var hc = _httpClientFactory.CreateClient();
-            var res = await hc.GetStringAsync(_configuration["Patreon:GoalApiUrl"]);
-            Goal = JsonSerializer.Deserialize<PatreonGoal>(
-                    JsonDocument.Parse(res).RootElement
-                        .GetProperty("data")
-                        .GetProperty("attributes")
-                        .GetRawText()
-                    );
+            try
+            {
+                var hc = _httpClientFactory.CreateClient();
+                hc.DefaultRequestHeaders.UserAgent.ParseAdd("Journal-Limpet");
+                var res = await hc.GetStringAsync(_configuration["Patreon:GoalApiUrl"]);
+                Goal = JsonSerializer.Deserialize<PatreonGoal>(
+                        JsonDocument.Parse(res).RootElement
+                            .GetProperty("data")
+                            .GetProperty("attributes")
+                            .GetRawText()
+                        );
+            }
+            catch
+            {
+                Goal = null;
+            }
         }
 
         public class PatreonGoal
