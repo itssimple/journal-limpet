@@ -24,9 +24,9 @@ namespace Journal_Limpet.Controllers
 
             var response = Response;
 
-            response.Headers.Add("Content-Type", "text/event-stream");
-            response.Headers.Add("X-Accel-Buffering", "no");
-            response.Headers.Add("Cache-Control", "no-cache");
+            response.Headers["Content-Type"] = "text/event-stream";
+            response.Headers["X-Accel-Buffering"] = "no";
+            response.Headers["Cache-Control"] = "no-cache";
 
             await response.WriteAsync("data: Connected to Activity SSE endpoint\r\r");
             await response.Body.FlushAsync();
@@ -73,9 +73,9 @@ namespace Journal_Limpet.Controllers
 
             var response = Response;
 
-            response.Headers.Add("Content-Type", "text/event-stream");
-            response.Headers.Add("X-Accel-Buffering", "no");
-            response.Headers.Add("Cache-Control", "no-cache");
+            response.Headers["Content-Type"] = "text/event-stream";
+            response.Headers["X-Accel-Buffering"] = "no";
+            response.Headers["Cache-Control"] = "no-cache";
 
             await response.WriteAsync("data: Connected to Log SSE endpoint\r\r");
             await response.Body.FlushAsync();
