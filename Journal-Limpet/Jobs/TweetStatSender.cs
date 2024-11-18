@@ -15,7 +15,7 @@ namespace Journal_Limpet.Jobs
     {
         public static async Task SendStatsTweetAsync(PerformContext context)
         {
-            context.WriteLine("Looking for tokens to refresh!");
+            context.WriteLine("Trying to send stats Tweet!");
             using (var scope = Startup.ServiceProvider.CreateScope())
             {
                 IConfiguration configuration = scope.ServiceProvider.GetRequiredService<IConfiguration>();
@@ -81,7 +81,13 @@ namespace Journal_Limpet.Jobs
                     sb.AppendLine($"{SharedSettings.NumberFixer(mod.TotalUserJournalLines)} lines of journal");
                 }
 
-                var res = await tweetSender.SendAsync(sb.ToString());
+                var message = sb.ToString();
+
+                context.WriteLine(message);
+
+                var res = await tweetSender.SendAsync(message);
+
+                context.WriteLine(res.response);
 
                 if (!res.status)
                 {
