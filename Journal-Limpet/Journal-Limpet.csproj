@@ -23,7 +23,6 @@
     <None Remove="News\2021-02-01-canonn-integration-released.md" />
     <None Remove="News\2021-03-05-added-faq-page.md" />
     <None Remove="News\2021-05-22-odyssey-ready.md" />
-    <None Remove="News\2022-06-26-tweet-changes-and-eddn-changes.md" />
   </ItemGroup>
 
   <ItemGroup>
