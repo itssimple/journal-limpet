@@ -13,7 +13,7 @@ namespace Journal_Limpet.Shared.Models.API.Profile
         [JsonPropertyName("debt")]
         public long Debt { get; set; }
         [JsonPropertyName("currentShipId")]
-        public int CurrentShipId { get; set; }
+        public int? CurrentShipId { get; set; }
         [JsonPropertyName("alive")]
         public bool Alive { get; set; }
         [JsonPropertyName("docked")]
